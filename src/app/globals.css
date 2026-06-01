@@ -1,0 +1,1757 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ===================================================================
+   PANDORA ATLAS — Sovereign Intelligence Design System
+   Palette : Noir profond, Or vieilli, Vert mousse, Bleu-gris
+   =================================================================== */
+
+:root {
+  /* --- Palette Principale --- */
+  --bg-void: #070807;
+  --bg-primary: #0B0D0C;
+  --bg-secondary: #111513;
+  --bg-tertiary: #1A1F1C;
+  --bg-panel: rgba(16, 19, 17, 0.92);
+  --bg-panel-solid: #121612;
+
+  /* --- Accents --- */
+  --gold-primary: #BFA46A;
+  --gold-light: #D7C18B;
+  --gold-dim: #6F6242;
+  --gold-glow: rgba(191, 164, 106, 0.14);
+
+  --cyan-primary: #8FA7A0;
+  --cyan-dim: #536661;
+  --cyan-glow: rgba(143, 167, 160, 0.08);
+
+  --alert-red: #C65D4E;
+  --alert-orange: #C18447;
+  --alert-green: #7FA276;
+  --alert-blue: #7D91A8;
+
+  /* --- Bordures --- */
+  --border-primary: rgba(191, 164, 106, 0.20);
+  --border-secondary: rgba(221, 214, 193, 0.08);
+  --border-active: rgba(191, 164, 106, 0.36);
+  --border-cyan: rgba(143, 167, 160, 0.18);
+
+  /* --- Texte --- */
+  --text-primary: #E3DED1;
+  --text-secondary: #A7A092;
+  --text-muted: #6B665C;
+  --text-heading: #F0E9D8;
+
+  /* --- Polices --- */
+  --font-hud: 'JetBrains Mono', 'Courier New', monospace;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  /* --- Espacements --- */
+  --panel-gap: 12px;
+  --edge-pad: 20px;
+}
+
+/* ===================================================================
+   BASE STYLES
+   =================================================================== */
+@theme inline {
+  --color-background: var(--bg-void);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-hud);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(191, 164, 106, 0.045), transparent 28%),
+    linear-gradient(135deg, #070807 0%, #0B0D0C 45%, #111513 100%);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Scrollbar --- */
+.styled-scrollbar::-webkit-scrollbar { width: 3px; }
+.styled-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.styled-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(191, 164, 106, 0.24);
+  border-radius: 10px;
+}
+.styled-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(143, 167, 160, 0.42);
+}
+.styled-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 164, 106, 0.24) transparent;
+}
+
+/* ===================================================================
+   GLASS PANELS — Panneaux transparents avec effet de profondeur
+   =================================================================== */
+.glass-panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.42),
+    0 1px 0 rgba(240, 233, 216, 0.045) inset;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(191, 164, 106, 0.28);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.46),
+    0 1px 0 rgba(240, 233, 216, 0.055) inset;
+}
+
+.glass-panel-sm {
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+}
+
+/* ===================================================================
+   HUD TEXT SYSTEM — Typographie technique
+   =================================================================== */
+.hud-text {
+  font-family: var(--font-hud);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.hud-label {
+  font-family: var(--font-hud);
+  font-size: 7px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hud-value {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================
+   ANIMATIONS — Effets subtils et élégants
+   =================================================================== */
+@keyframes pandora-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(191, 164, 106, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(191, 164, 106, 0.6), 0 0 40px rgba(191, 164, 106, 0.2); }
+}
+
+@keyframes data-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.animate-pandora-pulse { animation: pandora-pulse 2s ease-in-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+.animate-data-pulse { animation: data-pulse 2s ease-in-out infinite; }
+
+/* ===================================================================
+   GOTHAM TAGS — Badges de classification
+   =================================================================== */
+.gotham-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-hud);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.gotham-tag--info {
+  color: #D7C18B;
+  border-color: rgba(191, 164, 106, 0.26);
+  background: rgba(191, 164, 106, 0.075);
+}
+
+.gotham-tag--low {
+  color: #9BB190;
+  border-color: rgba(127, 162, 118, 0.24);
+  background: rgba(127, 162, 118, 0.07);
+}
+
+.gotham-tag--high {
+  color: #D2A36D;
+  border-color: rgba(193, 132, 71, 0.28);
+  background: rgba(193, 132, 71, 0.08);
+}
+
+.gotham-tag--critical {
+  color: #D48173;
+  border-color: rgba(198, 93, 78, 0.30);
+  background: rgba(198, 93, 78, 0.08);
+}
+
+/* ===================================================================
+   PANELS — Conteneurs de contenu
+   =================================================================== */
+.foundry-panel,
+.mission-panel,
+.aip-panel,
+.ops-panel,
+.innovation-panel,
+.public-intel-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.foundry-panel::before,
+.mission-panel::before,
+.aip-panel::before,
+.ops-panel::before,
+.innovation-panel::before,
+.public-intel-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(240, 233, 216, 0.035), transparent 34%),
+    linear-gradient(90deg, rgba(191, 164, 106, 0.055), transparent 45%);
+  opacity: 0.55;
+}
+
+.foundry-panel > *,
+.mission-panel > *,
+.aip-panel > *,
+.ops-panel > *,
+.innovation-panel > *,
+.public-intel-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===================================================================
+   ORBS & RETICLES — Éléments circulaires
+   =================================================================== */
+.foundry-orb,
+.mission-reticle,
+.aip-orb,
+.ops-orb,
+.innovation-orb,
+.public-intel-orb {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(191, 164, 106, 0.25);
+  background: rgba(191, 164, 106, 0.07);
+  box-shadow: none;
+}
+
+.mission-reticle {
+  color: var(--gold-primary);
+  border-color: rgba(191, 164, 106, 0.28);
+  background: rgba(191, 164, 106, 0.07);
+}
+
+/* ===================================================================
+   METRICS & CARDS — Cartes de données
+   =================================================================== */
+.foundry-metric {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 7px 6px;
+  text-align: center;
+}
+
+.foundry-metric span {
+  display: block;
+  font-family: var(--font-hud);
+  font-size: 7px;
+  letter-spacing: 0.11em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.foundry-metric strong {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--cyan-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================
+   LIST ROWS — Lignes de données
+   =================================================================== */
+.public-intel-row,
+.innovation-mission-card,
+.ops-time-row,
+.ops-hit-row,
+.aip-list-row,
+.aip-hotspot-row,
+.aip-entity-row,
+.aip-case-row,
+.foundry-source-row,
+.mission-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 6px;
+  background: rgba(240, 233, 216, 0.025);
+  padding: 6px 7px;
+  color: var(--text-secondary);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.public-intel-row:hover,
+.innovation-mission-card:hover,
+.ops-time-row:hover,
+.ops-hit-row:hover,
+.aip-hotspot-row:hover,
+.aip-entity-row:hover {
+  border-color: rgba(191, 164, 106, 0.26);
+  background: rgba(191, 164, 106, 0.055);
+  transform: none;
+}
+
+/* ===================================================================
+   TABS — Onglets
+   =================================================================== */
+.aip-tabs,
+.ops-tabs,
+.innovation-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.aip-tabs button,
+.ops-tabs button,
+.innovation-tabs button {
+  border-radius: 4px;
+  padding: 6px 3px;
+  font-family: var(--font-hud);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  transition: all 0.18s ease;
+}
+
+.aip-tabs button.active,
+.ops-tabs button.active {
+  color: var(--gold-primary);
+  background: rgba(191, 164, 106, 0.10);
+  box-shadow: inset 0 0 14px rgba(191, 164, 106, 0.05);
+}
+
+.innovation-tabs button.active {
+  color: var(--cyan-primary);
+  background: rgba(143, 167, 160, 0.10);
+}
+
+/* ===================================================================
+   BUTTONS & ACTIONS — Boutons
+   =================================================================== */
+.aip-mini-button,
+.aip-action-button,
+.ops-watch-builder button,
+.ops-action,
+.innovation-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(191, 164, 106, 0.22);
+  border-radius: 6px;
+  background: rgba(191, 164, 106, 0.08);
+  color: var(--gold-primary);
+  font-family: var(--font-hud);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  padding: 7px 8px;
+  transition: all 0.18s ease;
+}
+
+.aip-mini-button {
+  padding: 4px 6px;
+  font-size: 7px;
+}
+
+.aip-mini-button:hover,
+.aip-action-button:hover,
+.ops-watch-builder button:hover,
+.ops-action:hover,
+.innovation-action:hover {
+  border-color: rgba(143, 167, 160, 0.28);
+  color: var(--cyan-primary);
+  background: rgba(143, 167, 160, 0.08);
+}
+
+/* ===================================================================
+   INPUTS & TEXTAREAS — Champs de saisie
+   =================================================================== */
+.aip-notes,
+.aip-prompt,
+.ops-watch-builder input,
+.ops-watch-builder select,
+.public-intel-search input {
+  width: 100%;
+  min-height: 58px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--text-secondary);
+  font-family: var(--font-hud);
+  font-size: 8px;
+  line-height: 1.5;
+  padding: 8px;
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.aip-prompt {
+  min-height: 64px;
+  color: var(--text-primary);
+}
+
+.aip-notes:focus,
+.aip-prompt:focus,
+.ops-watch-builder input:focus,
+.public-intel-search input:focus {
+  border-color: rgba(191, 164, 106, 0.25);
+}
+
+/* ===================================================================
+   PROGRESS BARS — Barres de progression
+   =================================================================== */
+.mission-readiness-track,
+.aip-forecast-track,
+.innovation-forecast-track,
+.innovation-dna-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mission-readiness-track div,
+.aip-forecast-track div,
+.innovation-forecast-track div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7FA276, #BFA46A, #C18447);
+  box-shadow: none;
+  transition: width 0.4s ease;
+}
+
+/* ===================================================================
+   LAYER TOGGLE — Interrupteurs
+   =================================================================== */
+.layer-toggle {
+  position: relative;
+  width: 28px;
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.layer-toggle::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.18s ease;
+}
+
+.layer-toggle.active {
+  background: rgba(191, 164, 106, 0.2);
+  border-color: var(--gold-primary);
+}
+
+.layer-toggle.active::after {
+  left: 15px;
+  background: var(--gold-primary);
+  box-shadow: 0 0 8px rgba(191, 164, 106, 0.5);
+}
+
+/* ===================================================================
+   MAP OVERRIDES — Personnalisation de la carte
+   =================================================================== */
+.maplibregl-popup-content {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.maplibregl-popup-tip {
+  display: none !important;
+}
+
+.maplibregl-ctrl-attrib {
+  display: none !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--text-muted) !important;
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: var(--gold-primary) !important;
+}
+
+.maplibregl-canvas {
+  filter: sepia(0.08) saturate(0.86) contrast(0.96) brightness(0.92);
+}
+
+/* ===================================================================
+   CRT & VIGNETTE — Effets visuels
+   =================================================================== */
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.01) 3px,
+    rgba(255, 255, 255, 0.01) 4px
+  );
+  opacity: 0.01 !important;
+}
+
+.vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 48%,
+    rgba(7, 8, 7, 0.42) 84%,
+    rgba(7, 8, 7, 0.82) 100%
+  );
+}
+
+/* ===================================================================
+   MOBILE DRAWER & NAV — Navigation mobile
+   =================================================================== */
+.mobile-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 55vh;
+  border-radius: 16px 16px 0 0;
+  overflow-y: auto;
+  z-index: 400;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--bg-panel-solid);
+}
+
+.mobile-drawer.open {
+  transform: translateY(0);
+}
+
+.mobile-drawer-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(191, 164, 106, 0.3);
+  border-radius: 4px;
+  margin: 8px auto 8px;
+}
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 450;
+  display: none;
+  padding: 0 4px;
+  padding-bottom: env(safe-area-inset-bottom, 4px);
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 8, 7, 0.96) 28%);
+}
+
+.mobile-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 2px 4px;
+  gap: 0;
+  border-radius: 10px 10px 0 0;
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 6px;
+  border-radius: 8px;
+  font-family: var(--font-hud);
+  font-size: 6px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-transform: uppercase;
+  min-width: 0;
+  flex: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-btn.active {
+  color: var(--gold-primary);
+  background: rgba(191, 164, 106, 0.1);
+}
+
+.mobile-nav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===================================================================
+   RESPONSIVE BREAKPOINTS — Adaptation aux écrans
+   =================================================================== */
+@media (max-width: 1024px) {
+  :root {
+    --edge-pad: 12px;
+    --panel-gap: 8px;
+  }
+  .desktop-only { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --edge-pad: 8px;
+    --panel-gap: 6px;
+  }
+  .desktop-only { display: none !important; }
+  .mobile-nav { display: block; }
+  .desktop-panel { display: none !important; }
+  .status-bar-desktop { display: none !important; }
+  body.drawer-open { overflow: hidden; }
+}
+
+@media (max-width: 390px) {
+  :root { --edge-pad: 4px; }
+  .mobile-nav-btn { padding: 4px 3px; font-size: 5px; }
+  .mobile-nav-btn svg { width: 14px; height: 14px; }
+}
+
+@media (max-height: 500px) and (max-width: 1024px) {
+  .desktop-only { display: none !important; }
+  .desktop-panel { display: none !important; }
+  .status-bar-desktop { display: none !important; }
+  .mobile-nav { display: block; }
+  .mobile-nav-inner { padding: 4px 2px 2px; }
+  .mobile-nav-btn { padding: 3px 4px; font-size: 5px; }
+  .mobile-nav-btn span { display: none; }
+  .mobile-drawer-handle { margin: 4px auto 4px; }
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .mobile-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@supports (padding: env(safe-area-inset-left)) {
+  .mobile-nav { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+}
+
+/* ===================================================================
+   WIDESCREEN SCALING — Adaptation aux grands écrans
+   =================================================================== */
+@media (min-width: 2560px) {
+  :root { font-size: 18px; }
+  .glass-panel { min-width: 280px; }
+}
+
+@media (min-width: 3440px) {
+  :root { font-size: 20px; }
+  .glass-panel { min-width: 320px; }
+}
+
+/* ===================================================================
+   PANDORA PRODUCT SUITE — Modern professional redesign
+   Direction: sober command workspace, premium SaaS, not “AI neon”.
+   =================================================================== */
+:root {
+  --bg-void: #05070D;
+  --bg-primary: #080B12;
+  --bg-secondary: #0D121C;
+  --bg-tertiary: #141B29;
+  --bg-panel: rgba(13, 18, 28, 0.86);
+  --bg-panel-solid: #0D121C;
+
+  --gold-primary: #D0A85C;
+  --gold-light: #E8C982;
+  --gold-dim: #7B643A;
+  --gold-glow: rgba(208, 168, 92, 0.14);
+
+  --cyan-primary: #8FB7FF;
+  --cyan-dim: #3D5F9A;
+  --cyan-glow: rgba(143, 183, 255, 0.12);
+
+  --accent-violet: #9B8CFF;
+  --accent-slate: #94A3B8;
+  --accent-line: rgba(148, 163, 184, 0.16);
+
+  --alert-red: #E06A6A;
+  --alert-orange: #D9984A;
+  --alert-green: #74C69D;
+  --alert-blue: #8FB7FF;
+
+  --border-primary: rgba(148, 163, 184, 0.18);
+  --border-secondary: rgba(148, 163, 184, 0.10);
+  --border-active: rgba(143, 183, 255, 0.42);
+  --border-cyan: rgba(143, 183, 255, 0.24);
+
+  --text-primary: #E7ECF4;
+  --text-secondary: #A9B4C5;
+  --text-muted: #687589;
+  --text-heading: #F8FAFC;
+
+  --panel-radius: 14px;
+  --panel-radius-sm: 10px;
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(143, 183, 255, 0.10), transparent 30%),
+    radial-gradient(circle at 86% 14%, rgba(208, 168, 92, 0.065), transparent 28%),
+    linear-gradient(135deg, #05070D 0%, #090E18 44%, #0F1724 100%);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at 50% 45%, black 0%, transparent 76%);
+  opacity: 0.36;
+}
+
+.glass-panel,
+.glass-panel-sm {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    var(--bg-panel);
+  backdrop-filter: blur(18px) saturate(1.14);
+  -webkit-backdrop-filter: blur(18px) saturate(1.14);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--panel-radius);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.38),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.28) inset;
+  overflow: hidden;
+}
+
+.glass-panel::before,
+.glass-panel-sm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(143, 183, 255, 0.10), transparent 18%, transparent 82%, rgba(208, 168, 92, 0.055)),
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.075), transparent 28%);
+  opacity: 0.42;
+}
+
+.glass-panel > *,
+.glass-panel-sm > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-panel:hover {
+  border-color: rgba(143, 183, 255, 0.32);
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(143, 183, 255, 0.06) inset,
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
+}
+
+.glass-panel-sm {
+  border-radius: var(--panel-radius-sm);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.045) inset;
+}
+
+.hud-text,
+.hud-label,
+.hud-value,
+.gotham-tag,
+.foundry-source-row,
+.mission-card span,
+.aip-tabs button,
+.ops-tabs button,
+.innovation-tabs button,
+.public-intel-cats button {
+  letter-spacing: 0.095em;
+}
+
+.hud-label {
+  color: #728197;
+  font-weight: 600;
+}
+
+.hud-value,
+.stat-value-glow,
+.gotham-stat__value {
+  color: var(--text-heading);
+  text-shadow: none;
+}
+
+.gotham-tag,
+.gotham-tag--info,
+.gotham-tag--low,
+.gotham-tag--high,
+.gotham-tag--critical {
+  border-radius: 999px;
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.gotham-tag--info {
+  color: var(--cyan-primary);
+  border-color: rgba(143, 183, 255, 0.30);
+  background: rgba(143, 183, 255, 0.095);
+}
+
+.gotham-tag--low {
+  color: var(--alert-green);
+  border-color: rgba(116, 198, 157, 0.28);
+  background: rgba(116, 198, 157, 0.08);
+}
+
+.gotham-tag--high {
+  color: var(--alert-orange);
+  border-color: rgba(217, 152, 74, 0.28);
+  background: rgba(217, 152, 74, 0.09);
+}
+
+.gotham-tag--critical {
+  color: var(--alert-red);
+  border-color: rgba(224, 106, 106, 0.30);
+  background: rgba(224, 106, 106, 0.09);
+}
+
+.foundry-panel::before,
+.mission-panel::before,
+.aip-panel::before,
+.ops-panel::before,
+.innovation-panel::before,
+.public-intel-panel::before {
+  background:
+    linear-gradient(135deg, rgba(143, 183, 255, 0.08), transparent 36%),
+    radial-gradient(circle at 92% 0%, rgba(208, 168, 92, 0.08), transparent 30%) !important;
+  opacity: 0.62 !important;
+}
+
+.foundry-orb,
+.mission-reticle,
+.aip-orb,
+.ops-orb,
+.innovation-orb,
+.public-intel-orb {
+  border-radius: 12px !important;
+  border-color: rgba(143, 183, 255, 0.24) !important;
+  background: rgba(143, 183, 255, 0.075) !important;
+  color: var(--cyan-primary) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+.foundry-source-row,
+.mission-card,
+.aip-list-row,
+.aip-hotspot-row,
+.aip-entity-row,
+.aip-case-row,
+.ops-time-row,
+.ops-hit-row,
+.innovation-mission-card,
+.public-intel-row,
+.foundry-metric,
+.mission-readiness,
+.aip-score-card,
+.ops-sim-card,
+.innovation-forecast-card,
+.innovation-mini-metric {
+  border-radius: 12px !important;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.foundry-source-row:hover,
+.ops-time-row:hover,
+.ops-hit-row:hover,
+.aip-hotspot-row:hover,
+.aip-entity-row:hover,
+.innovation-mission-card:hover,
+.public-intel-row:hover {
+  border-color: rgba(143, 183, 255, 0.30) !important;
+  background: rgba(143, 183, 255, 0.07) !important;
+  transform: translateY(-1px);
+}
+
+.layer-toggle {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.layer-toggle::after {
+  width: 12px;
+  height: 12px;
+  top: 2px;
+  left: 2px;
+  background: #8A96A8;
+}
+
+.layer-toggle.active {
+  background: rgba(143, 183, 255, 0.18);
+  border-color: rgba(143, 183, 255, 0.45);
+}
+
+.layer-toggle.active::after {
+  left: 18px;
+  background: var(--cyan-primary);
+  box-shadow: 0 0 14px rgba(143, 183, 255, 0.28);
+}
+
+.maplibregl-canvas {
+  filter: saturate(0.82) contrast(0.98) brightness(0.88) hue-rotate(2deg);
+}
+
+.vignette {
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(5, 7, 13, 0.40) 84%, rgba(5, 7, 13, 0.78) 100%);
+}
+
+.crt-scanlines {
+  opacity: 0 !important;
+}
+
+.mobile-nav {
+  background: linear-gradient(180deg, transparent 0%, rgba(5, 7, 13, 0.96) 30%);
+}
+
+.mobile-nav-inner {
+  border-radius: 18px 18px 0 0;
+  padding: 8px 4px 5px;
+}
+
+.mobile-nav-btn {
+  border-radius: 12px;
+}
+
+.mobile-nav-btn.active {
+  color: var(--cyan-primary);
+  background: rgba(143, 183, 255, 0.12);
+}
+
+.mobile-drawer-handle {
+  background: rgba(143, 183, 255, 0.32);
+}
+
+/* Splash: product launch screen, not radar/AI-heavy. */
+.product-splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(143, 183, 255, 0.12), transparent 30%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: auto, 56px 56px, 56px 56px;
+  opacity: 0.62;
+}
+
+.product-splash::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  pointer-events: none;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.035), transparent 42%);
+}
+
+.product-mark > [class*='rounded-full'] {
+  animation-duration: 32s !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow: none !important;
+}
+
+.product-mark::before {
+  content: '';
+  position: absolute;
+  width: 86px;
+  height: 86px;
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgba(143, 183, 255, 0.16), rgba(208, 168, 92, 0.10)),
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: rotate(45deg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.product-mark::after {
+  content: '';
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(5, 7, 13, 0.58);
+  border: 1px solid rgba(143, 183, 255, 0.28);
+  transform: rotate(45deg);
+}
+
+.pandora-product-logo > div:nth-child(1),
+.pandora-product-logo > div:nth-child(2) {
+  display: none;
+}
+
+.pandora-product-logo > div:nth-child(3) {
+  border-radius: 10px !important;
+  border-width: 1px !important;
+  border-color: rgba(143, 183, 255, 0.42) !important;
+  background: linear-gradient(145deg, rgba(143,183,255,0.16), rgba(208,168,92,0.08));
+  transform: rotate(45deg);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.32);
+}
+
+.pandora-product-logo > div:nth-child(3) > div {
+  border-radius: 6px !important;
+  background: rgba(248, 250, 252, 0.18) !important;
+  border-color: rgba(248, 250, 252, 0.14) !important;
+}
+
+.pandora-product-logo > div:nth-child(4),
+.pandora-product-logo > div:nth-child(5) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ===================================================================
+   READABILITY HOTFIX — higher contrast operational panels
+   Fixes: panels too transparent over map, muted labels too faint,
+   catalog stats stuck together, bottom HUD readability.
+   =================================================================== */
+:root {
+  --bg-panel: rgba(10, 15, 24, 0.96);
+  --bg-panel-solid: #0A0F18;
+  --text-secondary: #C1CAD8;
+  --text-muted: #8997AA;
+  --border-primary: rgba(164, 178, 199, 0.28);
+  --border-secondary: rgba(164, 178, 199, 0.16);
+}
+
+.desktop-panel {
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.42));
+}
+
+.glass-panel,
+.glass-panel-sm {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    rgba(10, 15, 24, 0.955) !important;
+  border-color: rgba(164, 178, 199, 0.26) !important;
+  box-shadow:
+    0 22px 56px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.025) inset,
+    0 1px 0 rgba(255, 255, 255, 0.07) inset !important;
+}
+
+.glass-panel::before,
+.glass-panel-sm::before {
+  opacity: 0.26 !important;
+}
+
+.hud-text {
+  color: #F4F7FB !important;
+  font-weight: 700;
+}
+
+.hud-label,
+.foundry-metric span,
+.mission-card span,
+.mission-readiness span,
+.aip-score-card span,
+.innovation-mini-metric span,
+.public-intel-stats span {
+  color: #9AA8BC !important;
+  font-weight: 700;
+}
+
+.hud-value,
+.foundry-metric strong,
+.mission-card strong,
+.mission-readiness strong,
+.aip-score-card strong,
+.innovation-mini-metric strong,
+.public-intel-stats strong {
+  color: #F1F5F9 !important;
+  font-weight: 800;
+}
+
+.gotham-tag,
+.gotham-tag--info,
+.gotham-tag--low,
+.gotham-tag--high,
+.gotham-tag--critical {
+  background: rgba(15, 23, 42, 0.72) !important;
+  border-color: rgba(143, 183, 255, 0.32) !important;
+  color: #DCE6F5 !important;
+}
+
+.gotham-tag--info {
+  color: #AFCBFF !important;
+  background: rgba(74, 107, 167, 0.22) !important;
+}
+
+.public-intel-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.public-intel-stats > div {
+  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 10px 7px !important;
+  border: 1px solid rgba(164, 178, 199, 0.18) !important;
+  border-radius: 12px !important;
+  background: rgba(6, 10, 18, 0.42) !important;
+}
+
+.public-intel-stats span {
+  display: block !important;
+  font-size: 7px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.12em !important;
+  text-align: center;
+}
+
+.public-intel-stats strong {
+  display: block !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.public-intel-row,
+.innovation-mission-card,
+.ops-time-row,
+.ops-hit-row,
+.aip-list-row,
+.aip-hotspot-row,
+.aip-entity-row,
+.aip-case-row,
+.foundry-source-row,
+.mission-card,
+.foundry-metric,
+.mission-readiness,
+.aip-score-card {
+  background: rgba(7, 12, 21, 0.58) !important;
+  border-color: rgba(164, 178, 199, 0.18) !important;
+}
+
+.public-intel-row p,
+.aip-dossier p,
+.ops-time-row p,
+.innovation-forecast-card p,
+.public-camera-portals p,
+.public-intel-disclaimer,
+.text-\[var\(--text-muted\)\] {
+  color: #9AA8BC !important;
+}
+
+.text-\[var\(--text-secondary\)\] {
+  color: #C1CAD8 !important;
+}
+
+.aip-tabs,
+.ops-tabs,
+.innovation-tabs,
+.public-intel-search,
+.command-palette-input {
+  background: rgba(5, 8, 14, 0.66) !important;
+  border-color: rgba(164, 178, 199, 0.18) !important;
+}
+
+.aip-tabs button.active,
+.ops-tabs button.active,
+.innovation-tabs button.active {
+  color: #F8FAFC !important;
+  background: rgba(143, 183, 255, 0.18) !important;
+}
+
+/* Bottom HUD: make it readable over bright/label-heavy map areas. */
+.desktop-only .glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.018)),
+    rgba(7, 11, 19, 0.975) !important;
+}
+
+.desktop-only .hud-label {
+  color: #A5B2C6 !important;
+}
+
+.desktop-only .text-\[var\(--gold-primary\)\],
+.desktop-only .text-\[var\(--cyan-primary\)\],
+.desktop-only .text-\[var\(--alert-green\)\] {
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+}
+
+/* Make top panel subtitles visible without shouting. */
+.glass-panel .text-\[8px\],
+.glass-panel .text-\[7px\],
+.glass-panel .text-\[9px\] {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .public-intel-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* ===================================================================
+   RESPONSIVE DESKTOP HOTFIX — prevents HUD overlap on laptops/desktop
+   =================================================================== */
+.app-header {
+  max-width: min(44vw, 620px);
+}
+
+.app-header h1 {
+  font-size: clamp(1rem, 1.22vw, 1.25rem) !important;
+  letter-spacing: clamp(0.22em, 0.9vw, 0.46em) !important;
+  white-space: nowrap;
+}
+
+.app-header .gotham-tag,
+.app-header span {
+  white-space: nowrap;
+}
+
+.app-status {
+  max-width: min(58vw, 920px);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  row-gap: 6px;
+  line-height: 1.2;
+}
+
+.app-status > * {
+  flex: 0 0 auto;
+}
+
+.desktop-panel-left,
+.desktop-panel-right {
+  top: clamp(76px, 9vh, 88px) !important;
+  bottom: clamp(104px, 13vh, 132px) !important;
+  gap: clamp(8px, 1.1vh, 12px) !important;
+}
+
+.desktop-panel-left {
+  left: clamp(12px, 1.45vw, 28px) !important;
+  width: clamp(270px, 18.5vw, 340px) !important;
+}
+
+.desktop-panel-right {
+  right: clamp(12px, 1.45vw, 28px) !important;
+  width: clamp(310px, 21vw, 405px) !important;
+}
+
+.desktop-panel .glass-panel {
+  border-radius: clamp(12px, 0.9vw, 16px) !important;
+}
+
+.bottom-command-hud {
+  bottom: clamp(18px, 2.2vh, 28px) !important;
+  max-width: min(820px, calc(100vw - 760px));
+}
+
+.bottom-command-hud > .glass-panel {
+  max-width: 100%;
+  padding-left: clamp(10px, 1vw, 20px) !important;
+  padding-right: clamp(10px, 1vw, 20px) !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.bottom-command-hud > .glass-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.bottom-command-hud .min-w-\[110px\] { min-width: clamp(92px, 7vw, 110px) !important; }
+.bottom-command-hud .min-w-\[160px\] { min-width: clamp(120px, 10vw, 160px) !important; }
+.bottom-command-hud .max-w-\[280px\] { max-width: clamp(150px, 16vw, 280px) !important; }
+.bottom-command-hud .px-3 { padding-left: clamp(8px, 0.75vw, 12px) !important; padding-right: clamp(8px, 0.75vw, 12px) !important; }
+
+.map-view-controls {
+  left: clamp(300px, 22vw, 430px) !important;
+  bottom: clamp(86px, 10.5vh, 112px) !important;
+}
+
+.scale-bar-wrap {
+  left: clamp(300px, 22vw, 430px) !important;
+  bottom: clamp(150px, 17vh, 178px) !important;
+}
+
+@media (max-width: 1500px) {
+  .app-header {
+    max-width: 48vw;
+  }
+
+  .app-header h1 {
+    letter-spacing: 0.24em !important;
+  }
+
+  .app-header .hidden.xl\:inline-flex,
+  .app-status span:has(+ a) {
+    display: none !important;
+  }
+
+  .desktop-panel-left {
+    width: 280px !important;
+  }
+
+  .desktop-panel-right {
+    width: 330px !important;
+  }
+
+  .bottom-command-hud {
+    max-width: min(700px, calc(100vw - 660px));
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 769px) {
+  .app-header {
+    max-width: 52vw;
+  }
+
+  .app-header h1 {
+    font-size: 0.98rem !important;
+    letter-spacing: 0.18em !important;
+  }
+
+  .app-header .gotham-tag,
+  .app-header .hidden.md\:inline-flex {
+    display: none !important;
+  }
+
+  .app-status {
+    max-width: 48vw;
+    gap: 6px !important;
+    font-size: 8px !important;
+  }
+
+  .app-status a span {
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+    font-size: 9px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .desktop-panel-left {
+    left: 10px !important;
+    width: 260px !important;
+  }
+
+  .desktop-panel-right {
+    right: 10px !important;
+    width: 300px !important;
+  }
+
+  .desktop-panel-left,
+  .desktop-panel-right {
+    top: 70px !important;
+    bottom: 108px !important;
+  }
+
+  .map-view-controls,
+  .scale-bar-wrap {
+    display: none !important;
+  }
+
+  .bottom-command-hud {
+    max-width: min(560px, calc(100vw - 590px));
+    transform: translateX(-50%) scale(0.88) !important;
+    transform-origin: bottom center;
+  }
+}
+
+@media (max-height: 860px) and (min-width: 1281px) {
+  .desktop-panel-left,
+  .desktop-panel-right {
+    top: 72px !important;
+    bottom: 118px !important;
+    gap: 8px !important;
+  }
+
+  .desktop-panel .glass-panel {
+    padding-top: 0.62rem !important;
+    padding-bottom: 0.62rem !important;
+  }
+
+  .desktop-panel .public-intel-list,
+  .desktop-panel .public-camera-portals,
+  .desktop-panel .public-intel-disclaimer {
+    display: none !important;
+  }
+
+  .public-intel-stats {
+    gap: 6px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .public-intel-stats > div {
+    padding: 7px 5px !important;
+  }
+
+  .public-intel-search,
+  .public-intel-cats,
+  .public-intel-camera-toggle {
+    display: none !important;
+  }
+
+  .bottom-command-hud {
+    transform: translateX(-50%) scale(0.92) !important;
+    transform-origin: bottom center;
+  }
+}
+
+@media (min-width: 1900px) and (max-height: 950px) {
+  .desktop-panel-left {
+    width: 356px !important;
+  }
+
+  .desktop-panel-right {
+    width: 396px !important;
+  }
+
+  .bottom-command-hud {
+    max-width: 790px;
+  }
+}
+
+/* ===================================================================
+   TOOL RAIL WORKSPACE — replaces stacked desktop panels
+   A compact navigation rail opens one focused tool workspace.
+   =================================================================== */
+.tool-rail {
+  position: absolute;
+  top: clamp(96px, 12vh, 124px);
+  left: clamp(16px, 1.2vw, 24px);
+  bottom: clamp(92px, 11vh, 116px);
+  z-index: 230;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px;
+  border: 1px solid rgba(164, 178, 199, 0.22);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015)),
+    rgba(7, 11, 19, 0.94);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.50),
+    0 1px 0 rgba(255,255,255,0.07) inset;
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.tool-rail::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.045);
+}
+
+.tool-rail-button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 54px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  color: #8E9CB1;
+  font-family: var(--font-hud);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.tool-rail-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tool-rail-button:hover {
+  color: #DCE6F5;
+  border-color: rgba(164, 178, 199, 0.18);
+  background: rgba(255,255,255,0.045);
+  transform: translateY(-1px);
+}
+
+.tool-rail-button.active {
+  color: var(--cyan-primary);
+  border-color: rgba(143, 183, 255, 0.34);
+  background:
+    linear-gradient(145deg, rgba(143,183,255,0.18), rgba(208,168,92,0.07)),
+    rgba(143, 183, 255, 0.06);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+}
+
+.tool-rail-button.active::after {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--cyan-primary);
+  box-shadow: 0 0 12px rgba(143,183,255,0.55);
+}
+
+.tool-workspace {
+  position: absolute;
+  top: clamp(96px, 12vh, 124px);
+  left: clamp(104px, 6.2vw, 124px);
+  bottom: clamp(92px, 11vh, 116px);
+  z-index: 225;
+  width: clamp(380px, 30vw, 560px);
+  padding: 0 !important;
+  overflow: hidden auto;
+  pointer-events: auto;
+}
+
+.tool-workspace-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(164, 178, 199, 0.14);
+  background:
+    linear-gradient(180deg, rgba(12, 18, 30, 0.98), rgba(12, 18, 30, 0.90));
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+}
+
+.tool-workspace-header h2 {
+  margin: 2px 0 0;
+  color: var(--text-heading);
+  font-family: var(--font-hud);
+  font-size: clamp(16px, 1.12vw, 22px);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.tool-workspace-body {
+  padding: 14px;
+}
+
+.tool-workspace-body > .glass-panel,
+.tool-workspace-body > .foundry-panel,
+.tool-workspace-body > .mission-panel,
+.tool-workspace-body > .aip-panel,
+.tool-workspace-body > .ops-panel,
+.tool-workspace-body > .innovation-panel,
+.tool-workspace-body > .public-intel-panel {
+  width: 100%;
+}
+
+.tool-workspace .public-intel-list,
+.tool-workspace .ops-timeline,
+.tool-workspace .ops-hit-list,
+.tool-workspace .aip-entity-list,
+.tool-workspace .innovation-missions {
+  max-height: min(42vh, 420px);
+}
+
+/* Old stacked panel classes may still exist in markup during transitions;
+   keep them from consuming layout when the tool rail is active. */
+.desktop-panel-left,
+.desktop-panel-right {
+  display: none !important;
+}
+
+@media (min-width: 1600px) {
+  .tool-workspace {
+    width: clamp(440px, 29vw, 620px);
+  }
+}
+
+@media (min-width: 1900px) {
+  .tool-rail {
+    width: 82px;
+  }
+
+  .tool-workspace {
+    left: clamp(112px, 6vw, 132px);
+    width: clamp(480px, 28vw, 640px);
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 769px) {
+  .tool-rail {
+    top: 84px;
+    bottom: 86px;
+    left: 10px;
+    width: 66px;
+    gap: 6px;
+    padding: 8px 6px;
+    border-radius: 18px;
+  }
+
+  .tool-rail-button {
+    min-height: 46px;
+    border-radius: 13px;
+    font-size: 6px;
+  }
+
+  .tool-rail-button svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .tool-workspace {
+    top: 84px;
+    left: 86px;
+    bottom: 86px;
+    width: min(390px, calc(100vw - 102px));
+  }
+
+  .tool-workspace-header {
+    padding: 13px 14px 11px;
+  }
+
+  .tool-workspace-body {
+    padding: 10px;
+  }
+}
+
+@media (max-height: 860px) and (min-width: 1281px) {
+  .tool-rail,
+  .tool-workspace {
+    top: 78px;
+    bottom: 82px;
+  }
+
+  .tool-rail {
+    gap: 6px;
+  }
+
+  .tool-rail-button {
+    min-height: 45px;
+  }
+
+  .tool-workspace-body {
+    padding: 10px;
+  }
+
+  .tool-workspace .public-intel-list,
+  .tool-workspace .ops-timeline,
+  .tool-workspace .ops-hit-list,
+  .tool-workspace .aip-entity-list,
+  .tool-workspace .innovation-missions {
+    max-height: min(34vh, 320px);
+  }
+}
