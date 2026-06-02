@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
-  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain
+  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, EyeOff, BookOpen
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
 import MarketsPanel from '@/components/MarketsPanel';
@@ -25,6 +25,9 @@ import CommandPalette from '@/components/CommandPalette';
 import InnovationLabPanel from '@/components/InnovationLabPanel';
 import PublicIntelCatalogPanel from '@/components/PublicIntelCatalogPanel';
 import { buildFusionModel } from '@/lib/palantir-fusion';
+import CyberThreatRadar from '@/components/CyberThreatRadar';
+import DarkWebMonitor from '@/components/DarkWebMonitor';
+import ReconPlaybooks from '@/components/ReconPlaybooks';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
 const LayerPanel = dynamic(() => import('@/components/LayerPanel'));
@@ -130,7 +133,7 @@ export default function Dashboard() {
   const [showIntel, setShowIntel] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
-  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts'>('layers');
+  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'darkweb' | 'playbooks'>('layers');
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
   const [sweepData, setSweepData] = useState<any>(null);
@@ -945,10 +948,14 @@ export default function Dashboard() {
               { id: 'markets' as const, icon: BarChart3, label: 'Markets' },
               { id: 'intel' as const, icon: Newspaper, label: 'Intel' },
               { id: 'search' as const, icon: Search, label: 'Search' },
-              { id: 'alerts' as const, icon: AlertTriangle, label: 'Alerts' },
-            ].map((tool) => {
-              const Icon = tool.icon;
-              return (
+            { id: 'alerts' as const, icon: AlertTriangle, label: 'Alerts' },
+            { id: 'cyber' as const, icon: Shield, label: 'Cyber' },
+            { id: 'darkweb' as const, icon: EyeOff, label: 'Dark Web' },
+            { id: 'playbooks' as const, icon: BookOpen, label: 'Playbooks' },
+            { id: 'osint' as const, icon: Search, label: 'OSINT' },
+          ].map((tool) => {
+            const Icon = tool.icon;
+            return (
                 <button
                   key={tool.id}
                   type="button"
@@ -1050,6 +1057,10 @@ export default function Dashboard() {
                   </div>
                 )}
                 {desktopTool === 'alerts' && <LiveAlerts data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} onWatchFeed={(url, name) => { setLiveFeedUrl(url); setLiveFeedName(name); }} />}
+                {desktopTool === 'cyber' && <CyberThreatRadar />}
+                {desktopTool === 'darkweb' && <DarkWebMonitor />}
+                {desktopTool === 'playbooks' && <ReconPlaybooks />}
+                {desktopTool === 'osint' && <OSINTHub />}
               </div>
             </motion.section>
           </AnimatePresence>
