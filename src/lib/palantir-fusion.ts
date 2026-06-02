@@ -77,6 +77,8 @@ const SOURCE_DEFS = [
   { key: 'military_flights', label: 'ADS-B military', confidence: 67 },
   { key: 'private_jets', label: 'Private aviation', confidence: 64 },
   { key: 'maritime_ships', label: 'AIS maritime', confidence: 70 },
+  { key: 'dark_vessels', label: 'AIS dark vessels', confidence: 78 },
+  { key: 'maritime_dark_activity', label: 'Maritime anomalies', confidence: 76 },
   { key: 'cameras', label: 'CCTV grid', confidence: 62 },
   { key: 'gdelt', label: 'GDELT incidents', confidence: 68 },
   { key: 'earthquakes', label: 'USGS seismic', confidence: 90 },
@@ -181,6 +183,8 @@ function buildEntities(dataValue: unknown): FusionEntity[] {
   add(asArray(data.weather_events), 'weather', 'NOAA/Weather', 35);
   add(asArray(data.infrastructure), 'infrastructure', 'Critical Infra', 45);
   add(asArray(data.maritime_ships), 'ship', 'AIS', 60);
+  add(asArray(data.dark_vessels), 'ship', 'AIS Dark Vessel', 40);
+  add(asArray(data.maritime_dark_activity), 'incident', 'Maritime Dark Activity', 45);
   add(asArray(data.military_flights), 'aircraft', 'ADS-B Military', 35);
   add(asArray(data.commercial_flights), 'aircraft', 'ADS-B', 45);
   add(asArray(data.cameras), 'camera', 'CCTV', 45);
@@ -270,9 +274,11 @@ function buildAnomalies(entities: FusionEntity[], hotspots: FusionHotspot[], dat
   const military = asArray(data.military_flights).length;
   const incidents = asArray(data.gdelt).length;
   const hazards = asArray(data.earthquakes).length + asArray(data.weather_events).length;
+  const darkVessels = asArray(data.dark_vessels).length;
   if (military > 25) anomalies.push({ id: 'anomaly:air-picture', title: 'Activité aérienne militaire dense', level: 'ELEVATED', score: clamp(48 + military), explanation: `${military} pistes militaires indexées dans l'image opérationnelle.`, sources: ['ADS-B Military'], entityIds: entities.filter(e => e.source === 'ADS-B Military').slice(0, 8).map(e => e.id) });
   if (incidents > 60) anomalies.push({ id: 'anomaly:gdelt-volume', title: 'Volume incident/news élevé', level: 'WATCH', score: clamp(35 + incidents / 2), explanation: `${incidents} événements GDELT actifs : bruit OSINT à surveiller.`, sources: ['GDELT'], entityIds: entities.filter(e => e.source === 'GDELT').slice(0, 8).map(e => e.id) });
   if (hazards > 30) anomalies.push({ id: 'anomaly:hazards', title: 'Exposition hazards multi-zones', level: 'ELEVATED', score: clamp(42 + hazards), explanation: `${hazards} signaux météo/sismiques corrélables aux infrastructures.`, sources: ['USGS', 'Weather'], entityIds: entities.filter(e => ['hazard', 'weather'].includes(e.type)).slice(0, 8).map(e => e.id) });
+  if (darkVessels > 0) anomalies.push({ id: 'anomaly:dark-vessels', title: 'Navires fantômes / anomalies AIS détectés', level: darkVessels >= 5 ? 'CRITICAL' : 'ELEVATED', score: clamp(58 + darkVessels * 7), explanation: `${darkVessels} navires ou signaux AIS présentent un comportement suspect : gap AIS, saut impossible, loitering ou proximité chokepoint.`, sources: ['AIS Dark Vessel', 'Maritime Dark Activity'], entityIds: entities.filter(e => e.source === 'AIS Dark Vessel' || e.source === 'Maritime Dark Activity').slice(0, 8).map(e => e.id) });
 
   return anomalies.sort((a, b) => b.score - a.score).slice(0, 10);
 }

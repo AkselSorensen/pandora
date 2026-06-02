@@ -1,5 +1,17 @@
 name: pandora
 services:
+  pandora-ai:
+    build:
+      context: ./ai/pandora-ai-service
+      dockerfile: Dockerfile
+    container_name: pandora-ai
+    ports:
+      - "${PANDORA_AI_PORT:-7701}:7701"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
+    restart: unless-stopped
+
   pandora:
     # Pulls the prebuilt image from GitHub Container Registry. The `build:`
     # block is kept as a fallback: `docker compose up -d` uses the registry
@@ -22,6 +34,10 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - PANDORA_AI_URL=${PANDORA_AI_URL:-http://pandora-ai:7701}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
+    depends_on:
+      - pandora-ai
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──

@@ -1523,8 +1523,15 @@ body::before {
   width: 76px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   padding: 10px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  mask-image: linear-gradient(to bottom, transparent 0, black 18px, black calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 18px, black calc(100% - 18px), transparent 100%);
   border: 1px solid rgba(164, 178, 199, 0.22);
   border-radius: 22px;
   background:
@@ -1537,10 +1544,33 @@ body::before {
   -webkit-backdrop-filter: blur(18px) saturate(1.1);
 }
 
+.tool-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.tool-rail:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(143,183,255,0.36) transparent;
+}
+
+.tool-rail:hover::-webkit-scrollbar {
+  display: block;
+  width: 3px;
+}
+
+.tool-rail:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tool-rail:hover::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(143,183,255,0.34);
+}
+
 .tool-rail::before {
   content: '';
   position: absolute;
-  inset: 8px;
+  inset: 8px 7px;
   pointer-events: none;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.045);
@@ -1554,7 +1584,8 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 54px;
+  min-height: 52px;
+  flex: 0 0 auto;
   border: 1px solid transparent;
   border-radius: 16px;
   background: transparent;
@@ -1573,8 +1604,9 @@ body::before {
 }
 
 .tool-rail-button svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .tool-rail-button:hover {
@@ -1696,13 +1728,13 @@ body::before {
     bottom: 86px;
     left: 10px;
     width: 66px;
-    gap: 6px;
+    gap: 5px;
     padding: 8px 6px;
     border-radius: 18px;
   }
 
   .tool-rail-button {
-    min-height: 46px;
+    min-height: 44px;
     border-radius: 13px;
     font-size: 6px;
   }
@@ -1736,11 +1768,11 @@ body::before {
   }
 
   .tool-rail {
-    gap: 6px;
+    gap: 5px;
   }
 
   .tool-rail-button {
-    min-height: 45px;
+    min-height: 42px;
   }
 
   .tool-workspace-body {

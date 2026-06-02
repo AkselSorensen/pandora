@@ -7,6 +7,8 @@ import { fetchMacedoniaCameras } from './macedonia';
 import { fetchTurkeyCameras } from './turkey';
 import { fetchRomaniaCameras } from './romania';
 import { fetchAustraliaCameras } from './australia';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 /**
  * PANDORA — Worldwide CCTV Camera API v2
@@ -16,6 +18,190 @@ import { fetchAustraliaCameras } from './australia';
  */
 
 // ═══ CAMERA SOURCE DEFINITIONS ═══
+
+type CameraApiV2Source = {
+  id: string;
+  url: string;
+  city: string;
+  country: string;
+  source: string;
+};
+
+const NORTH_AMERICA_CAMERA_API_V2: CameraApiV2Source[] = [
+  // Public 511-style camera APIs. Some providers may temporarily block or rate-limit;
+  // each source is isolated with timeouts and failures are ignored.
+  { id: 'mn511', url: 'https://511mn.org/api/v2/get/cameras', city: 'Minnesota', country: 'US', source: 'MN 511' },
+  { id: 'ia511', url: 'https://511ia.org/api/v2/get/cameras', city: 'Iowa', country: 'US', source: 'Iowa 511' },
+  { id: 'kandrive', url: 'https://www.kandrive.gov/api/v2/get/cameras', city: 'Kansas', country: 'US', source: 'KanDrive' },
+  { id: 'ne511', url: 'https://new.511.nebraska.gov/api/v2/get/cameras', city: 'Nebraska', country: 'US', source: 'Nebraska 511' },
+  { id: 'wi511', url: 'https://511wi.gov/api/v2/get/cameras', city: 'Wisconsin', country: 'US', source: 'Wisconsin 511' },
+  { id: 'az511', url: 'https://www.az511.gov/api/v2/get/cameras', city: 'Arizona', country: 'US', source: 'Arizona 511' },
+  { id: 'cotrip', url: 'https://www.cotrip.org/api/v2/get/cameras', city: 'Colorado', country: 'US', source: 'COtrip' },
+  { id: 'udot', url: 'https://www.udottraffic.utah.gov/api/v2/get/cameras', city: 'Utah', country: 'US', source: 'UDOT Traffic' },
+  { id: 'id511', url: 'https://511.idaho.gov/api/v2/get/cameras', city: 'Idaho', country: 'US', source: 'Idaho 511' },
+  { id: 'nvroads', url: 'https://www.nvroads.com/api/v2/get/cameras', city: 'Nevada', country: 'US', source: 'NV Roads' },
+  { id: 'newengland511', url: 'https://newengland511.org/api/v2/get/cameras', city: 'New England', country: 'US', source: 'New England 511' },
+  { id: 'mb511', url: 'https://www.manitoba511.ca/api/v2/get/cameras', city: 'Manitoba', country: 'Canada', source: 'Manitoba 511' },
+  { id: 'nb511', url: 'https://511.gnb.ca/api/v2/get/cameras', city: 'New Brunswick', country: 'Canada', source: 'New Brunswick 511' },
+];
+
+function firstString(...values: any[]) {
+  return values.find((value) => typeof value === 'string' && value.trim().length > 0)?.trim() || '';
+}
+
+function firstNumber(...values: any[]) {
+  for (const value of values) {
+    const parsed = typeof value === 'number' ? value : parseFloat(String(value || ''));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function normalizeCameraApiV2Item(cam: any, source: CameraApiV2Source, index: number) {
+  const lat = firstNumber(cam.Latitude, cam.latitude, cam.Lat, cam.lat, cam.Location?.Latitude, cam.location?.latitude);
+  const lng = firstNumber(cam.Longitude, cam.longitude, cam.Lon, cam.lng, cam.Location?.Longitude, cam.location?.longitude);
+  const view = Array.isArray(cam.Views) ? cam.Views[0] : Array.isArray(cam.views) ? cam.views[0] : null;
+  const feedUrl = firstString(
+    view?.Url, view?.url, view?.ImageUrl, view?.imageUrl,
+    cam.ImageURL, cam.ImageUrl, cam.imageUrl, cam.Url, cam.url,
+    cam.CctvUrl, cam.cctvUrl, cam.SnapshotUrl, cam.snapshotUrl,
+  );
+
+  if (lat === null || lng === null || !feedUrl) return null;
+
+  return {
+    id: `${source.id}-${cam.Id || cam.ID || cam.id || cam.CameraID || index}`,
+    lat,
+    lng,
+    name: firstString(cam.Name, cam.name, cam.Location, cam.location, cam.Description, cam.description, cam.Title, cam.title) || `${source.source} Camera`,
+    city: source.city,
+    country: source.country,
+    feed_url: feedUrl,
+    source: source.source,
+  };
+}
+
+async function fetchCameraApiV2Sources(sources: CameraApiV2Source[]): Promise<any[]> {
+  const settled = await Promise.allSettled(sources.map(async (source) => {
+    const res = await fetch(source.url, { signal: AbortSignal.timeout(9000), headers: { Accept: 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : Array.isArray(data?.cameras) ? data.cameras : Array.isArray(data?.Cameras) ? data.Cameras : [];
+    return list
+      .slice(0, 1200)
+      .map((cam: any, index: number) => normalizeCameraApiV2Item(cam, source, index))
+      .filter(Boolean);
+  }));
+
+  return settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+}
+
+function cameraApiV2ByIds(ids: string[]) {
+  const wanted = new Set(ids);
+  return NORTH_AMERICA_CAMERA_API_V2.filter((source) => wanted.has(source.id));
+}
+
+const COUNTRY_WEBCAM_FALLBACK = [
+  ['Afghanistan', 33.9391, 67.71], ['Albania', 41.1533, 20.1683], ['Algeria', 28.0339, 1.6596], ['Andorra', 42.5063, 1.5218],
+  ['Angola', -11.2027, 17.8739], ['Argentina', -38.4161, -63.6167], ['Armenia', 40.0691, 45.0382], ['Australia', -25.2744, 133.7751],
+  ['Austria', 47.5162, 14.5501], ['Azerbaijan', 40.1431, 47.5769], ['Bahamas', 25.0343, -77.3963], ['Bahrain', 25.9304, 50.6378],
+  ['Bangladesh', 23.685, 90.3563], ['Belgium', 50.5039, 4.4699], ['Belize', 17.1899, -88.4976], ['Benin', 9.3077, 2.3158],
+  ['Bhutan', 27.5142, 90.4336], ['Bolivia', -16.2902, -63.5887], ['Bosnia and Herzegovina', 43.9159, 17.6791], ['Botswana', -22.3285, 24.6849],
+  ['Brazil', -14.235, -51.9253], ['Bulgaria', 42.7339, 25.4858], ['Cambodia', 12.5657, 104.991], ['Cameroon', 7.3697, 12.3547],
+  ['Canada', 56.1304, -106.3468], ['Chile', -35.6751, -71.543], ['China', 35.8617, 104.1954], ['Colombia', 4.5709, -74.2973],
+  ['Costa Rica', 9.7489, -83.7534], ['Croatia', 45.1, 15.2], ['Cyprus', 35.1264, 33.4299], ['Czechia', 49.8175, 15.473],
+  ['Denmark', 56.2639, 9.5018], ['Dominican Republic', 18.7357, -70.1627], ['Ecuador', -1.8312, -78.1834], ['Egypt', 26.8206, 30.8025],
+  ['Estonia', 58.5953, 25.0136], ['Ethiopia', 9.145, 40.4897], ['Finland', 61.9241, 25.7482], ['France', 46.2276, 2.2137],
+  ['Georgia', 42.3154, 43.3569], ['Germany', 51.1657, 10.4515], ['Ghana', 7.9465, -1.0232], ['Greece', 39.0742, 21.8243],
+  ['Greenland', 71.7069, -42.6043], ['Guatemala', 15.7835, -90.2308], ['Hungary', 47.1625, 19.5033], ['Iceland', 64.9631, -19.0208],
+  ['India', 20.5937, 78.9629], ['Indonesia', -0.7893, 113.9213], ['Ireland', 53.1424, -7.6921], ['Israel', 31.0461, 34.8516],
+  ['Italy', 41.8719, 12.5674], ['Japan', 36.2048, 138.2529], ['Jordan', 30.5852, 36.2384], ['Kazakhstan', 48.0196, 66.9237],
+  ['Kenya', -0.0236, 37.9062], ['Latvia', 56.8796, 24.6032], ['Lebanon', 33.8547, 35.8623], ['Lithuania', 55.1694, 23.8813],
+  ['Luxembourg', 49.8153, 6.1296], ['Malaysia', 4.2105, 101.9758], ['Maldives', 3.2028, 73.2207], ['Malta', 35.9375, 14.3754],
+  ['Mexico', 23.6345, -102.5528], ['Moldova', 47.4116, 28.3699], ['Monaco', 43.7384, 7.4246], ['Mongolia', 46.8625, 103.8467],
+  ['Montenegro', 42.7087, 19.3744], ['Morocco', 31.7917, -7.0926], ['Nepal', 28.3949, 84.124], ['Netherlands', 52.1326, 5.2913],
+  ['New Zealand', -40.9006, 174.886], ['Nigeria', 9.082, 8.6753], ['North Macedonia', 41.6086, 21.7453], ['Norway', 60.472, 8.4689],
+  ['Pakistan', 30.3753, 69.3451], ['Panama', 8.538, -80.7821], ['Peru', -9.19, -75.0152], ['Philippines', 12.8797, 121.774],
+  ['Poland', 51.9194, 19.1451], ['Portugal', 39.3999, -8.2245], ['Qatar', 25.3548, 51.1839], ['Romania', 45.9432, 24.9668],
+  ['Serbia', 44.0165, 21.0059], ['Singapore', 1.3521, 103.8198], ['Slovakia', 48.669, 19.699], ['Slovenia', 46.1512, 14.9955],
+  ['South Africa', -30.5595, 22.9375], ['South Korea', 35.9078, 127.7669], ['Spain', 40.4637, -3.7492], ['Sri Lanka', 7.8731, 80.7718],
+  ['Sweden', 60.1282, 18.6435], ['Switzerland', 46.8182, 8.2275], ['Taiwan', 23.6978, 120.9605], ['Thailand', 15.87, 100.9925],
+  ['Tunisia', 33.8869, 9.5375], ['Turkey', 38.9637, 35.2433], ['Ukraine', 48.3794, 31.1656], ['United Arab Emirates', 23.4241, 53.8478],
+  ['United Kingdom', 55.3781, -3.436], ['United States', 37.0902, -95.7129], ['Uruguay', -32.5228, -55.7658], ['Vietnam', 14.0583, 108.2772],
+];
+
+function webcamPortalUrl(countryName: string) {
+  return `https://www.windy.com/webcams?${new URLSearchParams({ q: countryName }).toString()}`;
+}
+
+async function fetchGlobalPublicWebcamPortals(): Promise<any[]> {
+  try {
+    const res = await fetch('https://restcountries.com/v3.1/all?fields=name,latlng,cca2', { signal: AbortSignal.timeout(8000), next: { revalidate: 86400 } });
+    if (res.ok) {
+      const countries = await res.json();
+      return (countries || []).flatMap((country: any) => {
+        const lat = Number(country.latlng?.[0]);
+        const lng = Number(country.latlng?.[1]);
+        const name = country.name?.common;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || !name) return [];
+        return [{
+          id: `world-webcam-${country.cca2 || name}`,
+          lat,
+          lng,
+          name: `${name} public webcam portal`,
+          city: name,
+          country: name,
+          external_url: webcamPortalUrl(name),
+          source: 'Windy public webcam portal',
+        }];
+      });
+    }
+  } catch { /* fallback below */ }
+
+  return COUNTRY_WEBCAM_FALLBACK.map(([name, lat, lng]) => ({
+    id: `world-webcam-${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    lat,
+    lng,
+    name: `${name} public webcam portal`,
+    city: name,
+    country: name,
+    external_url: webcamPortalUrl(String(name)),
+    source: 'Windy public webcam portal',
+  }));
+}
+
+async function fetchCustomCctvCatalog(): Promise<any[]> {
+  try {
+    const filePath = path.join(process.cwd(), 'public', 'cctv-sources.json');
+    const raw = await readFile(filePath, 'utf8');
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items)) return [];
+
+    return items.flatMap((cam: any, index: number) => {
+      const lat = Number(cam.lat);
+      const lng = Number(cam.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+      if (!cam.feed_url && !cam.external_url && !cam.stream_url) return [];
+
+      return [{
+        id: String(cam.id || `custom-${index}`),
+        lat,
+        lng,
+        name: String(cam.name || 'Custom public camera'),
+        city: String(cam.city || cam.country || 'Unknown'),
+        country: String(cam.country || 'Unknown'),
+        feed_url: cam.feed_url,
+        stream_url: cam.stream_url,
+        external_url: cam.external_url,
+        category: cam.category || 'custom',
+        access: cam.access || (cam.feed_url || cam.stream_url ? 'direct' : 'external-only'),
+        source: cam.source || 'Custom public CCTV catalog',
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
 
 // ── UK: Transport for London JamCams (~900) ──
 async function fetchTfLCameras(): Promise<any[]> {
@@ -219,6 +405,31 @@ async function fetchUSEastCameras(): Promise<any[]> {
 }
 
 // ── EUROPE: Netherlands, Germany, France ──
+async function fetchFranceCameras(): Promise<any[]> {
+  // France has fewer stable public raw camera APIs than North American 511 feeds.
+  // These are public camera/traffic portals exposed as external-only entries so
+  // Pandora opens the official/public page instead of hotlinking protected media.
+  const portals = [
+    { id: 'fr-sytadin-idf', lat: 48.8566, lng: 2.3522, name: 'Île-de-France traffic cameras / Sytadin', city: 'Paris / Île-de-France', external_url: 'https://www.sytadin.fr/', source: 'Sytadin' },
+    { id: 'fr-bison-fute', lat: 46.6034, lng: 1.8883, name: 'France national road traffic webcams / Bison Futé', city: 'France', external_url: 'https://www.bison-fute.gouv.fr/', source: 'Bison Futé' },
+    { id: 'fr-paris-earthcam', lat: 48.8584, lng: 2.2945, name: 'Paris Eiffel Tower public webcam', city: 'Paris', external_url: 'https://www.earthcam.com/world/france/paris/?cam=eiffeltower_hd', source: 'EarthCam public' },
+    { id: 'fr-paris-skyline', lat: 48.8566, lng: 2.3522, name: 'Paris public webcam', city: 'Paris', external_url: 'https://www.skylinewebcams.com/en/webcam/france/ile-de-france/paris.html', source: 'SkylineWebcams public' },
+    { id: 'fr-nice-promenade', lat: 43.695, lng: 7.265, name: 'Nice Promenade public webcam', city: 'Nice', external_url: 'https://www.skylinewebcams.com/en/webcam/france/provence-alpes-cote-d-azur/nice.html', source: 'SkylineWebcams public' },
+    { id: 'fr-marseille-vieux-port', lat: 43.2965, lng: 5.3698, name: 'Marseille public webcam portal', city: 'Marseille', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-lyon', lat: 45.764, lng: 4.8357, name: 'Lyon public webcam portal', city: 'Lyon', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-bordeaux', lat: 44.8378, lng: -0.5792, name: 'Bordeaux public webcam portal', city: 'Bordeaux', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-toulouse', lat: 43.6047, lng: 1.4442, name: 'Toulouse public webcam portal', city: 'Toulouse', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-lille', lat: 50.6292, lng: 3.0573, name: 'Lille public webcam portal', city: 'Lille', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-strasbourg', lat: 48.5734, lng: 7.7521, name: 'Strasbourg public webcam portal', city: 'Strasbourg', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-nantes', lat: 47.2184, lng: -1.5536, name: 'Nantes public webcam portal', city: 'Nantes', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-grenoble', lat: 45.1885, lng: 5.7245, name: 'Grenoble / Alps public webcam portal', city: 'Grenoble', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+    { id: 'fr-chamonix', lat: 45.9237, lng: 6.8694, name: 'Chamonix Mont-Blanc public webcams', city: 'Chamonix', external_url: 'https://www.chamonix.com/webcams', source: 'Chamonix public' },
+    { id: 'fr-cannes', lat: 43.5528, lng: 7.0174, name: 'Cannes public webcam portal', city: 'Cannes', external_url: 'https://www.viewsurf.com/', source: 'Viewsurf public portal' },
+  ];
+
+  return portals.map((cam) => ({ ...cam, country: 'France' }));
+}
+
 async function fetchEuropeCameras(): Promise<any[]> {
   const cams: any[] = [];
 
@@ -239,6 +450,7 @@ async function fetchEuropeCameras(): Promise<any[]> {
   } catch { /* silent */ }
 
   cams.push(...await fetchAsfinagCameras());
+  cams.push(...await fetchFranceCameras());
 
   return cams.filter((c: any) => c.lat && c.lng);
 }
@@ -275,11 +487,27 @@ async function fetchAsiaCameras(): Promise<any[]> {
 
 // ═══ REGION MAPPING ═══
 const REGION_FETCHERS: Record<string, () => Promise<any[]>> = {
+  'custom': fetchCustomCctvCatalog,
+  'world': fetchGlobalPublicWebcamPortals,
   'uk': fetchTfLCameras,
-  'us-west': async () => [...await fetchWSDOTCameras(), ...await fetchCaltransCameras()],
-  'us-east': fetchUSEastCameras,
-  'us-central': fetchUSCentralCameras,
-  'canada': fetchCanadaCameras,
+  'us-west': async () => [
+    ...await fetchWSDOTCameras(),
+    ...await fetchCaltransCameras(),
+    ...await fetchCameraApiV2Sources(cameraApiV2ByIds(['az511', 'cotrip', 'udot', 'id511', 'nvroads'])),
+  ],
+  'us-east': async () => [
+    ...await fetchUSEastCameras(),
+    ...await fetchCameraApiV2Sources(cameraApiV2ByIds(['newengland511'])),
+  ],
+  'us-central': async () => [
+    ...await fetchUSCentralCameras(),
+    ...await fetchCameraApiV2Sources(cameraApiV2ByIds(['mn511', 'ia511', 'kandrive', 'ne511', 'wi511'])),
+  ],
+  'canada': async () => [
+    ...await fetchCanadaCameras(),
+    ...await fetchCameraApiV2Sources(cameraApiV2ByIds(['mb511', 'nb511'])),
+  ],
+  'france': fetchFranceCameras,
   'europe': fetchEuropeCameras,
   'asia': fetchAsiaCameras,
   'bulgaria': fetchBulgariaCameras,
@@ -311,11 +539,13 @@ function getRegionsForBounds(lat: number, lng: number, radius: number): string[]
   const inMacedonia = lat > 40.8 && lat < 42.8 && lng > 20.4 && lng < 23.2;
   const inRomania = lat > 43.5 && lat < 48.5 && lng > 20 && lng < 29.8;
   const inTurkey = lat > 35.5 && lat < 42.5 && lng > 25.5 && lng < 45;
+  const inFrance = lat > 41 && lat < 51.5 && lng > -5.5 && lng < 10;
   const inBalkans = inBulgaria || inGreece || inSerbia || inMacedonia || inRomania || inTurkey;
 
-  if (lat > 35 && lat < 72 && lng > -11 && lng < 40 && !inBalkans) {
+  if (lat > 35 && lat < 72 && lng > -11 && lng < 40 && !inBalkans && !inFrance) {
     regions.push('europe');
   }
+  if (inFrance) regions.push('france');
   if (inBulgaria) regions.push('bulgaria');
   if (inGreece) regions.push('greece');
   if (inSerbia) regions.push('serbia');
@@ -328,7 +558,7 @@ function getRegionsForBounds(lat: number, lng: number, radius: number): string[]
   // Australia explicitly
   if (lat > -45 && lat < -10 && lng > 110 && lng < 155) regions.push('asia');
 
-  return regions.length > 0 ? regions : ['uk', 'us-east']; // Default fallback
+  return regions.length > 0 ? regions : ['world']; // Default fallback: one public webcam portal per country
 }
 
 export async function GET(request: Request) {
@@ -368,9 +598,16 @@ export async function GET(request: Request) {
       }
     }
 
+    const unique = new Map<string, any>();
+    for (const cam of allCameras) {
+      const key = String(cam.id || cam.external_url || cam.feed_url || `${cam.lat},${cam.lng},${cam.name}`);
+      if (!unique.has(key)) unique.set(key, cam);
+    }
+    const cameras = Array.from(unique.values());
+
     return NextResponse.json({
-      cameras: allCameras,
-      total: allCameras.length,
+      cameras,
+      total: cameras.length,
       sources,
       regions: regionsToFetch,
       timestamp: new Date().toISOString(),

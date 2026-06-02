@@ -1,0 +1,38 @@
+[
+  {
+    "id": "custom-fr-sytadin",
+    "name": "Île-de-France traffic cameras / Sytadin",
+    "city": "Paris / Île-de-France",
+    "country": "France",
+    "lat": 48.8566,
+    "lng": 2.3522,
+    "external_url": "https://www.sytadin.fr/",
+    "source": "Custom public CCTV catalog",
+    "category": "traffic",
+    "access": "external-only"
+  },
+  {
+    "id": "custom-fr-bison-fute",
+    "name": "France national traffic webcams / Bison Futé",
+    "city": "France",
+    "country": "France",
+    "lat": 46.6034,
+    "lng": 1.8883,
+    "external_url": "https://www.bison-fute.gouv.fr/",
+    "source": "Custom public CCTV catalog",
+    "category": "traffic",
+    "access": "external-only"
+  },
+  {
+    "id": "custom-world-windy",
+    "name": "Worldwide public webcam search",
+    "city": "Global",
+    "country": "World",
+    "lat": 20,
+    "lng": 0,
+    "external_url": "https://www.windy.com/webcams",
+    "source": "Custom public CCTV catalog",
+    "category": "portal",
+    "access": "external-only"
+  }
+]

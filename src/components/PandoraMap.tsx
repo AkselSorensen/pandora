@@ -10,7 +10,7 @@ interface PandoraMapProps {
   onEntityClick?: (entity: any) => void;
   onMouseCoords?: (coords: { lat: number; lng: number }) => void;
   onRightClick?: (coords: { lat: number; lng: number }) => void;
-  onViewStateChange?: (vs: { zoom: number; latitude: number }) => void;
+  onViewStateChange?: (vs: { zoom: number; latitude: number; longitude: number }) => void;
   flyToLocation?: { lat: number; lng: number; ts: number } | null;
   projection?: 'mercator' | 'globe';
   mapStyle?: string;
@@ -40,6 +40,64 @@ function computeSolarTerminator(): [number, number][] {
 }
 
 const EMPTY_FC = { type: 'FeatureCollection' as const, features: [] };
+
+function bboxToPolygon(bbox: any): [number, number][][] | null {
+  if (!Array.isArray(bbox) || bbox.length < 4) return null;
+  const [minLng, minLat, maxLng, maxLat] = bbox.map(Number);
+  if (![minLng, minLat, maxLng, maxLat].every(Number.isFinite)) return null;
+  return [[
+    [minLng, minLat], [maxLng, minLat], [maxLng, maxLat], [minLng, maxLat], [minLng, minLat],
+  ]];
+}
+
+function sceneToFeature(scene: any, bucket: 'SCENE' | 'SAR' | 'OPTICAL') {
+  const coordinates = bboxToPolygon(scene?.bbox);
+  if (!coordinates) return null;
+  return {
+    type: 'Feature' as const,
+    geometry: { type: 'Polygon' as const, coordinates },
+    properties: {
+      id: scene.id,
+      datetime: scene.datetime,
+      platform: scene.platform,
+      orbit: scene.orbit,
+      polarization: Array.isArray(scene.polarization) ? scene.polarization.join(', ') : scene.polarization,
+      mode: scene.mode,
+      cloud_cover: scene.cloud_cover,
+      area_km2: scene.area_km2,
+      preview: scene.preview || scene.thumbnail,
+      bucket,
+    },
+  };
+}
+
+function collectGeoFeatures(input: any): any[] {
+  const out: any[] = [];
+  const visit = (value: any) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (value.type === 'FeatureCollection' && Array.isArray(value.features)) {
+      value.features.forEach(visit);
+      return;
+    }
+    if (value.type === 'Feature' && value.geometry) {
+      out.push(value);
+      return;
+    }
+    if (value.geometry?.type && value.geometry?.coordinates) {
+      out.push({ type: 'Feature', geometry: value.geometry, properties: value.properties || {} });
+      return;
+    }
+    if (value.geojson || value.geoJson || value.data || value.features || value.objects || value.lines || value.polygons) {
+      visit(value.geojson || value.geoJson || value.data || value.features || value.objects || value.lines || value.polygons);
+    }
+  };
+  visit(input);
+  return out;
+}
 
 function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightClick, onViewStateChange, flyToLocation, projection = 'globe', mapStyle = 'dark', sweepData, scanTargets = [], fusionHotspots = [] }: PandoraMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,6 +159,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       createIcon(map, 'plane-green', '#00E676', 24);
       createIcon(map, 'plane-pink', '#FF69B4', 24);
       createIcon(map, 'plane-red', '#FF3D3D', 24);
+      createIcon(map, 'plane-orange', '#FF9500', 24);
       createIcon(map, 'plane-grey', '#555555', 24);
       createDot(map, 'dot-gold', '#D4AF37', 8);
       createDot(map, 'dot-red', '#FF3D3D', 10);
@@ -110,7 +169,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       createDot(map, 'dot-cctv', '#39FF14', 10);
 
       // Sources
-      const sources = ['flights','military','jets','private-fl','satellites','earthquakes','gdelt','gps-jamming','day-night','cctv','fires','weather','infrastructure','maritime','maritime-choke','maritime-ships','live-news','sigint-news','conflict-zones', 'war-alerts-targets', 'war-alerts-lines', 'balloons', 'radiation', 'ip-sweep-devices', 'ip-sweep-pulse', 'ip-sweep-connections', 'scan-targets', 'fusion-hotspots'];
+      const sources = ['flights','military','tankers-isr','jets','private-fl','satellites','sentinel-scenes','sentinel-sar','sentinel-optical','frontlines','military-events','naval-bases','air-quality','disaster-ops','country-risk','cyber-geo','port-congestion','maritime-dark-activity','risk-heatmap','space-weather-points','osm-critical','earthquakes','gdelt','gps-jamming','day-night','cctv','fires','weather','infrastructure','maritime','maritime-choke','maritime-ships','live-news','sigint-news','conflict-zones', 'war-alerts-targets', 'war-alerts-lines', 'balloons', 'radiation', 'ip-sweep-devices', 'ip-sweep-pulse', 'ip-sweep-connections', 'scan-targets', 'fusion-hotspots'];
       sources.forEach(s => map.addSource(s, { type: 'geojson', data: EMPTY_FC }));
 
       // ── CONFLICT ZONES — small warning markers (not polygons) ──
@@ -186,6 +245,28 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       // Day/Night
       map.addLayer({ id: 'day-night-fill', type: 'fill', source: 'day-night', paint: { 'fill-color': '#000022', 'fill-opacity': 0.35 }});
 
+      // Sentinel satellite scene footprints (real STAC scenes)
+      [
+        { id: 'sentinel-scenes', color: '#D4AF37', opacity: 0.10 },
+        { id: 'sentinel-sar', color: '#00E5FF', opacity: 0.12 },
+        { id: 'sentinel-optical', color: '#76FF03', opacity: 0.10 },
+      ].forEach((cfg) => {
+        map.addLayer({ id: `${cfg.id}-fill`, type: 'fill', source: cfg.id, paint: {
+          'fill-color': cfg.color, 'fill-opacity': cfg.opacity,
+        }});
+        map.addLayer({ id: `${cfg.id}-line`, type: 'line', source: cfg.id, paint: {
+          'line-color': cfg.color, 'line-width': 1.5, 'line-opacity': 0.85, 'line-dasharray': [2, 2],
+        }});
+      });
+
+      // Public frontlines / war map GeoJSON (when upstream provides geometry)
+      map.addLayer({ id: 'frontlines-fill', type: 'fill', source: 'frontlines', paint: {
+        'fill-color': '#FF1744', 'fill-opacity': 0.08,
+      }});
+      map.addLayer({ id: 'frontlines-line', type: 'line', source: 'frontlines', paint: {
+        'line-color': '#FF1744', 'line-width': 2, 'line-opacity': 0.9,
+      }});
+
       // Earthquakes
       map.addLayer({ id: 'eq-circles', type: 'circle', source: 'earthquakes', paint: {
         'circle-radius': ['interpolate',['linear'],['get','magnitude'], 2.5,4, 5,12, 7,24],
@@ -195,6 +276,113 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       map.addLayer({ id: 'eq-label', type: 'symbol', source: 'earthquakes', filter: ['>=',['get','magnitude'],4.5], layout: {
         'text-field': ['concat','M',['to-string',['get','magnitude']]], 'text-size': 9, 'text-font': ['Open Sans Regular'], 'text-offset': [0,1.5],
       }, paint: { 'text-color': '#FFD700', 'text-halo-color': '#000', 'text-halo-width': 1 }});
+
+      // Air quality — real OpenAQ measurements
+      map.addLayer({ id: 'air-quality-glow', type: 'circle', source: 'air-quality', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,8, 5,14, 10,26],
+        'circle-color': ['get','color'], 'circle-opacity': 0.12, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'air-quality-dots', type: 'circle', source: 'air-quality', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,3, 5,5, 10,9],
+        'circle-color': ['get','color'], 'circle-opacity': 0.85,
+        'circle-stroke-width': 1.5, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-opacity': 0.35,
+      }});
+
+      // Disaster Ops — derived from real EONET/FIRMS/USGS data
+      map.addLayer({ id: 'disaster-ops-glow', type: 'circle', source: 'disaster-ops', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,10, 5,18, 10,32],
+        'circle-color': ['match',['get','layer_type'], 'fire','#FF6B00', 'earthquake','#FF9500', '#FFD700'],
+        'circle-opacity': 0.16, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'disaster-ops-dots', type: 'circle', source: 'disaster-ops', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,7, 10,12],
+        'circle-color': ['match',['get','layer_type'], 'fire','#FF6B00', 'earthquake','#FF9500', '#FFD700'],
+        'circle-opacity': 0.9,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#000000', 'circle-stroke-opacity': 0.6,
+      }});
+
+      // Country risk index — geocoded country/capital points
+      map.addLayer({ id: 'country-risk-glow', type: 'circle', source: 'country-risk', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','risk_score'], 30,14, 100,46],
+        'circle-color': ['match',['get','risk_level'], 'CRITICAL','#FF1744', 'HIGH','#FF9500', 'ELEVATED','#FFD700', '#00E676'],
+        'circle-opacity': 0.14, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'country-risk-dots', type: 'circle', source: 'country-risk', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','risk_score'], 30,4, 100,12],
+        'circle-color': ['match',['get','risk_level'], 'CRITICAL','#FF1744', 'HIGH','#FF9500', 'ELEVATED','#FFD700', '#00E676'],
+        'circle-opacity': 0.9, 'circle-stroke-width': 2, 'circle-stroke-color': '#F5F0E0', 'circle-stroke-opacity': 0.5,
+      }});
+
+      // Cyber geo threats — only IPs with verified public geolocation
+      map.addLayer({ id: 'cyber-geo-glow', type: 'circle', source: 'cyber-geo', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,8, 5,16, 10,30],
+        'circle-color': ['get','color'], 'circle-opacity': 0.14, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'cyber-geo-dots', type: 'circle', source: 'cyber-geo', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,6, 10,10],
+        'circle-color': ['get','color'], 'circle-opacity': 0.9,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#00E5FF', 'circle-stroke-opacity': 0.45,
+      }});
+
+      // Port congestion — derived from real AIS ship positions around real ports
+      map.addLayer({ id: 'port-congestion-glow', type: 'circle', source: 'port-congestion', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','score'], 0,8, 100,42],
+        'circle-color': ['match',['get','level'], 'CRITICAL','#FF1744', 'HIGH','#FF9500', 'WATCH','#FFD700', '#00BCD4'],
+        'circle-opacity': 0.16, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'port-congestion-dots', type: 'circle', source: 'port-congestion', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','score'], 0,3, 100,12],
+        'circle-color': ['match',['get','level'], 'CRITICAL','#FF1744', 'HIGH','#FF9500', 'WATCH','#FFD700', '#00BCD4'],
+        'circle-opacity': 0.92, 'circle-stroke-width': 2, 'circle-stroke-color': '#00BCD4', 'circle-stroke-opacity': 0.5,
+      }});
+
+      // Maritime dark activity — AIS-derived heuristics, no synthetic vessels
+      map.addLayer({ id: 'maritime-dark-glow', type: 'circle', source: 'maritime-dark-activity', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','vessel_count'], 0,14, 20,52],
+        'circle-color': ['match',['get','severity'], 'CRITICAL','#FF1744', 'HIGH','#FF6B00', 'WATCH','#FFD700', '#00BCD4'],
+        'circle-opacity': 0.18, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'maritime-dark-dots', type: 'circle', source: 'maritime-dark-activity', paint: {
+        'circle-radius': ['interpolate',['linear'],['get','vessel_count'], 0,5, 20,14],
+        'circle-color': ['match',['get','severity'], 'CRITICAL','#FF1744', 'HIGH','#FF6B00', 'WATCH','#FFD700', '#00BCD4'],
+        'circle-opacity': 0.95, 'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-opacity': 0.45,
+      }});
+
+      // Global risk heatmap — grid score derived from real active layers
+      map.addLayer({ id: 'risk-heatmap-heat', type: 'heatmap', source: 'risk-heatmap', paint: {
+        'heatmap-weight': ['interpolate',['linear'],['get','score'], 0,0, 100,1],
+        'heatmap-intensity': ['interpolate',['linear'],['zoom'], 1,0.7, 6,1.8, 10,2.8],
+        'heatmap-radius': ['interpolate',['linear'],['zoom'], 1,18, 5,38, 10,70],
+        'heatmap-opacity': 0.72,
+        'heatmap-color': ['interpolate',['linear'],['heatmap-density'], 0,'rgba(0,0,0,0)', 0.25,'rgba(255,213,0,0.35)', 0.55,'rgba(255,149,0,0.55)', 0.8,'rgba(255,23,68,0.75)', 1,'rgba(255,255,255,0.9)'],
+      }});
+      map.addLayer({ id: 'risk-heatmap-dots', type: 'circle', source: 'risk-heatmap', minzoom: 4, paint: {
+        'circle-radius': ['interpolate',['linear'],['get','score'], 0,3, 100,11],
+        'circle-color': ['interpolate',['linear'],['get','score'], 10,'#FFD700', 45,'#FF9500', 75,'#FF1744'],
+        'circle-opacity': 0.75, 'circle-stroke-width': 1, 'circle-stroke-color': '#000', 'circle-stroke-opacity': 0.5,
+      }});
+
+      // Space weather ops — NOAA SWPC operational markers
+      map.addLayer({ id: 'space-weather-glow', type: 'circle', source: 'space-weather-points', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,24, 5,42, 10,70],
+        'circle-color': ['get','color'], 'circle-opacity': 0.11, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'space-weather-dots', type: 'circle', source: 'space-weather-points', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,5, 5,9, 10,14],
+        'circle-color': ['get','color'], 'circle-opacity': 0.9,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#D4AF37', 'circle-stroke-opacity': 0.6,
+      }});
+
+      // OSM critical infrastructure — viewport/radius Overpass lookup
+      map.addLayer({ id: 'osm-critical-glow', type: 'circle', source: 'osm-critical', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,6, 5,10, 10,18],
+        'circle-color': '#76FF03', 'circle-opacity': 0.11, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'osm-critical-dots', type: 'circle', source: 'osm-critical', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,3, 5,5, 10,8],
+        'circle-color': '#76FF03', 'circle-opacity': 0.85,
+        'circle-stroke-width': 1.5, 'circle-stroke-color': '#000', 'circle-stroke-opacity': 0.65,
+      }});
 
       // Fires
       map.addLayer({ id: 'fires-heat', type: 'circle', source: 'fires', paint: {
@@ -222,6 +410,17 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       // GDELT
       map.addLayer({ id: 'gdelt-dots', type: 'circle', source: 'gdelt', paint: {
         'circle-radius': 4, 'circle-color': '#FF3D3D', 'circle-opacity': 0.5, 'circle-stroke-width': 1, 'circle-stroke-color': '#FF3D3D', 'circle-stroke-opacity': 0.3,
+      }});
+
+      // Military-specific OSINT events derived from the same real RSS/GDELT feed
+      map.addLayer({ id: 'mil-events-glow', type: 'circle', source: 'military-events', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,8, 5,14, 10,24],
+        'circle-color': '#FF6B00', 'circle-opacity': 0.12, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'mil-events-dots', type: 'circle', source: 'military-events', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,6, 10,10],
+        'circle-color': '#FF6B00', 'circle-opacity': 0.85,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#FF1744', 'circle-stroke-opacity': 0.45,
       }});
 
       // Fusion Hotspots — AIP risk heat markers
@@ -320,6 +519,21 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
         'text-offset': [0, 2], 'text-max-width': 14, 'text-allow-overlap': false,
       }, paint: { 'text-color': '#FF9500', 'text-halo-color': '#000', 'text-halo-width': 1, 'text-opacity': 0.9 }});
 
+      // Naval bases split out as defense layer (from real /api/maritime data)
+      map.addLayer({ id: 'naval-base-glow', type: 'circle', source: 'naval-bases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,10, 5,18, 10,30],
+        'circle-color': '#00BCD4', 'circle-opacity': 0.13, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'naval-base-dots', type: 'circle', source: 'naval-bases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,7, 10,12],
+        'circle-color': '#00BCD4', 'circle-opacity': 0.9,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#FF3D3D', 'circle-stroke-opacity': 0.45,
+      }});
+      map.addLayer({ id: 'naval-base-label', type: 'symbol', source: 'naval-bases', minzoom: 4, layout: {
+        'text-field': ['get','name'], 'text-size': 9, 'text-font': ['Open Sans Bold'],
+        'text-offset': [0, 1.8], 'text-max-width': 12, 'text-allow-overlap': false,
+      }, paint: { 'text-color': '#00BCD4', 'text-halo-color': '#000', 'text-halo-width': 1, 'text-opacity': 0.85 }});
+
       // Live News — broadcast dots
       map.addLayer({ id: 'news-glow', type: 'circle', source: 'live-news', paint: {
         'circle-radius': ['interpolate',['linear'],['zoom'], 1,8, 5,14, 10,22],
@@ -397,6 +611,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
         { id: 'fl-private', src: 'private-fl', icon: 'plane-green' },
         { id: 'fl-jets', src: 'jets', icon: 'plane-pink' },
         { id: 'fl-military', src: 'military', icon: 'plane-red' },
+        { id: 'fl-tankers-isr', src: 'tankers-isr', icon: 'plane-orange' },
       ];
       flightLayers.forEach(l => {
         map.addLayer({ id: l.id, type: 'symbol', source: l.src, layout: {
@@ -458,7 +673,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       }
     });
     map.on('contextmenu', e => { e.preventDefault(); onRightClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }); });
-    map.on('moveend', () => { const c = map.getCenter(); onViewStateChange?.({ zoom: map.getZoom(), latitude: c.lat }); });
+    map.on('moveend', () => { const c = map.getCenter(); onViewStateChange?.({ zoom: map.getZoom(), latitude: c.lat, longitude: c.lng }); });
 
     // ── POPUP HELPER ──
     const popup = (coords: any, html: string) => {
@@ -469,7 +684,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     const linkStyle = `display:inline-block;margin-top:8px;padding:5px 12px;font-size:10px;letter-spacing:0.12em;text-decoration:none;border-radius:5px;font-family:'JetBrains Mono',monospace;`;
 
     // ── Flights (with FlightAware + ADS-B Exchange links) ──
-    ['fl-commercial','fl-private','fl-jets','fl-military'].forEach(layer => {
+    ['fl-commercial','fl-private','fl-jets','fl-military','fl-tankers-isr'].forEach(layer => {
       map.on('click', layer, e => {
         if (!e.features?.length) return;
         const p = e.features[0].properties as any;
@@ -487,6 +702,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
             <div><span style="color:#5C5A54;font-size:9px;">HDG</span><br/><span style="color:#E8E6E0;">${Math.round(p.heading||0)}°</span></div>
             <div><span style="color:#5C5A54;font-size:9px;">REG</span><br/><span style="color:#E8E6E0;">${p.registration||'—'}</span></div>
             <div><span style="color:#5C5A54;font-size:9px;">POS</span><br/><span style="color:#E8E6E0;">${coords[1].toFixed(2)},${coords[0].toFixed(2)}</span></div>
+            ${p.mission_hint ? `<div><span style="color:#5C5A54;font-size:9px;">MISSION</span><br/><span style="color:#FF9500;">${p.mission_hint}</span></div>` : ''}
           </div>
           <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
             <a href="https://www.flightaware.com/live/flight/${cs}" target="_blank" style="${linkStyle}color:#D4AF37;border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.1);">⚡ FLIGHTAWARE</a>
@@ -585,6 +801,190 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       </div>`);
     });
 
+    map.on('click', 'mil-events-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid rgba(255,107,0,0.35);">
+        <div style="color:#FF6B00;font-size:12px;font-weight:700;margin-bottom:6px;">🎖️ MILITARY OSINT EVENT</div>
+        <div style="font-size:9px;color:#E8E6E0;margin-bottom:8px;line-height:1.4;">${p.name||'Military event'}</div>
+        ${p.url ? `<a href="${p.url}" target="_blank" style="${linkStyle}color:#FF6B00;border:1px solid rgba(255,107,0,0.4);background:rgba(255,107,0,0.1);">SOURCE</a>` : ''}
+      </div>`);
+    });
+
+    ['sentinel-scenes-fill','sentinel-sar-fill','sentinel-optical-fill'].forEach(layer => {
+      map.on('click', layer, e => {
+        if (!e.features?.length) return;
+        const p = e.features[0].properties as any;
+        const coords = (e.lngLat ? [e.lngLat.lng, e.lngLat.lat] : [0, 0]) as [number, number];
+        const color = p.bucket === 'SAR' ? '#00E5FF' : p.bucket === 'OPTICAL' ? '#76FF03' : '#D4AF37';
+        popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+          <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">🛰️ ${p.bucket || 'SENTINEL'} SCENE</div>
+          <div style="font-size:9px;color:#E8E6E0;margin-bottom:8px;line-height:1.4;">${p.id || 'STAC scene'}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:9px;margin-bottom:8px;">
+            <div><span style="color:#5C5A54;">PLATFORM</span><br/><span style="color:#E8E6E0;">${p.platform || 'Sentinel'}</span></div>
+            <div><span style="color:#5C5A54;">DATE</span><br/><span style="color:#E8E6E0;">${p.datetime ? new Date(p.datetime).toISOString().slice(0,10) : '—'}</span></div>
+            <div><span style="color:#5C5A54;">CLOUD</span><br/><span style="color:${color};">${p.cloud_cover ?? '—'}%</span></div>
+            <div><span style="color:#5C5A54;">AREA</span><br/><span style="color:#E8E6E0;">${p.area_km2 || '—'} km²</span></div>
+          </div>
+          ${p.preview ? `<a href="${p.preview}" target="_blank" style="${linkStyle}color:${color};border:1px solid ${color}66;background:${color}1A;">PREVIEW</a>` : ''}
+        </div>`);
+      });
+    });
+
+    map.on('click', 'frontlines-line', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      popup([e.lngLat.lng, e.lngLat.lat], `<div style="${pStyle}border:1px solid rgba(255,23,68,0.4);">
+        <div style="color:#FF1744;font-size:12px;font-weight:700;margin-bottom:6px;">⚔️ PUBLIC FRONTLINE GEOMETRY</div>
+        <div style="font-size:9px;color:#E8E6E0;line-height:1.4;">${p.name || p.title || p.description || 'Geometry from public frontline feed.'}</div>
+        <a href="https://deepstatemap.live/" target="_blank" style="${linkStyle}color:#FF1744;border:1px solid rgba(255,23,68,0.4);background:rgba(255,23,68,0.1);">DEEPSTATE MAP</a>
+      </div>`);
+    });
+
+    // ── Air Quality / Pollution ──
+    map.on('click', 'air-quality-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid ${p.color || '#00E676'}55;">
+        <div style="color:${p.color || '#00E676'};font-size:12px;font-weight:700;margin-bottom:6px;">🌬️ AIR QUALITY</div>
+        <div style="font-size:10px;color:#E8E6E0;margin-bottom:8px;">${p.name || 'OpenAQ station'} — ${p.city || ''} ${p.country || ''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">PM2.5</span><br/><span style="color:${p.color || '#00E676'};font-weight:bold;">${p.pm25 ?? '—'} ${p.unit || ''}</span></div>
+          <div><span style="color:#5C5A54;">LEVEL</span><br/><span style="color:${p.color || '#00E676'};">${p.level || '—'}</span></div>
+        </div>
+        <div style="font-size:8px;color:#8A8880;margin-top:8px;">Source: OpenAQ · ${p.lastUpdated || ''}</div>
+      </div>`);
+    });
+
+    // ── Disaster Ops ──
+    map.on('click', 'disaster-ops-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      const color = p.layer_type === 'fire' ? '#FF6B00' : p.layer_type === 'earthquake' ? '#FF9500' : '#FFD700';
+      popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+        <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">🚨 DISASTER OPS</div>
+        <div style="font-size:10px;color:#E8E6E0;margin-bottom:8px;line-height:1.4;">${p.title || p.type || 'Disaster signal'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">TYPE</span><br/><span style="color:${color};">${p.layer_type || p.type || '—'}</span></div>
+          <div><span style="color:#5C5A54;">SOURCE</span><br/><span style="color:#E8E6E0;">${p.source || 'NASA/USGS/FIRMS'}</span></div>
+        </div>
+      </div>`);
+    });
+
+    // ── Country Risk ──
+    map.on('click', 'country-risk-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      const color = p.risk_level === 'CRITICAL' ? '#FF1744' : p.risk_level === 'HIGH' ? '#FF9500' : p.risk_level === 'ELEVATED' ? '#FFD700' : '#00E676';
+      popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+        <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">${p.flag || ''} COUNTRY RISK INDEX</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.name || p.code} ${p.capital ? `— ${p.capital}` : ''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">SCORE</span><br/><span style="color:${color};font-weight:bold;">${p.risk_score}/100</span></div>
+          <div><span style="color:#5C5A54;">LEVEL</span><br/><span style="color:${color};">${p.risk_level}</span></div>
+        </div>
+        <div style="font-size:8px;color:#8A8880;margin-top:8px;line-height:1.4;">${p.tags || ''}</div>
+      </div>`);
+    });
+
+    // ── Cyber Geo Threats ──
+    map.on('click', 'cyber-geo-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid ${p.color || '#00E5FF'}55;">
+        <div style="color:${p.color || '#00E5FF'};font-size:12px;font-weight:700;margin-bottom:6px;">🛡️ CYBER GEO THREAT</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.ip || 'IOC'} — ${p.malware || p.threatType || 'ThreatFox IOC'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">LOCATION</span><br/><span style="color:#E8E6E0;">${p.city || '—'}, ${p.country || '—'}</span></div>
+          <div><span style="color:#5C5A54;">CONF</span><br/><span style="color:${p.color || '#00E5FF'};">${p.confidence || '—'}%</span></div>
+          <div><span style="color:#5C5A54;">ASN</span><br/><span style="color:#E8E6E0;">${p.asn || '—'}</span></div>
+          <div><span style="color:#5C5A54;">ORG</span><br/><span style="color:#E8E6E0;">${p.org || p.isp || '—'}</span></div>
+        </div>
+        ${p.reference ? `<a href="${p.reference}" target="_blank" style="${linkStyle}color:${p.color || '#00E5FF'};border:1px solid ${p.color || '#00E5FF'}66;background:rgba(0,229,255,0.1);">REFERENCE</a>` : ''}
+      </div>`);
+    });
+
+    // ── Port Congestion ──
+    map.on('click', 'port-congestion-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      const color = p.level === 'CRITICAL' ? '#FF1744' : p.level === 'HIGH' ? '#FF9500' : p.level === 'WATCH' ? '#FFD700' : '#00BCD4';
+      popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+        <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">⚓ PORT CONGESTION</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.name || 'Port'} — ${p.country || ''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">VESSELS</span><br/><span style="color:${color};font-weight:bold;">${p.vessel_count || 0}</span></div>
+          <div><span style="color:#5C5A54;">SCORE</span><br/><span style="color:${color};">${p.score || 0}/100</span></div>
+        </div>
+      </div>`);
+    });
+
+    // ── Maritime Dark Activity ──
+    map.on('click', 'maritime-dark-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      const color = p.severity === 'CRITICAL' ? '#FF1744' : p.severity === 'HIGH' ? '#FF6B00' : '#FFD700';
+      popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+        <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">🕳️ AIS DARK ACTIVITY HEURISTIC</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.title || 'Maritime anomaly'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">SEVERITY</span><br/><span style="color:${color};font-weight:bold;">${p.severity || 'WATCH'}</span></div>
+          <div><span style="color:#5C5A54;">VESSELS</span><br/><span style="color:${color};">${p.vessel_count || 0}</span></div>
+        </div>
+        <div style="font-size:8px;color:#8A8880;margin-top:8px;line-height:1.4;">${p.context || ''}<br/>Source: ${p.source || 'AIS-derived heuristic'}</div>
+      </div>`);
+    });
+
+    // ── Risk Heatmap cells ──
+    map.on('click', 'risk-heatmap-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      const score = Number(p.score || 0);
+      const color = score >= 75 ? '#FF1744' : score >= 45 ? '#FF9500' : '#FFD700';
+      popup(coords, `<div style="${pStyle}border:1px solid ${color}55;">
+        <div style="color:${color};font-size:12px;font-weight:700;margin-bottom:6px;">🔥 GLOBAL RISK SURFACE</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">Grid risk score: <span style="color:${color};font-weight:bold;">${score}/100</span></div>
+        <div style="font-size:9px;color:#8A8880;line-height:1.4;">Drivers: ${p.drivers || 'multi-source OSINT'}</div>
+      </div>`);
+    });
+
+    // ── Space Weather Ops ──
+    map.on('click', 'space-weather-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid ${p.color || '#D4AF37'}55;">
+        <div style="color:${p.color || '#D4AF37'};font-size:12px;font-weight:700;margin-bottom:6px;">☀️ SPACE WEATHER OPS</div>
+        <div style="font-size:10px;color:#E8E6E0;margin-bottom:8px;">${p.name || 'NOAA SWPC marker'}</div>
+        <div style="font-size:9px;color:#aaa;">Kp Index: <span style="color:${p.color || '#D4AF37'};font-weight:bold;">${p.kp ?? '—'}</span> · Level: ${p.level || '—'}</div>
+        <a href="https://www.swpc.noaa.gov/" target="_blank" style="${linkStyle}color:#D4AF37;border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.1);">NOAA SWPC</a>
+      </div>`);
+    });
+
+    // ── OSM Critical Infrastructure ──
+    map.on('click', 'osm-critical-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid rgba(118,255,3,0.4);">
+        <div style="color:#76FF03;font-size:12px;font-weight:700;margin-bottom:6px;">🏛️ OSM CRITICAL FACILITY</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.name || p.type || 'Facility'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">TYPE</span><br/><span style="color:#76FF03;">${p.type || '—'}</span></div>
+          <div><span style="color:#5C5A54;">OPERATOR</span><br/><span style="color:#E8E6E0;">${p.operator || '—'}</span></div>
+        </div>
+        <a href="https://www.openstreetmap.org/?mlat=${coords[1]}&mlon=${coords[0]}#map=16/${coords[1]}/${coords[0]}" target="_blank" style="${linkStyle}color:#76FF03;border:1px solid rgba(118,255,3,0.4);background:rgba(118,255,3,0.1);">OPENSTREETMAP</a>
+      </div>`);
+    });
+
     // ── Global Event / Conflict Markers ──
     map.on('click', 'conflict-icons', e => {
       if (!e.features?.length) return;
@@ -603,7 +1003,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
 
 
     // ── Generic hover for clickables ──
-    ['conflict-icons','cctv-dots','eq-circles','sat-dots','fires-heat','gdelt-dots','fusion-hotspot-core','weather-dots','infra-dots','maritime-dots','choke-dots','news-dots','sigint-news-dots','balloon-dots','rad-dots','ship-dots','sweep-device-dots','scan-targets-dots'].forEach(layer => {
+    ['conflict-icons','cctv-dots','eq-circles','sat-dots','fires-heat','gdelt-dots','mil-events-dots','frontlines-line','sentinel-scenes-fill','sentinel-sar-fill','sentinel-optical-fill','air-quality-dots','disaster-ops-dots','country-risk-dots','cyber-geo-dots','port-congestion-dots','maritime-dark-dots','risk-heatmap-dots','space-weather-dots','osm-critical-dots','naval-base-dots','fusion-hotspot-core','weather-dots','infra-dots','maritime-dots','choke-dots','news-dots','sigint-news-dots','balloon-dots','rad-dots','ship-dots','sweep-device-dots','scan-targets-dots'].forEach(layer => {
       map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
     });
@@ -831,13 +1231,14 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     if (!mapReady) return;
     const toFeatures = (arr: any[]) => (arr || []).map((f: any) => ({
       type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [f.lng, f.lat] },
-      properties: { callsign: f.callsign, heading: f.heading || 0, alt: f.alt, model: f.model, speed_knots: f.speed_knots, registration: f.registration, icao24: f.icao24 },
+      properties: { callsign: f.callsign, heading: f.heading || 0, alt: f.alt, model: f.model, speed_knots: f.speed_knots, registration: f.registration, icao24: f.icao24, mission_hint: f.mission_hint },
     }));
     setGeo('flights', activeLayers.flights ? toFeatures(data.commercial_flights) : []);
     setGeo('private-fl', activeLayers.private ? toFeatures(data.private_flights) : []);
     setGeo('jets', activeLayers.jets ? toFeatures(data.private_jets) : []);
     setGeo('military', activeLayers.military ? toFeatures(data.military_flights) : []);
-  }, [mapReady, data.commercial_flights, data.private_flights, data.private_jets, data.military_flights, activeLayers.flights, activeLayers.private, activeLayers.jets, activeLayers.military]);
+    setGeo('tankers-isr', activeLayers.tankers_isr ? toFeatures(data.tankers_isr) : []);
+  }, [mapReady, data.commercial_flights, data.private_flights, data.private_jets, data.military_flights, data.tankers_isr, activeLayers.flights, activeLayers.private, activeLayers.jets, activeLayers.military, activeLayers.tankers_isr, setGeo]);
 
   // ── DECOUPLED LAYER RENDERERS (Performance Optimized) ──
 
@@ -853,8 +1254,33 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
 
   useEffect(() => {
     if (!mapReady) return;
-    setGeo('gdelt', activeLayers.global_incidents && data.gdelt ? data.gdelt.map((e: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [e.lng, e.lat] }, properties: { name: e.name } })) : []);
+    setGeo('gdelt', activeLayers.global_incidents && data.gdelt ? data.gdelt.map((e: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [e.lng, e.lat] }, properties: { name: e.name, url: e.url, type: e.type } })) : []);
   }, [mapReady, data.gdelt, activeLayers.global_incidents, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('military-events', activeLayers.mil_conflict_events && data.military_events ? data.military_events.map((e: any) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [e.lng, e.lat] },
+      properties: { name: e.name, url: e.url, type: e.type },
+    })) : []);
+  }, [mapReady, data.military_events, activeLayers.mil_conflict_events, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const toSceneFeatures = (items: any[], bucket: 'SCENE' | 'SAR' | 'OPTICAL') => (items || [])
+      .map((scene: any) => sceneToFeature(scene, bucket))
+      .filter(Boolean);
+    setGeo('sentinel-scenes', activeLayers.satellite_scenes ? toSceneFeatures(data.sentinel_scenes, 'SCENE') : []);
+    setGeo('sentinel-sar', activeLayers.sar_watch ? toSceneFeatures(data.sentinel_sar, 'SAR') : []);
+    setGeo('sentinel-optical', activeLayers.optical_watch ? toSceneFeatures(data.sentinel_optical, 'OPTICAL') : []);
+  }, [mapReady, data.sentinel_scenes, data.sentinel_sar, data.sentinel_optical, activeLayers.satellite_scenes, activeLayers.sar_watch, activeLayers.optical_watch, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const features = activeLayers.frontlines ? collectGeoFeatures(data.frontlines) : [];
+    setGeo('frontlines', features);
+  }, [mapReady, data.frontlines, activeLayers.frontlines, setGeo]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -878,6 +1304,78 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
 
   useEffect(() => {
     if (!mapReady) return;
+    setGeo('air-quality', activeLayers.air_quality && data.air_quality ? data.air_quality.map((a: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [a.lng, a.lat] },
+      properties: { name: a.name, city: a.city, country: a.country, pm25: a.pm25, unit: a.unit, level: a.level, color: a.color, lastUpdated: a.lastUpdated },
+    })) : []);
+  }, [mapReady, data.air_quality, activeLayers.air_quality, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('disaster-ops', activeLayers.disaster_ops && data.disaster_ops ? data.disaster_ops.map((d: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [d.lng, d.lat] },
+      properties: { title: d.title || d.place || d.type, type: d.type, layer_type: d.layer_type, severity: d.severity, magnitude: d.magnitude, source: d.source },
+    })) : []);
+  }, [mapReady, data.disaster_ops, activeLayers.disaster_ops, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('country-risk', activeLayers.country_risk && data.country_risk ? data.country_risk.map((c: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+      properties: { name: c.name, code: c.code, flag: c.flag, capital: c.capital, risk_score: c.risk_score, risk_level: c.risk_level, tags: (c.tags || []).join(', ') },
+    })) : []);
+  }, [mapReady, data.country_risk, activeLayers.country_risk, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('cyber-geo', activeLayers.cyber_geo && data.cyber_geo_threats ? data.cyber_geo_threats.map((t: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [t.lng, t.lat] },
+      properties: { ip: t.ip, malware: t.malware, threatType: t.threatType, confidence: t.confidence, severity: t.severity, color: t.color, city: t.city, country: t.country, isp: t.isp, org: t.org, asn: t.asn, reference: t.reference, source: t.source },
+    })) : []);
+  }, [mapReady, data.cyber_geo_threats, activeLayers.cyber_geo, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('port-congestion', activeLayers.port_congestion && data.port_congestion ? data.port_congestion.map((p: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+      properties: { name: p.name, country: p.country, type: p.type, vessel_count: p.vessel_count, score: p.score, level: p.level, volume: p.volume },
+    })) : []);
+  }, [mapReady, data.port_congestion, activeLayers.port_congestion, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('maritime-dark-activity', activeLayers.maritime_dark_activity && data.maritime_dark_activity ? data.maritime_dark_activity.map((e: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [e.lng, e.lat] },
+      properties: { id: e.id, title: e.title, type: e.type, severity: e.severity, vessel_count: e.vessel_count, context: e.context, source: e.source },
+    })) : []);
+  }, [mapReady, data.maritime_dark_activity, activeLayers.maritime_dark_activity, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('risk-heatmap', activeLayers.risk_heatmap && data.risk_heatmap ? data.risk_heatmap.map((cell: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [cell.lng, cell.lat] },
+      properties: { score: cell.score, drivers: cell.drivers },
+    })) : []);
+  }, [mapReady, data.risk_heatmap, activeLayers.risk_heatmap, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('space-weather-points', activeLayers.space_weather_layer && data.space_weather_points ? data.space_weather_points.map((s: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+      properties: { name: s.name, kp: s.kp, level: s.level, color: s.color },
+    })) : []);
+  }, [mapReady, data.space_weather_points, activeLayers.space_weather_layer, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('osm-critical', activeLayers.osm_critical && data.osm_critical ? data.osm_critical.map((f: any) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [f.lng, f.lat] },
+      properties: { id: f.id, name: f.name, type: f.type, operator: f.operator, source: f.source },
+    })) : []);
+  }, [mapReady, data.osm_critical, activeLayers.osm_critical, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
     setGeo('infrastructure', activeLayers.infrastructure && data.infrastructure ? data.infrastructure.map((i: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [i.lng, i.lat] }, properties: { name: i.name, city: i.city, country: i.country, status: i.status, reactors: i.reactors, capacityMW: i.capacityMW, owner: i.owner } })) : []);
   }, [mapReady, data.infrastructure, activeLayers.infrastructure, setGeo]);
 
@@ -886,7 +1384,8 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     setGeo('maritime', activeLayers.maritime && data.maritime_ports ? data.maritime_ports.map((p: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { name: p.name, country: p.country, type: p.type, volume: p.volume, fleet: p.fleet, rank: p.rank } })) : []);
     setGeo('maritime-choke', activeLayers.maritime && data.maritime_chokepoints ? data.maritime_chokepoints.map((c: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [c.lng, c.lat] }, properties: { name: c.name, traffic: c.traffic, risk: c.risk } })) : []);
     setGeo('maritime-ships', activeLayers.maritime && data.maritime_ships ? data.maritime_ships.map((s: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [s.lng, s.lat] }, properties: { name: s.name || s.mmsi?.toString(), type: s.type || 'cargo', speed: s.speed, heading: s.heading, destination: s.destination, flag: s.flag } })) : []);
-  }, [mapReady, data.maritime_ports, data.maritime_chokepoints, data.maritime_ships, activeLayers.maritime, setGeo]);
+    setGeo('naval-bases', activeLayers.naval_bases && data.naval_bases ? data.naval_bases.map((p: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { name: p.name, country: p.country, type: p.type, fleet: p.fleet } })) : []);
+  }, [mapReady, data.maritime_ports, data.maritime_chokepoints, data.maritime_ships, data.naval_bases, activeLayers.maritime, activeLayers.naval_bases, setGeo]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -954,9 +1453,25 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     setVis(['fl-private'], activeLayers.private);
     setVis(['fl-jets'], activeLayers.jets);
     setVis(['fl-military'], activeLayers.military);
+    setVis(['fl-tankers-isr'], activeLayers.tankers_isr);
+    setVis(['sentinel-scenes-fill','sentinel-scenes-line'], activeLayers.satellite_scenes);
+    setVis(['sentinel-sar-fill','sentinel-sar-line'], activeLayers.sar_watch);
+    setVis(['sentinel-optical-fill','sentinel-optical-line'], activeLayers.optical_watch);
+    setVis(['frontlines-fill','frontlines-line'], activeLayers.frontlines);
+    setVis(['mil-events-glow','mil-events-dots'], activeLayers.mil_conflict_events);
+    setVis(['naval-base-glow','naval-base-dots','naval-base-label'], activeLayers.naval_bases);
     setVis(['cctv-glow','cctv-dots','cctv-label'], activeLayers.cctv);
     setVis(['fires-heat'], activeLayers.fires);
     setVis(['weather-glow','weather-dots','weather-label'], activeLayers.weather);
+    setVis(['air-quality-glow','air-quality-dots'], activeLayers.air_quality);
+    setVis(['disaster-ops-glow','disaster-ops-dots'], activeLayers.disaster_ops);
+    setVis(['country-risk-glow','country-risk-dots'], activeLayers.country_risk);
+    setVis(['cyber-geo-glow','cyber-geo-dots'], activeLayers.cyber_geo);
+    setVis(['port-congestion-glow','port-congestion-dots'], activeLayers.port_congestion);
+    setVis(['maritime-dark-glow','maritime-dark-dots'], activeLayers.maritime_dark_activity);
+    setVis(['risk-heatmap-heat','risk-heatmap-dots'], activeLayers.risk_heatmap);
+    setVis(['space-weather-glow','space-weather-dots'], activeLayers.space_weather_layer);
+    setVis(['osm-critical-glow','osm-critical-dots'], activeLayers.osm_critical);
     setVis(['infra-glow','infra-dots','infra-label'], activeLayers.infrastructure);
     setVis(['maritime-glow','maritime-dots','maritime-label'], activeLayers.maritime);
     setVis(['choke-glow','choke-dots','choke-label'], activeLayers.maritime);

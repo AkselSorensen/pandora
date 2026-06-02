@@ -1,132 +1,149 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 
-interface DarkWebAlert {
+export interface DarkWebAlert {
   id: string;
   title: string;
   source: string;
   forum: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   timestamp: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 }
 
-export async function scrapeTorForum(forumUrl: string): Promise<DarkWebAlert[]> {
-  try {
-    // Configuration pour utiliser un proxy Tor local (généralement sur le port 9050)
-    const torProxy = process.env.TOR_PROXY_URL || 'http://localhost:9050';
-    
-    const response = await axios.get(forumUrl, {
-      proxy: {
-        host: torProxy.split('://')[1].split(':')[0],
-        port: parseInt(torProxy.split(':')[2] || '9050')
+interface ForumConfig {
+  name: string;
+  url: string;
+  network?: 'tor' | 'i2p' | 'http';
+  selectors?: {
+    item?: string;
+    title?: string;
+    author?: string;
+    time?: string;
+    content?: string;
+    link?: string;
+  };
+}
+
+const DEFAULT_SELECTORS = {
+  item: 'article, .post, .topic, .thread, li',
+  title: 'h1, h2, h3, .title, .post-title, .topic-title, a',
+  author: '.author, .username, .user, [rel="author"]',
+  time: 'time, .date, .timestamp',
+  content: '.content, .post-content, .body, p',
+  link: 'a',
+};
+
+function parseForumConfig(): ForumConfig[] {
+  const raw = process.env.DARKWEB_FORUMS_JSON || process.env.DARKWEB_FORUMS || '';
+  if (!raw.trim()) return [];
+
+  if (raw.trim().startsWith('[')) {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('DARKWEB_FORUMS_JSON must be a JSON array');
+    return parsed;
+  }
+
+  return raw
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map((url) => ({ name: new URL(url).hostname, url }));
+}
+
+function inferNetwork(url: string, configured?: ForumConfig['network']): ForumConfig['network'] {
+  if (configured) return configured;
+  if (url.includes('.onion')) return 'tor';
+  if (url.includes('.i2p')) return 'i2p';
+  return 'http';
+}
+
+function severityFromText(value: string): DarkWebAlert['severity'] {
+  const text = value.toLowerCase();
+  if (/zero[-\s]?day|rce|exploit|credential dump|database leak|ransomware|initial access/.test(text)) return 'critical';
+  if (/leak|stolen|malware|botnet|phishing|ddos|cve|access/.test(text)) return 'high';
+  if (/market|forum|sale|dump|breach/.test(text)) return 'medium';
+  return 'low';
+}
+
+function getProxyAgent(network: ForumConfig['network']) {
+  if (network === 'tor') {
+    const proxy = process.env.TOR_SOCKS_PROXY || 'socks5h://127.0.0.1:9050';
+    return new SocksProxyAgent(proxy);
+  }
+  if (network === 'i2p') {
+    const proxy = process.env.I2P_HTTP_PROXY;
+    return proxy ? new URL(proxy) : undefined;
+  }
+  return undefined;
+}
+
+async function scrapeForum(forum: ForumConfig): Promise<DarkWebAlert[]> {
+  const network = inferNetwork(forum.url, forum.network);
+  const agent = getProxyAgent(network);
+  const selectors = { ...DEFAULT_SELECTORS, ...(forum.selectors || {}) };
+
+  const response = await axios.get(forum.url, {
+    timeout: Number(process.env.DARKWEB_TIMEOUT_MS || 30000),
+    httpAgent: agent,
+    httpsAgent: agent,
+    proxy: false,
+    headers: {
+      'User-Agent': process.env.DARKWEB_USER_AGENT || 'Mozilla/5.0 PandoraRecon/1.0',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+    maxRedirects: 3,
+  });
+
+  const $ = cheerio.load(response.data);
+  const alerts: DarkWebAlert[] = [];
+
+  $(selectors.item).each((index: number, element: any) => {
+    const title = $(element).find(selectors.title).first().text().trim();
+    const content = $(element).find(selectors.content).first().text().trim();
+    if (!title && !content) return;
+
+    const author = $(element).find(selectors.author).first().text().trim() || forum.name;
+    const timeElement = $(element).find(selectors.time).first();
+    const timestamp = timeElement.attr('datetime') || timeElement.text().trim() || new Date().toISOString();
+    const href = $(element).find(selectors.link).first().attr('href') || forum.url;
+    const absoluteUrl = href.startsWith('http') ? href : new URL(href, forum.url).toString();
+    const combinedText = `${title} ${content}`;
+
+    alerts.push({
+      id: `${forum.name}-${index}-${Buffer.from(absoluteUrl).toString('base64url').slice(0, 12)}`,
+      title: title || content.slice(0, 120),
+      source: author,
+      forum: forum.name,
+      severity: severityFromText(combinedText),
+      timestamp: Number.isNaN(Date.parse(timestamp)) ? new Date().toISOString() : new Date(timestamp).toISOString(),
+      details: {
+        url: absoluteUrl,
+        network,
+        excerpt: content.slice(0, 500),
       },
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0'
-      }
     });
-    
-    const $ = cheerio.load(response.data);
-    const alerts: DarkWebAlert[] = [];
-    
-    // Exemple de scraping pour un forum dark web (à adapter selon la structure réelle)
-    // Cette partie dépendra de la structure HTML spécifique du forum cible
-    $('div.post').each((index: number, element: any) => {
-      const title = $(element).find('h3.post-title').text().trim();
-      const source = $(element).find('span.post-author').text().trim();
-      const timestamp = $(element).find('time.post-time').attr('datetime') || new Date().toISOString();
-      
-      // Déterminer la sévérité en fonction des mots-clés
-      let severity: 'critical' | 'high' | 'medium' | 'low' = 'medium';
-      if (title.includes('exploit') || title.includes('zero-day')) {
-        severity = 'critical';
-      } else if (title.includes('leak') || title.includes('stolen')) {
-        severity = 'high';
-      }
-      
-      alerts.push({
-        id: `tor-${index}-${Date.now()}`,
-        title,
-        source,
-        forum: forumUrl,
-        severity,
-        timestamp,
-        details: {
-          content: $(element).find('div.post-content').text().trim(),
-          url: $(element).find('a.post-link').attr('href') || forumUrl
-        }
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('Tor scraping error:', error);
-    throw new Error('Failed to scrape Tor forum');
-  }
+  });
+
+  return alerts;
 }
 
-export async function scrapeI2PForum(forumUrl: string): Promise<DarkWebAlert[]> {
-  // Implémentation similaire pour les forums I2P
-  // Utiliserait un proxy I2P au lieu de Tor
-  try {
-    const i2pProxy = process.env.I2P_PROXY_URL || 'http://localhost:4444';
-    
-    const response = await axios.get(forumUrl, {
-      proxy: {
-        host: i2pProxy.split('://')[1].split(':')[0],
-        port: parseInt(i2pProxy.split(':')[2] || '4444')
-      },
-      timeout: 30000
-    });
-    
-    // Logique de parsing similaire à Tor
-    const $ = cheerio.load(response.data);
-    const alerts: DarkWebAlert[] = [];
-    
-    $('article.forum-post').each((index: number, element: any) => {
-      const title = $(element).find('header h2').text().trim();
-      const source = $(element).find('footer .author').text().trim();
-      
-      alerts.push({
-        id: `i2p-${index}-${Date.now()}`,
-        title,
-        source,
-        forum: forumUrl,
-        severity: 'medium',
-        timestamp: new Date().toISOString(),
-        details: {
-          content: $(element).find('.post-body').text().trim()
-        }
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('I2P scraping error:', error);
-    throw new Error('Failed to scrape I2P forum');
+export async function monitorConfiguredDarkWebForums(): Promise<DarkWebAlert[]> {
+  const forums = parseForumConfig();
+  if (forums.length === 0) {
+    throw new Error('No dark web forums configured. Set DARKWEB_FORUMS or DARKWEB_FORUMS_JSON.');
   }
-}
 
-export async function monitorDarkWebForums(forums: string[]): Promise<DarkWebAlert[]> {
-  const allAlerts: DarkWebAlert[] = [];
-  
-  for (const forum of forums) {
-    try {
-      if (forum.includes('.onion')) {
-        const alerts = await scrapeTorForum(forum);
-        allAlerts.push(...alerts);
-      } else if (forum.includes('.i2p')) {
-        const alerts = await scrapeI2PForum(forum);
-        allAlerts.push(...alerts);
-      }
-    } catch (error) {
-      console.warn(`Failed to scrape ${forum}:`, error);
-    }
+  const settled = await Promise.allSettled(forums.map(scrapeForum));
+  const alerts = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+
+  if (alerts.length === 0) {
+    const errors = settled
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((result) => String(result.reason?.message || result.reason));
+    throw new Error(errors.join(' | ') || 'Configured dark web forums returned no parseable records.');
   }
-  
-  // Trier par timestamp (le plus récent en premier)
-  return allAlerts.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+
+  return alerts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }

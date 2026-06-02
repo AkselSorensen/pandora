@@ -43,7 +43,7 @@ function distanceKm(a: { lat?: number; lng?: number }, b: { lat?: number; lng?: 
 }
 
 function AdvancedOpsPanel({ model, mouseCoords, onLocate, isMobile = false }: AdvancedOpsPanelProps) {
-  const [tab, setTab] = useState<'timeline' | 'watch' | 'briefing' | 'simulate'>('timeline');
+  const [tab, setTab] = useState<'timeline' | 'watch' | 'briefing' | 'impact'>('timeline');
   const [watchRules, setWatchRules] = useState<WatchRule[]>(() => loadWatchRules());
   const [watchInput, setWatchInput] = useState('ukraine');
   const [watchType, setWatchType] = useState<WatchRule['type']>('keyword');
@@ -79,7 +79,7 @@ function AdvancedOpsPanel({ model, mouseCoords, onLocate, isMobile = false }: Ad
     })).slice(0, 16);
   }, [model.entities, watchRules]);
 
-  const simulation = useMemo(() => {
+  const impactRadiusEntities = useMemo(() => {
     const center = simCenter || mouseCoords || model.hotspots[0];
     if (!center) return [] as FusionEntity[];
     return model.entities
@@ -124,7 +124,7 @@ function AdvancedOpsPanel({ model, mouseCoords, onLocate, isMobile = false }: Ad
 
       <div className="ops-tabs mb-3">
         {[
-          ['timeline', 'Time'], ['watch', 'Watch'], ['briefing', 'Brief'], ['simulate', 'Sim'],
+          ['timeline', 'Time'], ['watch', 'Watch'], ['briefing', 'Brief'], ['impact', 'Impact'],
         ].map(([id, label]) => <button key={id} onClick={() => setTab(id as typeof tab)} className={tab === id ? 'active' : ''}>{label}</button>)}
       </div>
 
@@ -178,7 +178,7 @@ function AdvancedOpsPanel({ model, mouseCoords, onLocate, isMobile = false }: Ad
         </div>
       )}
 
-      {tab === 'simulate' && (
+      {tab === 'impact' && (
         <div className="space-y-3">
           <div className="ops-sim-card">
             <div className="flex items-center justify-between mb-2"><span>WHAT-IF IMPACT RADIUS</span><strong>{simRadius} KM</strong></div>
@@ -186,7 +186,7 @@ function AdvancedOpsPanel({ model, mouseCoords, onLocate, isMobile = false }: Ad
             <button onClick={() => mouseCoords && setSimCenter(mouseCoords)} className="ops-action w-full mt-2"><MapPin className="w-3 h-3" /> USE CURRENT MAP COORDS</button>
           </div>
           <div className="ops-hit-list styled-scrollbar">
-            {simulation.map(entity => (
+            {impactRadiusEntities.map(entity => (
               <button key={entity.id} className="ops-hit-row" onClick={() => typeof entity.lat === 'number' && typeof entity.lng === 'number' && onLocate?.(entity.lat, entity.lng)}>
                 <Route className="w-3 h-3" /> <span className="truncate">{entity.label}</span><em>{Math.round(entity.risk)}</em>
               </button>

@@ -72,15 +72,91 @@ const CHOKEPOINTS = [
 
 const globalForAis = globalThis as unknown as {
   shipsCache: Map<number, any>;
+  shipsHistory: Map<number, any>;
   isAisConnecting: boolean;
 };
 
 if (!globalForAis.shipsCache) {
   globalForAis.shipsCache = new Map();
+  globalForAis.shipsHistory = new Map();
   globalForAis.isAisConnecting = false;
 }
 
 const shipsCache = globalForAis.shipsCache;
+const shipsHistory = globalForAis.shipsHistory;
+
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const r = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.asin(Math.sqrt(h));
+}
+
+function nearestFeature(point: { lat: number; lng: number }, features: any[]) {
+  let nearest: any = null;
+  let minKm = Infinity;
+  for (const feature of features) {
+    const km = distanceKm(point, feature);
+    if (km < minKm) {
+      minKm = km;
+      nearest = feature;
+    }
+  }
+  return nearest ? { ...nearest, distance_km: Math.round(minKm * 10) / 10 } : null;
+}
+
+function scoreDarkVessel(ship: any) {
+  const reasons: string[] = [];
+  let score = 0;
+  const point = { lat: ship.lat, lng: ship.lng };
+  const nearestPort = nearestFeature(point, PORTS);
+  const nearestChokepoint = nearestFeature(point, CHOKEPOINTS);
+  const speed = Number(ship.speed || 0);
+  const ageMinutes = Math.max(0, Math.round((Date.now() - Number(ship.timestamp || 0)) / 60000));
+
+  if (ageMinutes >= 5) {
+    score += 20;
+    reasons.push(`stale AIS position ${ageMinutes}m old`);
+  }
+  if (ship.gap_minutes >= 45) {
+    score += 35;
+    reasons.push(`AIS gap ${ship.gap_minutes}m before last report`);
+  }
+  if (ship.implied_speed_kts >= 45) {
+    score += 45;
+    reasons.push(`impossible jump ${ship.implied_speed_kts}kt implied`);
+  }
+  if (nearestChokepoint?.distance_km <= 90) {
+    score += nearestChokepoint.risk === 'CRITICAL' ? 35 : nearestChokepoint.risk === 'HIGH' ? 25 : 15;
+    reasons.push(`near ${nearestChokepoint.name} chokepoint (${nearestChokepoint.distance_km}km)`);
+  }
+  if (nearestPort?.distance_km <= 35 && speed <= 1.5) {
+    score += nearestPort.type === 'energy' || nearestPort.type === 'naval' ? 30 : 18;
+    reasons.push(`loitering near ${nearestPort.name} ${nearestPort.type} port (${nearestPort.distance_km}km)`);
+  }
+  if (!Number.isFinite(Number(ship.heading)) || Number(ship.heading) === 511) {
+    score += 8;
+    reasons.push('missing/invalid heading');
+  }
+  if (!ship.name && !ship.imo) {
+    score += 7;
+    reasons.push('limited identity metadata from public AIS');
+  }
+
+  const severity = score >= 80 ? 'CRITICAL' : score >= 55 ? 'HIGH' : score >= 30 ? 'WATCH' : 'LOW';
+  return {
+    ...ship,
+    dark_score: Math.min(100, score),
+    severity,
+    reasons,
+    nearest_port: nearestPort,
+    nearest_chokepoint: nearestChokepoint,
+    title: `${severity} maritime anomaly — MMSI ${ship.mmsi}`,
+  };
+}
 
 function connectAisStream() {
   if (globalForAis.isAisConnecting) return;
@@ -117,20 +193,36 @@ function connectAisStream() {
         
         if (!mmsi) return;
 
-        shipsCache.set(mmsi, {
+        const previous = shipsHistory.get(mmsi) || shipsCache.get(mmsi);
+        const timestamp = Date.now();
+        const gapMs = previous?.timestamp ? timestamp - previous.timestamp : 0;
+        const jumpKm = previous?.lat && previous?.lng ? distanceKm({ lat: previous.lat, lng: previous.lng }, { lat: report.Latitude, lng: report.Longitude }) : 0;
+        const impliedSpeedKts = gapMs > 0 ? (jumpKm / (gapMs / 3600000)) / 1.852 : 0;
+
+        const shipRecord = {
           id: mmsi,
           mmsi: mmsi,
           lat: report.Latitude,
           lng: report.Longitude,
           speed: report.Sog,
           heading: report.TrueHeading || report.Cog,
-          timestamp: Date.now()
-        });
+          timestamp,
+          gap_minutes: Math.round(gapMs / 60000),
+          jump_km: Math.round(jumpKm * 10) / 10,
+          implied_speed_kts: Math.round(impliedSpeedKts * 10) / 10,
+        };
+
+        shipsCache.set(mmsi, shipRecord);
+        shipsHistory.set(mmsi, shipRecord);
 
         // Limit cache size to prevent memory leak (latest 5000 ships)
         if (shipsCache.size > 5000) {
           const firstKey = shipsCache.keys().next().value;
           if (firstKey) shipsCache.delete(firstKey);
+        }
+        if (shipsHistory.size > 10000) {
+          const firstKey = shipsHistory.keys().next().value;
+          if (firstKey) shipsHistory.delete(firstKey);
         }
       }
     } catch (e) {
@@ -161,14 +253,38 @@ export async function GET() {
   }
 
   const ships = Array.from(shipsCache.values());
+  const darkVessels = ships
+    .map(scoreDarkVessel)
+    .filter((ship) => ship.dark_score >= 30)
+    .sort((a, b) => b.dark_score - a.dark_score)
+    .slice(0, 250);
+
+  const darkActivity = darkVessels.map((ship) => ({
+    id: `dark-vessel-${ship.mmsi}`,
+    lat: ship.lat,
+    lng: ship.lng,
+    type: 'dark_vessel',
+    title: ship.title,
+    severity: ship.severity,
+    score: ship.dark_score,
+    vessel_mmsi: ship.mmsi,
+    vessel_count: 1,
+    context: ship.reasons.join(' | '),
+    source: 'AIS-derived dark vessel heuristic',
+    nearest_port: ship.nearest_port?.name,
+    nearest_chokepoint: ship.nearest_chokepoint?.name,
+  }));
 
   return NextResponse.json({
     ports: PORTS,
     chokepoints: CHOKEPOINTS,
     ships: ships,
+    dark_vessels: darkVessels,
+    dark_activity: darkActivity,
     total_ports: PORTS.length,
     total_chokepoints: CHOKEPOINTS.length,
     total_ships: ships.length,
+    total_dark_vessels: darkVessels.length,
     timestamp: new Date().toISOString(),
   }, {
     headers: { 

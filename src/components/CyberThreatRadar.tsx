@@ -3,15 +3,18 @@ import { Shield, AlertTriangle, Globe, Wifi, Database } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Threat {
-  id: number;
+  id: string;
   title: string;
   source: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
+  timestamp?: string;
+  details?: Record<string, unknown>;
 }
 
 export default function CyberThreatRadar() {
   const [threats, setThreats] = useState<Threat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchThreats = async () => {
@@ -21,17 +24,12 @@ export default function CyberThreatRadar() {
           throw new Error('Failed to fetch threats');
         }
         const data = await response.json();
-        setThreats(data.threats);
+        setThreats(Array.isArray(data.threats) ? data.threats : []);
+        setError(data.message || (Array.isArray(data.errors) && data.errors.length ? data.errors.join(' · ') : ''));
       } catch (error) {
         console.error('Error fetching threats:', error);
-        // Fallback to mock data if API fails
-        const fallbackThreats: Threat[] = [
-          { id: 1, title: 'Botnet C2 Detected', source: 'Shodan', severity: 'critical' },
-          { id: 2, title: 'CVE-2024-1234 Exploited', source: 'MISP', severity: 'high' },
-          { id: 3, title: 'Phishing Campaign', source: 'AlienVault OTX', severity: 'medium' },
-          { id: 4, title: 'DDoS Attack Imminent', source: 'Dark Web Forum', severity: 'critical' },
-        ];
-        setThreats(fallbackThreats);
+        setError(error instanceof Error ? error.message : 'Cyber threat API unavailable');
+        setThreats([]);
       } finally {
         setLoading(false);
       }
@@ -57,13 +55,13 @@ export default function CyberThreatRadar() {
           </div>
           <div className="glass-panel-sm p-3 text-center">
             <Globe className="w-6 h-6 mx-auto mb-2 text-[var(--cyan-primary)]" />
-            <div className="hud-label">Countries</div>
-            <div className="hud-value text-2xl">12</div>
+            <div className="hud-label">Sources</div>
+            <div className="hud-value text-2xl">{new Set(threats.map((threat) => threat.source)).size}</div>
           </div>
           <div className="glass-panel-sm p-3 text-center">
             <Shield className="w-6 h-6 mx-auto mb-2 text-[var(--alert-green)]" />
-            <div className="hud-label">Mitigated</div>
-            <div className="hud-value text-2xl">89%</div>
+            <div className="hud-label">Critical</div>
+            <div className="hud-value text-2xl">{threats.filter((threat) => threat.severity === 'critical').length}</div>
           </div>
         </div>
         <div className="glass-panel-sm mb-4">
@@ -80,20 +78,29 @@ export default function CyberThreatRadar() {
               <div className="text-xs text-[var(--text-muted)] mt-2">Scanning cyber threats...</div>
             </div>
           ) : (
-            <div className="space-y-2">
-              {threats.map((threat) => (
-                <div key={threat.id} className="aip-list-row">
-                  <div className="w-2 h-2 rounded-full bg-[var(--alert-red)]" />
-                  <div className="flex-1">
-                    <div className="text-xs text-[var(--text-primary)]">{threat.title}</div>
-                    <div className="text-[8px] text-[var(--text-muted)]">{threat.source}</div>
-                  </div>
-                  <span className={`gotham-tag gotham-tag--${threat.severity}`}>
-                    {threat.severity.toUpperCase()}
-                  </span>
+            <>
+              {error && <div className="glass-panel-sm p-3 mb-3 text-xs text-[var(--alert-orange)]">{error}</div>}
+              {threats.length === 0 ? (
+                <div className="text-xs text-[var(--text-muted)] py-4 text-center">
+                  No live cyber threat records returned by configured sources.
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="space-y-2">
+                  {threats.map((threat) => (
+                    <div key={threat.id} className="aip-list-row">
+                      <div className="w-2 h-2 rounded-full bg-[var(--alert-red)]" />
+                      <div className="flex-1">
+                        <div className="text-xs text-[var(--text-primary)]">{threat.title}</div>
+                        <div className="text-[8px] text-[var(--text-muted)]">{threat.source}{threat.timestamp ? ` • ${new Date(threat.timestamp).toLocaleString()}` : ''}</div>
+                      </div>
+                      <span className={`gotham-tag gotham-tag--${threat.severity}`}>
+                        {threat.severity.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

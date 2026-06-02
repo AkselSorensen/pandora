@@ -28,11 +28,197 @@ import { buildFusionModel } from '@/lib/palantir-fusion';
 import CyberThreatRadar from '@/components/CyberThreatRadar';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
+import OSINTHub from '@/components/OSINTHub';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
 const LayerPanel = dynamic(() => import('@/components/LayerPanel'));
 const CameraViewer = dynamic(() => import('@/components/CameraViewer'));
 const OsintPanel = dynamic(() => import('@/components/OsintPanel'));
+
+const TANKER_ISR_TYPES = new Set([
+  'KC10', 'KC46', 'KC35', 'K35R', 'K35A', 'A332', 'A333', 'A339', 'MRTT',
+  'E3CF', 'E3TF', 'E3A', 'E7', 'E8A', 'E6B', 'RC135', 'P8A', 'P3', 'EP3',
+  'RQ4', 'MQ9', 'U2', 'GLEX', 'GLF5', 'GLF6', 'C30J', 'C130', 'C17', 'C5M',
+]);
+
+const MIL_EVENT_KEYWORDS = [
+  'attack', 'strike', 'missile', 'drone', 'war', 'troops', 'military', 'clash',
+  'bomb', 'killed', 'forces', 'airstrike', 'shelling', 'frontline', 'invasion',
+  'naval', 'army', 'defence', 'defense', 'mobilisation', 'mobilization',
+];
+
+function deriveTankersIsr(flights: any[] = []) {
+  return flights.filter((flight) => {
+    const model = String(flight.model || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const callsign = String(flight.callsign || '').toUpperCase();
+    return (
+      TANKER_ISR_TYPES.has(model) ||
+      /^(NATO|MAGIC|SENTRY|FORTE|JAKE|REACH|RCH|TEXACO|QID|NACHO|LAGR|CACTI|COBRA|DRAGO|DUKE)/.test(callsign) ||
+      model.includes('RC135') || model.includes('RQ4') || model.includes('P8') || model.includes('KC')
+    );
+  }).map((flight) => ({
+    ...flight,
+    mission_hint: inferMilitaryMission(flight),
+  }));
+}
+
+function inferMilitaryMission(flight: any) {
+  const model = String(flight.model || '').toUpperCase();
+  const callsign = String(flight.callsign || '').toUpperCase();
+  if (model.includes('KC') || /^(TEXACO|QID|NACHO|LAGR|CACTI)/.test(callsign)) return 'AERIAL REFUELING';
+  if (model.includes('E3') || model.includes('E7') || /^(NATO|MAGIC|SENTRY)/.test(callsign)) return 'AEW / AWACS';
+  if (model.includes('RC') || model.includes('RQ') || model.includes('U2') || /^(FORTE|JAKE|COBRA)/.test(callsign)) return 'ISR / RECON';
+  if (model.includes('P8') || model.includes('P3')) return 'MARITIME PATROL';
+  if (model.includes('C17') || model.includes('C130') || model.includes('C5')) return 'MILITARY AIRLIFT';
+  return 'MILITARY WATCH';
+}
+
+function deriveMilitaryEvents(events: any[] = []) {
+  return events.filter((event) => {
+    const text = `${event.name || ''} ${event.type || ''}`.toLowerCase();
+    return MIL_EVENT_KEYWORDS.some((keyword) => text.includes(keyword));
+  });
+}
+
+function deriveSentinelBuckets(scenes: any[] = []) {
+  return {
+    sentinel_scenes: scenes,
+    sentinel_sar: scenes.filter((scene) => String(scene.platform || scene.mode || '').toLowerCase().includes('sentinel-1') || scene.polarization),
+    sentinel_optical: scenes.filter((scene) => String(scene.platform || '').toLowerCase().includes('sentinel-2') || scene.cloud_cover !== null),
+  };
+}
+
+function deriveDisasterOps(weatherEvents: any[] = [], fires: any[] = [], earthquakes: any[] = []) {
+  const weather = weatherEvents.filter((event) => /flood|storm|cyclone|volcano|severe/i.test(`${event.type || ''} ${event.title || ''}`));
+  const majorQuakes = earthquakes.filter((eq) => Number(eq.magnitude || 0) >= 5.5);
+  return [
+    ...weather.map((event) => ({ ...event, layer_type: 'weather' })),
+    ...fires.slice(0, 150).map((event) => ({ ...event, title: 'Active fire / thermal anomaly', type: 'fire', layer_type: 'fire' })),
+    ...majorQuakes.map((event) => ({ ...event, title: `M${event.magnitude} earthquake`, type: 'earthquake', layer_type: 'earthquake' })),
+  ].filter((item) => typeof item.lat === 'number' && typeof item.lng === 'number');
+}
+
+function derivePortCongestion(ports: any[] = [], ships: any[] = []) {
+  return ports.map((port) => {
+    const nearby = ships.filter((ship) => {
+      if (typeof ship.lat !== 'number' || typeof ship.lng !== 'number') return false;
+      const dLat = ship.lat - port.lat;
+      const dLng = (ship.lng - port.lng) * Math.cos((port.lat * Math.PI) / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng) <= 0.75;
+    });
+    const score = Math.min(100, nearby.length * 8);
+    return {
+      ...port,
+      vessel_count: nearby.length,
+      score,
+      level: score >= 75 ? 'CRITICAL' : score >= 45 ? 'HIGH' : score >= 20 ? 'WATCH' : 'LOW',
+    };
+  }).filter((port) => port.vessel_count > 0 || port.type === 'container' || port.type === 'energy');
+}
+
+function distanceDeg(a: any, b: any) {
+  if (typeof a?.lat !== 'number' || typeof a?.lng !== 'number' || typeof b?.lat !== 'number' || typeof b?.lng !== 'number') return Infinity;
+  const dLat = a.lat - b.lat;
+  const dLng = (a.lng - b.lng) * Math.cos((((a.lat + b.lat) / 2) * Math.PI) / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function deriveMaritimeDarkActivity(ships: any[] = [], ports: any[] = [], chokepoints: any[] = []) {
+  const events: any[] = [];
+
+  for (const choke of chokepoints || []) {
+    const nearby = (ships || []).filter((ship) => distanceDeg(ship, choke) <= 0.8);
+    const slow = nearby.filter((ship) => Number(ship.speed || 0) <= 1.5);
+    if (slow.length >= 3) {
+      events.push({
+        id: `dark-choke-slow-${choke.name}`,
+        lat: choke.lat,
+        lng: choke.lng,
+        type: 'chokepoint_slow_cluster',
+        title: `Low-speed vessel cluster near ${choke.name}`,
+        severity: slow.length >= 8 ? 'CRITICAL' : 'HIGH',
+        vessel_count: slow.length,
+        context: `${slow.length} AIS vessels <= 1.5 kt within chokepoint radius`,
+        source: 'AIS-derived heuristic',
+      });
+    }
+    if (nearby.length >= 12) {
+      events.push({
+        id: `dark-choke-density-${choke.name}`,
+        lat: choke.lat,
+        lng: choke.lng,
+        type: 'chokepoint_density',
+        title: `Abnormal AIS concentration near ${choke.name}`,
+        severity: nearby.length >= 25 ? 'CRITICAL' : 'WATCH',
+        vessel_count: nearby.length,
+        context: `${nearby.length} AIS vessels detected near chokepoint`,
+        source: 'AIS-derived heuristic',
+      });
+    }
+  }
+
+  for (const port of ports || []) {
+    const nearby = (ships || []).filter((ship) => distanceDeg(ship, port) <= 0.5);
+    const verySlow = nearby.filter((ship) => Number(ship.speed || 0) <= 0.8);
+    if (verySlow.length >= 5) {
+      events.push({
+        id: `dark-port-loiter-${port.name}`,
+        lat: port.lat,
+        lng: port.lng,
+        type: 'port_loitering',
+        title: `Low-speed / stopped AIS vessels around ${port.name}`,
+        severity: verySlow.length >= 12 ? 'HIGH' : 'WATCH',
+        vessel_count: verySlow.length,
+        context: `${verySlow.length} vessels <= 0.8 kt inside port approach radius`,
+        source: 'AIS-derived heuristic',
+      });
+    }
+  }
+
+  return events;
+}
+
+function deriveRiskHeatmap(data: any) {
+  const cells = new Map<string, any>();
+  const add = (lat: number, lng: number, weight: number, label: string) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const gLat = Math.round(lat / 5) * 5;
+    const gLng = Math.round(lng / 5) * 5;
+    const key = `${gLat},${gLng}`;
+    const current = cells.get(key) || { lat: gLat, lng: gLng, score: 0, drivers: new Set<string>() };
+    current.score += weight;
+    current.drivers.add(label);
+    cells.set(key, current);
+  };
+
+  (data.gdelt || []).forEach((e: any) => add(e.lat, e.lng, 14, 'incidents'));
+  (data.military_events || []).forEach((e: any) => add(e.lat, e.lng, 18, 'mil-events'));
+  (data.earthquakes || []).forEach((e: any) => add(e.lat, e.lng, Math.min(28, Number(e.magnitude || 0) * 4), 'seismic'));
+  (data.fires || []).slice(0, 500).forEach((e: any) => add(e.lat, e.lng, 4, 'fires'));
+  (data.weather_events || []).forEach((e: any) => add(e.lat, e.lng, 12, 'weather'));
+  (data.cyber_geo_threats || []).forEach((e: any) => add(e.lat, e.lng, 16, 'cyber'));
+  (data.military_flights || []).forEach((e: any) => add(e.lat, e.lng, 8, 'mil-air'));
+  (data.tankers_isr || []).forEach((e: any) => add(e.lat, e.lng, 12, 'isr/tanker'));
+  (data.port_congestion || []).forEach((e: any) => add(e.lat, e.lng, Math.min(25, Number(e.score || 0) / 4), 'ports'));
+  (data.infrastructure || []).forEach((e: any) => add(e.lat, e.lng, 10, 'infra'));
+  (data.maritime_dark_activity || []).forEach((e: any) => add(e.lat, e.lng, e.severity === 'CRITICAL' ? 30 : 18, 'dark-ais'));
+
+  return Array.from(cells.values())
+    .map((cell: any) => ({ ...cell, score: Math.min(100, Math.round(cell.score)), drivers: Array.from(cell.drivers).join(', ') }))
+    .filter((cell: any) => cell.score >= 12)
+    .sort((a: any, b: any) => b.score - a.score)
+    .slice(0, 250);
+}
+
+function deriveSpaceWeatherPoints(spaceWeather: any) {
+  if (!spaceWeather) return [];
+  const kp = Number(spaceWeather.kp_index || 0);
+  const level = kp >= 7 ? 'CRITICAL' : kp >= 5 ? 'ELEVATED' : kp >= 4 ? 'WATCH' : 'LOW';
+  return [
+    { id: 'swpc-north', name: 'NOAA SWPC Aurora / GNSS North', lat: 68, lng: -45, kp, level, color: spaceWeather.storm_color || '#D4AF37' },
+    { id: 'swpc-south', name: 'NOAA SWPC Aurora / GNSS South', lat: -65, lng: 135, kp, level, color: spaceWeather.storm_color || '#D4AF37' },
+  ];
+}
 
 // --- Hooks ---
 function useIsMobile() {
@@ -119,7 +305,7 @@ export default function Dashboard() {
 
   // --- State ---
   const [backendStatus, setBackendStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  const [mapView, setMapView] = useState({ zoom: 2.5, latitude: 20 });
+  const [mapView, setMapView] = useState({ zoom: 2.5, latitude: 20, longitude: 0 });
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; ts: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLabel, setLocationLabel] = useState('');
@@ -133,7 +319,7 @@ export default function Dashboard() {
   const [showIntel, setShowIntel] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
-  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'darkweb' | 'playbooks'>('layers');
+  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'darkweb' | 'playbooks' | 'osint'>('layers');
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
   const [sweepData, setSweepData] = useState<any>(null);
@@ -153,7 +339,15 @@ export default function Dashboard() {
     private: false,
     jets: false,
     military: false,
+    tankers_isr: false,
+    frontlines: false,
+    mil_conflict_events: false,
+    naval_bases: false,
+    satellite_scenes: false,
+    sar_watch: false,
+    optical_watch: false,
     maritime: true,
+    maritime_dark_activity: false,
     satellites: false,
     balloons: false,
     cctv: true,
@@ -162,9 +356,18 @@ export default function Dashboard() {
     earthquakes: true,
     fires: false,
     weather: false,
+    air_quality: false,
+    disaster_ops: false,
     radiation: false,
     infrastructure: false,
     global_incidents: true,
+    conflict_zones: true,
+    country_risk: false,
+    cyber_geo: false,
+    port_congestion: false,
+    risk_heatmap: false,
+    space_weather_layer: false,
+    osm_critical: false,
     war_alerts: false,
     gps_jamming: false,
     day_night: true,
@@ -209,7 +412,7 @@ export default function Dashboard() {
     urlTimer.current = setTimeout(() => {
       const p = new URLSearchParams();
       p.set('lat', (mouseCoords?.lat ?? mapView.latitude ?? 20).toFixed(4));
-      p.set('lon', (mouseCoords?.lng ?? 0).toFixed(4));
+      p.set('lon', (mouseCoords?.lng ?? mapView.longitude ?? 0).toFixed(4));
       p.set('zoom', mapView.zoom.toFixed(2));
       const active = Object.entries(activeLayers)
         .filter(([, v]) => v)
@@ -360,9 +563,9 @@ export default function Dashboard() {
   // Layer-aware data loading
   const layerFetchedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (activeLayers.flights || activeLayers.military || activeLayers.jets || activeLayers.private) {
+    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private) {
       if (!layerFetchedRef.current.has('flights')) {
-        fetchEndpoint('/api/flights');
+        fetchEndpoint('/api/flights', (d) => ({ ...d, tankers_isr: deriveTankersIsr(d.military_flights || []) }));
         layerFetchedRef.current.add('flights');
       }
     }
@@ -378,11 +581,14 @@ export default function Dashboard() {
       fetchEndpoint('/api/cctv?region=all');
       layerFetchedRef.current.add('cctv');
     }
-    if (activeLayers.maritime && !layerFetchedRef.current.has('maritime')) {
+    if ((activeLayers.maritime || activeLayers.maritime_dark_activity || activeLayers.naval_bases || activeLayers.port_congestion || activeLayers.risk_heatmap) && !layerFetchedRef.current.has('maritime')) {
       fetchEndpoint('/api/maritime', (d) => ({
         maritime_ports: d.ports,
         maritime_chokepoints: d.chokepoints,
         maritime_ships: d.ships,
+        maritime_dark_activity_api: d.dark_activity || [],
+        dark_vessels: d.dark_vessels || [],
+        naval_bases: (d.ports || []).filter((p: any) => p.type === 'naval'),
       }));
       layerFetchedRef.current.add('maritime');
     }
@@ -402,21 +608,68 @@ export default function Dashboard() {
       fetchEndpoint('/api/weather', (d) => ({ weather_events: d.events }));
       layerFetchedRef.current.add('weather');
     }
+    if (activeLayers.air_quality && !layerFetchedRef.current.has('air_quality')) {
+      fetchEndpoint('/api/air-quality', (d) => ({ air_quality: d.stations || [] }));
+      layerFetchedRef.current.add('air_quality');
+    }
+    if (activeLayers.country_risk && !layerFetchedRef.current.has('country_risk')) {
+      fetchEndpoint('/api/country-risk-geo', (d) => ({ country_risk: d.countries || [] }));
+      layerFetchedRef.current.add('country_risk');
+    }
+    if (activeLayers.cyber_geo && !layerFetchedRef.current.has('cyber_geo')) {
+      fetchEndpoint('/api/cyber-geo', (d) => ({ cyber_geo_threats: d.threats || [] }));
+      layerFetchedRef.current.add('cyber_geo');
+    }
+    if (activeLayers.osm_critical && !layerFetchedRef.current.has('osm_critical')) {
+      const lat = Number.isFinite(mapView.latitude) ? mapView.latitude : 48.8566;
+      const lng = Number.isFinite(mapView.longitude) ? mapView.longitude : 2.3522;
+      fetchEndpoint(`/api/osm-critical?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=50000`, (d) => ({ osm_critical: d.facilities || [] }));
+      layerFetchedRef.current.add('osm_critical');
+    }
     if (activeLayers.infrastructure && !layerFetchedRef.current.has('infrastructure')) {
       fetchEndpoint('/api/infrastructure', (d) => ({ infrastructure: d.infrastructure }));
       layerFetchedRef.current.add('infrastructure');
     }
-    if (activeLayers.global_incidents && !layerFetchedRef.current.has('gdelt')) {
-      fetchEndpoint('/api/gdelt', (d) => ({ gdelt: d.events }));
+    if ((activeLayers.global_incidents || activeLayers.mil_conflict_events) && !layerFetchedRef.current.has('gdelt')) {
+      fetchEndpoint('/api/gdelt', (d) => ({ gdelt: d.events, military_events: deriveMilitaryEvents(d.events || []) }));
       layerFetchedRef.current.add('gdelt');
     }
-  }, [activeLayers, fetchEndpoint]);
+    if (activeLayers.frontlines && !layerFetchedRef.current.has('frontlines')) {
+      fetchEndpoint('/api/frontlines', (d) => ({ frontlines: d.frontlines ? [d.frontlines] : [] }));
+      layerFetchedRef.current.add('frontlines');
+    }
+    if ((activeLayers.satellite_scenes || activeLayers.sar_watch || activeLayers.optical_watch) && !layerFetchedRef.current.has('sentinel')) {
+      const lat = Number.isFinite(mapView.latitude) ? mapView.latitude : 20;
+      const lng = Number.isFinite(mapView.longitude) ? mapView.longitude : 0;
+      fetchEndpoint(`/api/sentinel?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=3&days=30`, (d) => deriveSentinelBuckets(d.scenes || []));
+      layerFetchedRef.current.add('sentinel');
+    }
+  }, [activeLayers, fetchEndpoint, mapView.latitude, mapView.longitude]);
+
+  useEffect(() => {
+    const next: any = {};
+    if (activeLayers.disaster_ops) next.disaster_ops = deriveDisasterOps(data.weather_events || [], data.fires || [], data.earthquakes || []);
+    else next.disaster_ops = [];
+    if (activeLayers.port_congestion) next.port_congestion = derivePortCongestion(data.maritime_ports || [], data.maritime_ships || []);
+    else next.port_congestion = [];
+    if (activeLayers.maritime_dark_activity) next.maritime_dark_activity = [
+      ...(data.maritime_dark_activity_api || []),
+      ...deriveMaritimeDarkActivity(data.maritime_ships || [], data.maritime_ports || [], data.maritime_chokepoints || []),
+    ];
+    else next.maritime_dark_activity = [];
+    if (activeLayers.risk_heatmap) next.risk_heatmap = deriveRiskHeatmap({ ...data, ...next });
+    else next.risk_heatmap = [];
+    if (activeLayers.space_weather_layer) next.space_weather_points = deriveSpaceWeatherPoints(spaceWeather);
+    else next.space_weather_points = [];
+    dataRef.current = { ...dataRef.current, ...next };
+    setDataVersion((v) => v + 1);
+  }, [activeLayers.disaster_ops, activeLayers.port_congestion, activeLayers.maritime_dark_activity, activeLayers.risk_heatmap, activeLayers.space_weather_layer, data.weather_events, data.fires, data.earthquakes, data.gdelt, data.military_events, data.cyber_geo_threats, data.military_flights, data.tankers_isr, data.infrastructure, data.maritime_ports, data.maritime_chokepoints, data.maritime_ships, data.maritime_dark_activity_api, spaceWeather]);
 
   // Layer-aware polling
   useEffect(() => {
     const intervals: ReturnType<typeof setInterval>[] = [];
-    if (activeLayers.flights || activeLayers.military || activeLayers.jets || activeLayers.private) {
-      intervals.push(setInterval(() => fetchEndpoint('/api/flights'), 300000));
+    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private) {
+      intervals.push(setInterval(() => fetchEndpoint('/api/flights', (d) => ({ ...d, tankers_isr: deriveTankersIsr(d.military_flights || []) })), 300000));
     }
     if (activeLayers.balloons) {
       intervals.push(
@@ -428,13 +681,16 @@ export default function Dashboard() {
         setInterval(() => fetchEndpoint('/api/radiation', (d) => ({ radiation: d.stations })), 300000)
       );
     }
-    if (activeLayers.maritime) {
+    if (activeLayers.maritime || activeLayers.maritime_dark_activity || activeLayers.naval_bases || activeLayers.port_congestion || activeLayers.risk_heatmap) {
       intervals.push(
         setInterval(
           () => fetchEndpoint('/api/maritime', (d) => ({
             maritime_ports: d.ports,
             maritime_chokepoints: d.chokepoints,
             maritime_ships: d.ships,
+            maritime_dark_activity_api: d.dark_activity || [],
+            dark_vessels: d.dark_vessels || [],
+            naval_bases: (d.ports || []).filter((p: any) => p.type === 'naval'),
           })),
           60000
         )
@@ -452,6 +708,9 @@ export default function Dashboard() {
       (data.military_flights?.length || 0),
     [data.commercial_flights, data.private_flights, data.private_jets, data.military_flights]
   );
+
+  const activeFeedCount = useMemo(() => Object.values(activeLayers).filter(Boolean).length, [activeLayers]);
+  const totalFeedCount = useMemo(() => Object.keys(activeLayers).length, [activeLayers]);
 
   const fusionModel = useMemo(() => buildFusionModel(data), [data]);
 
@@ -892,7 +1151,7 @@ export default function Dashboard() {
         )}
         <span className="hidden lg:inline-flex items-center gap-1">
           <Wifi className="w-3 h-3 text-[var(--cyan-primary)]" />
-          <span className="text-[var(--cyan-primary)] font-bold">{Object.values(activeLayers).filter(Boolean).length}</span>
+          <span className="text-[var(--cyan-primary)] font-bold">{activeFeedCount}/{totalFeedCount}</span>
           <span className="text-[var(--text-muted)]/60">FEEDS</span>
         </span>
         <UptimeClock />
@@ -902,9 +1161,7 @@ export default function Dashboard() {
           rel="noopener noreferrer"
           className="pointer-events-auto hover:opacity-80 transition-opacity ml-1 flex items-center"
         >
-          <span className="px-3 py-1 rounded-sm border border-[var(--gold-primary)]/40 bg-[var(--gold-primary)]/10 text-[var(--gold-primary)] text-[11px] font-bold tracking-[0.2em]">
-            SUPPORT PROJECT
-          </span>
+
         </a>
       </motion.div>
 
@@ -925,7 +1182,6 @@ export default function Dashboard() {
             className="glass-panel px-2 py-1 flex items-center gap-1.5 text-[7px] font-mono tracking-widest hover:opacity-80 transition-opacity border-[var(--gold-primary)]/40 bg-[var(--gold-primary)]/10"
           >
             <div className="w-1 h-1 rounded-full bg-[var(--gold-primary)] animate-pandora-pulse" />
-            <span className="text-[var(--gold-primary)] font-bold">SUPPORT PROJECT</span>
           </a>
         </motion.div>
       )}
@@ -948,12 +1204,12 @@ export default function Dashboard() {
               { id: 'markets' as const, icon: BarChart3, label: 'Markets' },
               { id: 'intel' as const, icon: Newspaper, label: 'Intel' },
               { id: 'search' as const, icon: Search, label: 'Search' },
-            { id: 'alerts' as const, icon: AlertTriangle, label: 'Alerts' },
-            { id: 'cyber' as const, icon: Shield, label: 'Cyber' },
-            { id: 'darkweb' as const, icon: EyeOff, label: 'Dark Web' },
-            { id: 'playbooks' as const, icon: BookOpen, label: 'Playbooks' },
-            { id: 'osint' as const, icon: Search, label: 'OSINT' },
-          ].map((tool) => {
+              { id: 'alerts' as const, icon: AlertTriangle, label: 'Alerts' },
+              { id: 'cyber' as const, icon: Shield, label: 'Cyber' },
+              { id: 'darkweb' as const, icon: EyeOff, label: 'Dark Web' },
+              { id: 'playbooks' as const, icon: BookOpen, label: 'Playbooks' },
+              { id: 'osint' as const, icon: Search, label: 'OSINT' },
+            ].map((tool) => {
             const Icon = tool.icon;
             return (
                 <button
@@ -985,6 +1241,14 @@ export default function Dashboard() {
                   <h2>
                     {desktopTool === 'layers'
                       ? 'Data Layers'
+                      : desktopTool === 'cyber'
+                      ? 'Cyber Threat Radar'
+                      : desktopTool === 'darkweb'
+                      ? 'Dark Web Monitor'
+                      : desktopTool === 'playbooks'
+                      ? 'Recon Playbooks'
+                      : desktopTool === 'osint'
+                      ? 'OSINT Automation Hub'
                       : desktopTool === 'foundry'
                       ? 'Data Foundry'
                       : desktopTool === 'mission'
@@ -1009,7 +1273,7 @@ export default function Dashboard() {
                   </h2>
                 </div>
                 <span className="gotham-tag gotham-tag--info">
-                  {Object.values(activeLayers).filter(Boolean).length} FEEDS
+                  {activeFeedCount}/{totalFeedCount} FEEDS
                 </span>
               </div>
 
@@ -1056,7 +1320,7 @@ export default function Dashboard() {
                     <SharePanel mapView={mapView} activeLayers={activeLayers} mouseCoords={mouseCoords} />
                   </div>
                 )}
-                {desktopTool === 'alerts' && <LiveAlerts data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} onWatchFeed={(url, name) => { setLiveFeedUrl(url); setLiveFeedName(name); }} />}
+                {desktopTool === 'alerts' && <LiveAlerts data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} onWatchFeed={(url, name, embedAllowed = true) => { setLiveFeedUrl(url); setLiveFeedName(name); setLiveFeedEmbedAllowed(embedAllowed); }} />}
                 {desktopTool === 'cyber' && <CyberThreatRadar />}
                 {desktopTool === 'darkweb' && <DarkWebMonitor />}
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
@@ -1444,7 +1708,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-1">
                 <Layers className="w-3 h-3 text-[var(--gold-primary)]" />
                 <span className="text-[10px] font-mono font-bold text-[var(--gold-primary)] tabular-nums">
-                  {Object.values(activeLayers).filter(Boolean).length}
+                  {activeFeedCount}
                 </span>
               </div>
             </div>
@@ -1457,7 +1721,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-1">
                 <Activity className="w-3 h-3 text-[var(--cyan-primary)]" />
                 <span className="text-[10px] font-mono font-bold text-[var(--cyan-primary)] tabular-nums">
-                  {Object.values(activeLayers).filter(Boolean).length}
+                  {activeFeedCount}/{totalFeedCount}
                 </span>
               </div>
             </div>

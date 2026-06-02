@@ -15,30 +15,23 @@ export default function DarkWebMonitor() {
   const [alerts, setAlerts] = useState<DarkWebAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
         const response = await fetch('/api/darkweb-alerts');
         if (!response.ok) {
-          throw new Error('Failed to fetch alerts');
+          const errorPayload = await response.json().catch(() => null);
+          throw new Error(errorPayload?.error || 'Failed to fetch alerts');
         }
         const data = await response.json();
-        setAlerts(data.alerts);
+        setAlerts(Array.isArray(data.alerts) ? data.alerts : []);
+        setError('');
       } catch (error) {
         console.error('Error fetching dark web alerts:', error);
-        // Fallback minimal si l'API échoue
-        const fallbackAlerts: DarkWebAlert[] = [
-          {
-            id: 'fallback-1',
-            title: 'API Connection Error',
-            source: 'System',
-            forum: 'N/A',
-            severity: 'high',
-            timestamp: new Date().toISOString()
-          }
-        ];
-        setAlerts(fallbackAlerts);
+        setError(error instanceof Error ? error.message : 'Dark web API unavailable');
+        setAlerts([]);
       } finally {
         setLoading(false);
       }
@@ -119,22 +112,31 @@ export default function DarkWebMonitor() {
               <div className="text-xs text-[var(--text-muted)] mt-2">Scanning dark web...</div>
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredAlerts.map((alert) => (
-                <div key={alert.id} className="aip-list-row">
-                  <div className="w-2 h-2 rounded-full bg-[var(--alert-red)]" />
-                  <div className="flex-1">
-                    <div className="text-xs text-[var(--text-primary)]">{alert.title}</div>
-                    <div className="text-[8px] text-[var(--text-muted)]">
-                      {alert.source} • {new Date(alert.timestamp).toLocaleString()}
-                    </div>
-                  </div>
-                  <span className={`gotham-tag gotham-tag--${alert.severity}`}>
-                    {alert.severity.toUpperCase()}
-                  </span>
+            <>
+              {error && <div className="glass-panel-sm p-3 mb-3 text-xs text-[var(--alert-orange)]">{error}</div>}
+              {filteredAlerts.length === 0 ? (
+                <div className="text-xs text-[var(--text-muted)] py-4 text-center">
+                  No configured Tor/I2P source returned records.
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredAlerts.map((alert) => (
+                    <div key={alert.id} className="aip-list-row">
+                      <div className="w-2 h-2 rounded-full bg-[var(--alert-red)]" />
+                      <div className="flex-1">
+                        <div className="text-xs text-[var(--text-primary)]">{alert.title}</div>
+                        <div className="text-[8px] text-[var(--text-muted)]">
+                          {alert.source} • {new Date(alert.timestamp).toLocaleString()}
+                        </div>
+                      </div>
+                      <span className={`gotham-tag gotham-tag--${alert.severity}`}>
+                        {alert.severity.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
