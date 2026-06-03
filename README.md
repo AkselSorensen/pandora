@@ -1,18 +1,16 @@
-<div align="center">
+﻿<div align="center">
 
 # ⬡ Pandora
 
-### Open Source Intelligence & Reconnaissance Integrated System
+### AI-Augmented Open Source Intelligence & Reconnaissance Platform
 
-[![Live Demo](https://img.shields.io/badge/Pandoraai.live-00E5FF?style=for-the-badge&logo=vercel&logoColor=white)](https://Pandoralive.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![MapLibre](https://img.shields.io/badge/MapLibre_GL-GPU_Rendered-396CB2?style=for-the-badge)](https://maplibre.org)
-[![License](https://img.shields.io/badge/License-MIT-D4AF37?style=for-the-badge)](LICENSE)
+[![AI](https://img.shields.io/badge/Pandora_AI-Local_Briefing-7C3AED?style=for-the-badge)](ai/pandora-ai/README.md)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](DOCKER.md)
 
-**A real-time global intelligence dashboard that aggregates live flight tracking, CCTV networks, earthquake monitoring, conflict zone mapping, and 24/7 news feeds into a single GPU-accelerated interface.**
-
-[Live Demo](https://Pandoraai.live) · [Report Bug](https://github.com/simplifaisoul/Pandora/issues) · [Request Feature](https://github.com/simplifaisoul/Pandora/issues) · [Join Discord](https://discord.gg/umBykEpb98)
+**Pandora is an AI-augmented OSINT dashboard that centralizes global signals, cyber threats, geospatial risk, aviation, maritime activity, critical infrastructure, live news, CCTV, satellite-ready data, and reconnaissance workflows into a single interactive intelligence interface.**
 
 </div>
 
@@ -20,161 +18,373 @@
 
 ## Overview
 
-Pandora is a production-grade OSINT platform that provides situational awareness across multiple intelligence domains. Built with Next.js 16 and MapLibre GL, every data point is rendered via WebGL for 60fps performance even with thousands of concurrent entities on-screen.
+Pandora is a real-time situational awareness and reconnaissance platform built around a GPU-rendered interactive map, modular intelligence layers, OSINT collection endpoints, cyber threat monitoring, and an optional local AI briefing service.
 
-### Key Capabilities
+The project has evolved from a global map dashboard into a broader **OSINT fusion platform**. It now focuses on helping a user collect, visualize, prioritize, and explain open-source signals across several domains:
 
-| Domain | Data Points | Sources |
-|--------|------------|---------|
-| **Aviation** | Commercial, Private, Military, Jets | OpenSky Network |
-| **Maritime** | 39 Global Ports, 10 Chokepoints | Static Naval Intel |
-| **CCTV** | 2,000+ Cameras | TfL, WSDOT, Caltrans, NYC DOT, VicRoads + more |
-| **Seismic** | Real-time M2.5+ | USGS Earthquake API |
-| **Fires** | Active Hotspots | NASA FIRMS |
-| **News** | 24/7 Live Streams | 25+ Global Broadcasters |
-| **Weather** | Severe Events | NASA EONET |
-| **Space** | Solar Weather, Satellites | NOAA SWPC, CelesTrak |
-| **Cyber** | CVE Threats, Vulnerability Scanning | NVD, Custom Scanner |
-| **Conflict** | 13 Active Zones | Static OSINT Intel |
+- geopolitical monitoring ;
+- cyber threat intelligence ;
+- country and infrastructure risk ;
+- aviation and airbase observation ;
+- maritime choke points and port intelligence ;
+- live news and crisis monitoring ;
+- CCTV and public camera feeds ;
+- dark web / leak-oriented alerting concepts ;
+- AI-assisted briefings and synthesis ;
+- future satellite and space-data integration.
+
+Pandora does **not** claim to replace human analysis. It provides a structured environment to observe signals, cross-reference them, and prepare a cautious briefing.
+
+---
+
+## 168H Project Documentation
+
+The repository contains a dedicated 168H delivery folder:
+
+```txt
+168h/
+├── README.md
+├── fiche-projet-j7.md
+├── volet-168h/
+│   ├── architecture/
+│   │   └── dossier-architecture.md
+│   ├── preuves/
+│   │   ├── dossier-preuves.md
+│   │   └── journal-sprint.md
+│   ├── prototype/
+│   │   └── prototype.md
+│   ├── soutenance/
+│   │   ├── scenario-demo.md
+│   │   └── support-soutenance.md
+│   ├── charte-projet.md
+│   ├── retour-experience.md
+│   └── runbook-demo.md
+└── volet-gpe/
+```
+
+The 168H part is centered on **Pandora** only. The GPE folder exists because the expected delivery architecture requires it, but it is not the current focus.
+
+---
+
+## Key Capabilities
+
+| Domain | What Pandora Provides | Sources / Strategy |
+|--------|------------------------|--------------------|
+| **AI Briefing** | Local or service-based briefing assistant, synthesis and contextual summaries | `ai/pandora-ai`, `ai/pandora-ai-service` |
+| **OSINT Hub** | Open-source collection workflows, scraping helpers and intelligence source aggregation | Internal OSINT modules, public sources |
+| **Cyber Threats** | CVE/threat monitoring, cyber geolocation, threat radar, vulnerability-oriented views | NVD, public cyber feeds, internal enrichment |
+| **Dark Web Monitoring** | Alerting-oriented dark web monitoring concepts and Tor scraper module | Tor/publicly accessible sources where legally allowed |
+| **Recon Playbooks** | Guided reconnaissance workflows for investigation scenarios | Internal playbooks API |
+| **Aviation** | Flights, airbases, French airbases and AIP briefing-oriented data | OpenSky-ready, static/open aviation data |
+| **Maritime** | Global ports, chokepoints, maritime intelligence and strategic sea lanes | Static naval intel, AIS-ready architecture |
+| **Country Risk** | Country-level risk and geospatial risk visualization | Public/open risk indicators, internal scoring |
+| **Critical Infrastructure** | OSM-based critical infrastructure and sensitive points of interest | OpenStreetMap / Overpass-style data |
+| **News / GDELT** | Live news, world events and international media context | RSS, GDELT, public broadcasters |
+| **CCTV** | Public camera feeds and transport cameras | TfL, WSDOT, Caltrans, NYC DOT, VicRoads, public JSON sources |
+| **Natural Events** | Earthquakes, fires, weather and environmental alerts | USGS, NASA FIRMS, NASA EONET, NOAA-ready |
+| **Space / Satellite Roadmap** | Satellite object tracking and future satellite imagery/open data integration | CelesTrak, NOAA, Sentinel/Copernicus, NASA |
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────┐
-│                  Pandora CLIENT                   │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐ │
-│  │ MapLibre  │  │  HUD     │  │  RECON Toolkit│ │
-│  │  GL (GPU) │  │ Panels   │  │  Port Scan    │ │
-│  │  WebGL    │  │ Layers   │  │  DNS / WHOIS  │ │
-│  │  Render   │  │ Controls │  │  Vuln Scanner │ │
-│  └──────────┘  └──────────┘  └───────────────┘ │
-├─────────────────────────────────────────────────┤
-│               NEXT.JS API ROUTES                 │
-│  /api/flights  /api/earthquakes  /api/cctv      │
-│  /api/news     /api/fires        /api/maritime  │
-│  /api/gdelt    /api/satellites   /api/weather   │
-│  /api/scanner  /api/sentinel     /api/osint/*   │
-├─────────────────────────────────────────────────┤
-│              EXTERNAL DATA SOURCES               │
-│  OpenSky · USGS · NASA · NOAA · TfL · NVD      │
-│  GDACS · EONET · FIRMS · CelesTrak · RSS Feeds │
-└─────────────────────────────────────────────────┘
+Pandora is organized as a modular intelligence platform. The frontend displays the map, panels and operational views. The API layer collects and normalizes data from domain-specific services. Optional AI services can generate briefings or summaries from selected signals.
+
+```mermaid
+flowchart TB
+    User[User / Analyst / Demo Jury]
+
+    subgraph Frontend[Pandora Frontend]
+        Dashboard[Global Dashboard]
+        Map[MapLibre Interactive Map]
+        Layers[Intelligence Layers]
+        Panels[OSINT / Cyber / Ops Panels]
+        AIUI[AI Briefing UI]
+    end
+
+    subgraph API[Next.js API Layer]
+        Flights[/api/flights]
+        Maritime[/api/maritime]
+        CCTV[/api/cctv]
+        News[/api/live-news + /api/gdelt]
+        Cyber[/api/cyber-threats + /api/cyber-geo]
+        OSINT[/api/osint]
+        DarkWeb[/api/darkweb-alerts]
+        Playbooks[/api/playbooks]
+        Risk[/api/country-risk-geo]
+        Infra[/api/osm-critical]
+        AIP[/api/aip/briefing]
+        Airbases[/api/airbases + /api/french-airbases]
+    end
+
+    subgraph AI[Pandora AI]
+        LocalModel[Custom Modelfile]
+        Training[Training Dataset]
+        AIService[FastAPI AI Service]
+    end
+
+    subgraph Sources[Open / External Sources]
+        PublicAPIs[Public APIs]
+        RSS[RSS / News Feeds]
+        GDELT[GDELT]
+        NVD[NVD / CVE Data]
+        OSM[OpenStreetMap]
+        NASA[NASA FIRMS / EONET]
+        NOAA[NOAA / Space Weather]
+        CelesTrak[CelesTrak]
+        Cameras[Public CCTV Feeds]
+    end
+
+    User --> Dashboard
+    Dashboard --> Map
+    Dashboard --> Layers
+    Dashboard --> Panels
+    Dashboard --> AIUI
+
+    Dashboard --> API
+    API --> Flights
+    API --> Maritime
+    API --> CCTV
+    API --> News
+    API --> Cyber
+    API --> OSINT
+    API --> DarkWeb
+    API --> Playbooks
+    API --> Risk
+    API --> Infra
+    API --> AIP
+    API --> Airbases
+
+    AIUI --> AIService
+    AIService --> LocalModel
+    Training --> LocalModel
+
+    API --> PublicAPIs
+    News --> RSS
+    News --> GDELT
+    Cyber --> NVD
+    Infra --> OSM
+    CCTV --> Cameras
+    Risk --> PublicAPIs
+    Maritime --> PublicAPIs
+    Flights --> PublicAPIs
+    API --> NASA
+    API --> NOAA
+    API --> CelesTrak
 ```
 
 ---
 
-## Features
+## Current Feature Set
 
-### Intelligence Layers
-- **15 toggleable data layers** with real-time entity counts
-- **GPU-accelerated rendering** — all map data rendered via WebGL, not DOM
-- **Progressive loading** — data fetched on-demand when layers are activated
-- **Viewport-aware** — only loads relevant data for the visible region
+### Global Intelligence Map
 
-### RECON Toolkit
-- **Port Scanner** — TCP connect scan with service fingerprinting
-- **DNS Lookup** — Full record resolution (A, AAAA, MX, NS, TXT, CNAME)
-- **WHOIS** — Domain/IP registration data
-- **SSL/TLS Inspector** — Certificate chain analysis
-- **IP Intelligence** — Geolocation, ASN, and threat reputation
-- **Vulnerability Scanner** — CVE lookup against NVD database
+- GPU-rendered map using MapLibre GL.
+- Layer-based display for multiple intelligence domains.
+- Progressive loading strategy to avoid unnecessary requests.
+- Entity counts and contextual panels.
+- Designed for live demonstration and situational awareness.
 
-### Live Broadcast Network
-- **25+ live 24/7 news streams** from global broadcasters
-- Click any news dot on the map to open the live stream
-- Feeds from NBC, CBS, ABC, Sky News, Al Jazeera, France 24, NHK, WION, and more
+### OSINT & Reconnaissance
 
-### Conflict Zone Monitoring
-- **13 active conflict/tension zones** with severity-coded warning markers
-- Active Wars: Ukraine, Gaza, Sudan, Myanmar, DRC, Yemen
-- High Tension: Syria, Lebanon, Sahel, Somalia, Red Sea
-- Elevated: Taiwan Strait, Korean DMZ
+- OSINT hub components and API routes.
+- Scraper modules for open-source collection workflows.
+- Recon playbooks for guided investigation scenarios.
+- Advanced operations panel for combining multiple sources.
+- Structured intelligence source definitions in `src/lib/intel-sources.ts`.
 
-### Performance Optimized
-- **75% reduction in edge requests** vs initial release
-- Aggressive polling relaxation (15-30 min intervals for stable data)
-- Static data served from memory (zero external API calls for news feeds)
-- `layerFetchedRef` prevents duplicate API requests
+### Cyber Intelligence
+
+- Cyber threat radar component.
+- Cyber threat API route.
+- Cyber geolocation route.
+- Country risk geospatial view.
+- CVE and vulnerability-oriented monitoring strategy.
+- Recon workflows for DNS, WHOIS, SSL/TLS, IP intelligence and scanner integration.
+
+### Dark Web / Leak Monitoring Concepts
+
+- Dark web monitor component.
+- Dark web alert API route.
+- Tor scraper module.
+- Intended for legal, defensive and demonstrative monitoring only.
+
+### AI-Augmented Analysis
+
+Pandora includes a dedicated AI folder:
+
+```txt
+ai/
+├── pandora-ai/
+│   ├── Modelfile
+│   ├── README.md
+│   └── train.jsonl
+└── pandora-ai-service/
+    ├── Dockerfile
+    ├── main.py
+    └── requirements.txt
+```
+
+Planned / supported AI use cases:
+
+- generate a short briefing from selected map signals ;
+- summarize a situation by zone ;
+- explain visible indicators in simple language ;
+- help prepare a 168H demo narrative ;
+- highlight uncertainty and limits ;
+- avoid replacing human analysis.
+
+### Aviation and Airbase Intelligence
+
+- Flight API route.
+- Airbases route.
+- French airbases route.
+- AIP briefing route.
+- Designed to support aviation context and demonstration scenarios.
+
+### Maritime Intelligence
+
+- Maritime route with ports and chokepoints.
+- Strategic maritime context.
+- AIS-ready environment variable support for future live vessel data.
+
+### News, GDELT and Live Media
+
+- Live news API route.
+- GDELT API route.
+- 24/7 news stream strategy.
+- Used to connect map signals with media context.
+
+### CCTV and Public Cameras
+
+- Public CCTV source file in `public/cctv-sources.json`.
+- CCTV API route.
+- Public transport and road camera strategy.
+
+### Infrastructure and Country Risk
+
+- OSM critical infrastructure route.
+- Country risk geospatial route.
+- Risk mapping and critical points of interest.
+
+### Satellite / Space Roadmap
+
+Pandora is prepared to evolve toward satellite-enabled OSINT using open sources:
+
+- NASA FIRMS for fire hotspots ;
+- NASA EONET for natural events ;
+- NOAA for weather / space weather ;
+- CelesTrak for satellite tracking ;
+- Sentinel / Copernicus or Sentinel Hub for imagery where credentials and access allow it.
+
+Pandora does not control satellites. It can consume open satellite data or public APIs to enrich the intelligence picture.
+
+---
+
+## 168H Roadmap Summary
+
+During the 168H sprint, the planned evolution is:
+
+1. define Pandora as the main 168H module ;
+2. strengthen the AI briefing concept ;
+3. increase the amount of usable OSINT data ;
+4. connect or prepare real public satellite data sources ;
+5. create multi-source fusion and prioritization ;
+6. stabilize a demo mode ;
+7. present architecture, evidence and limitations.
+
+See:
+
+- [`168h/fiche-projet-j7.md`](168h/fiche-projet-j7.md)
+- [`168h/volet-168h/architecture/dossier-architecture.md`](168h/volet-168h/architecture/dossier-architecture.md)
+- [`168h/volet-168h/preuves/journal-sprint.md`](168h/volet-168h/preuves/journal-sprint.md)
 
 ---
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/simplifaisoul/Pandora.git
-cd Pandora
+git clone https://github.com/AkselSorensen/pandora.git
+cd pandora
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000).
 
-### Docker / Self-Hosting
+---
+
+## Docker / Self-Hosting
 
 ```bash
-git clone https://github.com/simplifaisoul/Pandora.git
-cd Pandora
-cp .env.template .env     # optional — configure keys / port
+cp .env.template .env
+Docker compose up -d
+```
+
+If your shell is case-sensitive, use:
+
+```bash
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The image is a multi-stage
-`node:22-alpine` standalone build (~220 MB, non-root). The compose file also
-carries CasaOS app metadata (`x-casaos:`) for one-click install on
-[CasaOS](https://casaos.io). See **[DOCKER.md](DOCKER.md)** for the full Docker,
-CasaOS and API-key guide.
+The application listens on container port `3000`.
 
-**Prebuilt image (GHCR)** — skip the build and pull it directly:
-
-```bash
-docker pull ghcr.io/aiacos/Pandora:latest
-docker run -d -p 3000:3000 --env-file .env ghcr.io/aiacos/Pandora:latest
-```
-
-**Custom port** — the container always listens on `3000`; set `Pandora_PORT` in
-`.env` to change the published host port (e.g. `Pandora_PORT=3005`) without
-editing the compose file.
-
-### Environment Variables
-
-Pandora works **fully without any API keys** — all core feeds use public,
-keyless sources. Copy [`.env.template`](.env.template) to `.env` and set only
-what you need:
+Custom host port:
 
 ```env
-# Published host port (container always listens on 3000). Default: 3000
+Pandora_PORT=3000
+```
+
+See [`DOCKER.md`](DOCKER.md) for Docker, CasaOS and deployment details.
+
+---
+
+## Environment Variables
+
+Copy `.env.template` to `.env` and configure only what you need.
+
+```env
+# Published host port
 Pandora_PORT=3000
 
-# RECON scanner backend (the only vars the current code reads).
-# SCANNER_KEY must match the backend's Pandora_KEY — generate with: openssl rand -hex 32
+# Scanner backend
 SCANNER_URL=
 SCANNER_KEY=
 
-# Optional, for higher rate limits / future sources (see DOCKER.md for signup links)
-FIRMS_API_KEY=                # NASA FIRMS  — firms.modaps.eosdis.nasa.gov/api/map_key/
-OPENSKY_CLIENT_ID=            # OpenSky OAuth2 (since Mar 2025) — opensky-network.org
+# Optional / future higher limits
+FIRMS_API_KEY=
+OPENSKY_CLIENT_ID=
 OPENSKY_CLIENT_SECRET=
-AIS_API_KEY=                 # aisstream.io maritime
+AIS_API_KEY=
+
+# AI service, if enabled by your local setup
+PANDORA_AI_URL=
+PANDORA_AI_KEY=
 ```
 
-> Without `SCANNER_URL`/`SCANNER_KEY` the RECON toolkit returns `503`; every
-> other layer works out of the box. `.env` is gitignored — only the template is committed.
+Notes:
+
+- Many Pandora layers can work with public or static data.
+- Some sources require API keys for higher limits or live access.
+- Scanner and AI services are optional depending on the deployment.
+- `.env` must stay private and should not be committed.
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
+|-------|------------|
+| Framework | Next.js 16, App Router |
 | Language | TypeScript 5 |
-| Map Engine | MapLibre GL JS (WebGL) |
+| Map Engine | MapLibre GL JS / WebGL |
+| UI | React components, custom CSS system |
 | Animations | Framer Motion |
 | Icons | Lucide React |
-| Styling | Custom CSS Design System |
-| Deployment | Vercel Edge Network |
+| AI Service | Python / FastAPI-ready service |
+| AI Model Packaging | Ollama-style Modelfile |
+| Deployment | Docker, Vercel-ready configuration |
+| Data Strategy | Public APIs, static datasets, RSS, OSINT sources |
 
 ---
 
@@ -184,22 +394,36 @@ AIS_API_KEY=                 # aisstream.io maritime
 |-----|--------|
 | `F` | Toggle flight layers |
 | `E` | Toggle earthquakes |
-| `S` | Toggle satellites |
+| `S` | Toggle satellites / space-related layers |
 | `D` | Toggle day/night cycle |
 | `Escape` | Close panels |
 
 ---
 
+## Responsible Use
+
+Pandora is designed for educational, defensive and demonstrative OSINT workflows.
+
+Do not use it to:
+
+- access private systems without authorization ;
+- collect private or sensitive personal data ;
+- present public signals as confirmed intelligence without verification ;
+- automate operational decisions ;
+- bypass legal or ethical constraints.
+
+All AI outputs and OSINT signals should be reviewed by a human analyst.
+
+---
+
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT — see [`LICENSE`](LICENSE) if present in your distribution.
 
 ---
 
 <div align="center">
 
-**Built by [simplifaisoul](https://github.com/simplifaisoul)**
-
-[Join our Discord to be a part of this movement!](https://discord.gg/umBykEpb98)
+**Pandora — AI-augmented OSINT, reconnaissance and global situational awareness.**
 
 </div>
