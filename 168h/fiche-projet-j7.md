@@ -45,7 +45,7 @@ Elevator pitch du défi technique 168H, en 5 lignes maximum :
 
 - Projet GPE concerné : Pandora
 - Affiche GPE prévue : oui, sous forme de message court présentant le problème, la cible, la promesse et la démonstration.
-- Pitch court GPE prévu : oui, disponible dans `volet-gpe/pitch-court-gpe.md`.
+- Pitch court GPE prévu : oui, disponible dans `volet-gpe/pitch-court.md`.
 - Éléments catalogue ou communication prévus : description courte, slogan, bénéfices, limites assumées et visuels à préparer.
 - Responsable du volet : À compléter
 
