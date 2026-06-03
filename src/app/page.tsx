@@ -343,6 +343,8 @@ export default function Dashboard() {
     frontlines: false,
     mil_conflict_events: false,
     naval_bases: false,
+    airbases: false,
+    french_airbases: false,
     satellite_scenes: false,
     sar_watch: false,
     optical_watch: false,
@@ -629,6 +631,14 @@ export default function Dashboard() {
     if (activeLayers.infrastructure && !layerFetchedRef.current.has('infrastructure')) {
       fetchEndpoint('/api/infrastructure', (d) => ({ infrastructure: d.infrastructure }));
       layerFetchedRef.current.add('infrastructure');
+    }
+    if (activeLayers.french_airbases && !layerFetchedRef.current.has('french_airbases')) {
+      fetchEndpoint('/api/french-airbases', (d) => ({ french_airbases: d.airbases || [] }));
+      layerFetchedRef.current.add('french_airbases');
+    }
+    if (activeLayers.airbases && !layerFetchedRef.current.has('airbases')) {
+      fetchEndpoint('/api/airbases?limit=1200', (d) => ({ airbases: d.airbases || [] }));
+      layerFetchedRef.current.add('airbases');
     }
     if ((activeLayers.global_incidents || activeLayers.mil_conflict_events) && !layerFetchedRef.current.has('gdelt')) {
       fetchEndpoint('/api/gdelt', (d) => ({ gdelt: d.events, military_events: deriveMilitaryEvents(d.events || []) }));

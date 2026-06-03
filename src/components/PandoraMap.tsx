@@ -169,7 +169,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       createDot(map, 'dot-cctv', '#39FF14', 10);
 
       // Sources
-      const sources = ['flights','military','tankers-isr','jets','private-fl','satellites','sentinel-scenes','sentinel-sar','sentinel-optical','frontlines','military-events','naval-bases','air-quality','disaster-ops','country-risk','cyber-geo','port-congestion','maritime-dark-activity','risk-heatmap','space-weather-points','osm-critical','earthquakes','gdelt','gps-jamming','day-night','cctv','fires','weather','infrastructure','maritime','maritime-choke','maritime-ships','live-news','sigint-news','conflict-zones', 'war-alerts-targets', 'war-alerts-lines', 'balloons', 'radiation', 'ip-sweep-devices', 'ip-sweep-pulse', 'ip-sweep-connections', 'scan-targets', 'fusion-hotspots'];
+      const sources = ['flights','military','tankers-isr','jets','private-fl','satellites','sentinel-scenes','sentinel-sar','sentinel-optical','frontlines','military-events','naval-bases','airbases','french-airbases','air-quality','disaster-ops','country-risk','cyber-geo','port-congestion','maritime-dark-activity','risk-heatmap','space-weather-points','osm-critical','earthquakes','gdelt','gps-jamming','day-night','cctv','fires','weather','infrastructure','maritime','maritime-choke','maritime-ships','live-news','sigint-news','conflict-zones', 'war-alerts-targets', 'war-alerts-lines', 'balloons', 'radiation', 'ip-sweep-devices', 'ip-sweep-pulse', 'ip-sweep-connections', 'scan-targets', 'fusion-hotspots'];
       sources.forEach(s => map.addSource(s, { type: 'geojson', data: EMPTY_FC }));
 
       // ── CONFLICT ZONES — small warning markers (not polygons) ──
@@ -534,6 +534,36 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
         'text-offset': [0, 1.8], 'text-max-width': 12, 'text-allow-overlap': false,
       }, paint: { 'text-color': '#00BCD4', 'text-halo-color': '#000', 'text-halo-width': 1, 'text-opacity': 0.85 }});
 
+      // Global air bases — real public Wikidata SPARQL data only, no mockdata
+      map.addLayer({ id: 'airbase-glow', type: 'circle', source: 'airbases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,10, 5,18, 10,30],
+        'circle-color': '#60A5FA', 'circle-opacity': 0.12, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'airbase-dots', type: 'circle', source: 'airbases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,7, 10,12],
+        'circle-color': '#60A5FA', 'circle-opacity': 0.92,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-opacity': 0.42,
+      }});
+      map.addLayer({ id: 'airbase-label', type: 'symbol', source: 'airbases', minzoom: 5, layout: {
+        'text-field': ['get','name'], 'text-size': 9, 'text-font': ['Open Sans Bold'],
+        'text-offset': [0, 1.8], 'text-max-width': 14, 'text-allow-overlap': false,
+      }, paint: { 'text-color': '#BFDBFE', 'text-halo-color': '#000', 'text-halo-width': 1, 'text-opacity': 0.85 }});
+
+      // French air bases — real public OSM/Overpass data only, no mockdata
+      map.addLayer({ id: 'french-airbase-glow', type: 'circle', source: 'french-airbases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,10, 5,18, 10,30],
+        'circle-color': '#3B82F6', 'circle-opacity': 0.14, 'circle-blur': 1,
+      }});
+      map.addLayer({ id: 'french-airbase-dots', type: 'circle', source: 'french-airbases', paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 1,4, 5,7, 10,12],
+        'circle-color': '#3B82F6', 'circle-opacity': 0.95,
+        'circle-stroke-width': 2, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-opacity': 0.45,
+      }});
+      map.addLayer({ id: 'french-airbase-label', type: 'symbol', source: 'french-airbases', minzoom: 5, layout: {
+        'text-field': ['get','name'], 'text-size': 9, 'text-font': ['Open Sans Bold'],
+        'text-offset': [0, 1.8], 'text-max-width': 14, 'text-allow-overlap': false,
+      }, paint: { 'text-color': '#93C5FD', 'text-halo-color': '#000', 'text-halo-width': 1, 'text-opacity': 0.9 }});
+
       // Live News — broadcast dots
       map.addLayer({ id: 'news-glow', type: 'circle', source: 'live-news', paint: {
         'circle-radius': ['interpolate',['linear'],['zoom'], 1,8, 5,14, 10,22],
@@ -756,7 +786,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       </div>`);
     });
 
-    // ── Satellites (with N2YO tracking) ──
+    // ── Satellites (CelesTrak TLE, no API key) ──
     map.on('click', 'sat-dots', e => {
       if (!e.features?.length) return;
       const p = e.features[0].properties as any;
@@ -767,7 +797,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
           <div><span style="color:#5C5A54;">MISSION</span><br/><span style="color:${p.color||'#aaa'};">${p.mission||'Unknown'}</span></div>
           <div><span style="color:#5C5A54;">POS</span><br/><span style="color:#E8E6E0;">${coords[1].toFixed(2)}°, ${coords[0].toFixed(2)}°</span></div>
         </div>
-        <a href="https://www.n2yo.com/?s=${encodeURIComponent(p.name||'')}" target="_blank" style="${linkStyle}color:#D4AF37;border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.1);">🔭 TRACK ON N2YO</a>
+        <a href="https://celestrak.org/NORAD/elements/" target="_blank" style="${linkStyle}color:#D4AF37;border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.1);">🔭 CELESTRAK TLE</a>
       </div>`);
     });
 
@@ -942,6 +972,44 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       </div>`);
     });
 
+    // ── Global Air Bases (public Wikidata only) ──
+    map.on('click', 'airbase-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid rgba(96,165,250,0.55);">
+        <div style="color:#BFDBFE;font-size:12px;font-weight:700;margin-bottom:6px;">🌐 GLOBAL AIR BASE — WIKIDATA PUBLIC</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.name || 'Public air base'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">COUNTRY</span><br/><span style="color:#BFDBFE;font-weight:bold;">${p.country || '—'}</span></div>
+          <div><span style="color:#5C5A54;">CLASS</span><br/><span style="color:#E8E6E0;">${p.class || 'air base'}</span></div>
+          <div><span style="color:#5C5A54;">OPERATOR</span><br/><span style="color:#E8E6E0;">${p.operator || '—'}</span></div>
+          <div><span style="color:#5C5A54;">WIKIDATA</span><br/><span style="color:#E8E6E0;">${p.wikidata || '—'}</span></div>
+        </div>
+        <div style="font-size:8px;color:#8A8880;margin-top:8px;line-height:1.4;">Source: ${p.source || 'Wikidata SPARQL'} · no mockdata</div>
+        ${p.source_url ? `<a href="${p.source_url}" target="_blank" style="${linkStyle}color:#BFDBFE;border:1px solid rgba(191,219,254,0.5);background:rgba(96,165,250,0.14);">OPEN WIKIDATA SOURCE</a>` : ''}
+      </div>`);
+    });
+
+    // ── French Air Bases (public OSM/Overpass only) ──
+    map.on('click', 'french-airbase-dots', e => {
+      if (!e.features?.length) return;
+      const p = e.features[0].properties as any;
+      const coords = (e.features[0].geometry as any).coordinates;
+      popup(coords, `<div style="${pStyle}border:1px solid rgba(59,130,246,0.55);">
+        <div style="color:#93C5FD;font-size:12px;font-weight:700;margin-bottom:6px;">🇫🇷 BASE AÉRIENNE FR — OSM PUBLIC</div>
+        <div style="font-size:11px;color:#E8E6E0;margin-bottom:8px;">${p.name || 'Aérodrome militaire public OSM'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;">
+          <div><span style="color:#5C5A54;">REF</span><br/><span style="color:#93C5FD;font-weight:bold;">${p.ref || '—'}</span></div>
+          <div><span style="color:#5C5A54;">ICAO</span><br/><span style="color:#E8E6E0;">${p.icao || '—'}</span></div>
+          <div><span style="color:#5C5A54;">MILITARY</span><br/><span style="color:#E8E6E0;">${p.military || '—'}</span></div>
+          <div><span style="color:#5C5A54;">OPERATOR</span><br/><span style="color:#E8E6E0;">${p.operator || '—'}</span></div>
+        </div>
+        <div style="font-size:8px;color:#8A8880;margin-top:8px;line-height:1.4;">Source: ${p.source || 'OpenStreetMap Overpass'} · no mockdata</div>
+        ${p.source_url ? `<a href="${p.source_url}" target="_blank" style="${linkStyle}color:#93C5FD;border:1px solid rgba(147,197,253,0.5);background:rgba(59,130,246,0.14);">OPEN OSM SOURCE</a>` : ''}
+      </div>`);
+    });
+
     // ── Risk Heatmap cells ──
     map.on('click', 'risk-heatmap-dots', e => {
       if (!e.features?.length) return;
@@ -1003,7 +1071,7 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
 
 
     // ── Generic hover for clickables ──
-    ['conflict-icons','cctv-dots','eq-circles','sat-dots','fires-heat','gdelt-dots','mil-events-dots','frontlines-line','sentinel-scenes-fill','sentinel-sar-fill','sentinel-optical-fill','air-quality-dots','disaster-ops-dots','country-risk-dots','cyber-geo-dots','port-congestion-dots','maritime-dark-dots','risk-heatmap-dots','space-weather-dots','osm-critical-dots','naval-base-dots','fusion-hotspot-core','weather-dots','infra-dots','maritime-dots','choke-dots','news-dots','sigint-news-dots','balloon-dots','rad-dots','ship-dots','sweep-device-dots','scan-targets-dots'].forEach(layer => {
+      ['conflict-icons','cctv-dots','eq-circles','sat-dots','fires-heat','gdelt-dots','mil-events-dots','frontlines-line','sentinel-scenes-fill','sentinel-sar-fill','sentinel-optical-fill','air-quality-dots','disaster-ops-dots','country-risk-dots','cyber-geo-dots','port-congestion-dots','maritime-dark-dots','risk-heatmap-dots','space-weather-dots','osm-critical-dots','naval-base-dots','airbase-dots','french-airbase-dots','fusion-hotspot-core','weather-dots','infra-dots','maritime-dots','choke-dots','news-dots','sigint-news-dots','balloon-dots','rad-dots','ship-dots','sweep-device-dots','scan-targets-dots'].forEach(layer => {
       map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
     });
@@ -1389,6 +1457,24 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
 
   useEffect(() => {
     if (!mapReady) return;
+    setGeo('airbases', activeLayers.airbases && data.airbases ? data.airbases.map((b: any) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [b.lng, b.lat] },
+      properties: { id: b.id, name: b.name, country: b.country, operator: b.operator, class: b.class, wikidata: b.wikidata, source: b.source, source_url: b.source_url },
+    })) : []);
+  }, [mapReady, data.airbases, activeLayers.airbases, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    setGeo('french-airbases', activeLayers.french_airbases && data.french_airbases ? data.french_airbases.map((b: any) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [b.lng, b.lat] },
+      properties: { id: b.id, name: b.name, ref: b.ref, operator: b.operator, aeroway: b.aeroway, military: b.military, icao: b.icao, wikidata: b.wikidata, wikipedia: b.wikipedia, source: b.source, source_url: b.source_url },
+    })) : []);
+  }, [mapReady, data.french_airbases, activeLayers.french_airbases, setGeo]);
+
+  useEffect(() => {
+    if (!mapReady) return;
     setGeo('balloons', activeLayers.balloons && data.balloons ? data.balloons.map((b: any) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [b.lng, b.lat] }, properties: { callsign: b.callsign, type: b.type, status: b.status, altitude: b.altitude, speed: b.speed, verticalRate: b.verticalRate, temperature: b.temperature, color: b.color } })) : []);
   }, [mapReady, data.balloons, activeLayers.balloons, setGeo]);
 
@@ -1460,6 +1546,8 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     setVis(['frontlines-fill','frontlines-line'], activeLayers.frontlines);
     setVis(['mil-events-glow','mil-events-dots'], activeLayers.mil_conflict_events);
     setVis(['naval-base-glow','naval-base-dots','naval-base-label'], activeLayers.naval_bases);
+    setVis(['airbase-glow','airbase-dots','airbase-label'], activeLayers.airbases);
+    setVis(['french-airbase-glow','french-airbase-dots','french-airbase-label'], activeLayers.french_airbases);
     setVis(['cctv-glow','cctv-dots','cctv-label'], activeLayers.cctv);
     setVis(['fires-heat'], activeLayers.fires);
     setVis(['weather-glow','weather-dots','weather-label'], activeLayers.weather);

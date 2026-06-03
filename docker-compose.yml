@@ -89,9 +89,6 @@ x-casaos:
     - container: OPENSKY_CLIENT_SECRET
       description:
         en_us: "(Optional) OpenSky OAuth2 client secret."
-    - container: N2YO_API_KEY
-      description:
-        en_us: "(Optional) N2YO key for satellite tracking."
   ports:
     - container: "3000"
       description:

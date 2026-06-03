@@ -37,6 +37,8 @@ const LAYER_GROUPS = [
       { key: 'frontlines', label: 'Frontlines', icon: Target, color: '#FF1744', dataKey: 'frontlines' },
       { key: 'mil_conflict_events', label: 'Military Events', icon: AlertTriangle, color: '#FF6B00', dataKey: 'military_events' },
       { key: 'naval_bases', label: 'Naval Bases', icon: Anchor, color: '#00BCD4', dataKey: 'naval_bases' },
+      { key: 'airbases', label: 'Global Air Bases', icon: Shield, color: '#60A5FA', dataKey: 'airbases' },
+      { key: 'french_airbases', label: 'French Air Bases', icon: Shield, color: '#3B82F6', dataKey: 'french_airbases' },
     ],
   },
   {
@@ -167,7 +169,7 @@ function LayerPanel({ data, activeLayers, setActiveLayers }: LayerPanelProps) {
       if (preset === 'all') ALL_LAYERS.forEach(layer => { next[layer.key] = true; });
       if (preset === 'surveillance') ['cctv', 'live_news', 'news_intel', 'global_incidents', 'satellite_scenes', 'cyber_geo'].forEach(key => { next[key] = true; });
       if (preset === 'hazards') ['earthquakes', 'fires', 'weather', 'air_quality', 'disaster_ops', 'radiation', 'space_weather_layer'].forEach(key => { next[key] = true; });
-      if (preset === 'ops') ['military', 'tankers_isr', 'frontlines', 'mil_conflict_events', 'maritime', 'maritime_dark_activity', 'naval_bases', 'port_congestion', 'risk_heatmap', 'satellite_scenes', 'sar_watch', 'satellites', 'balloons', 'conflict_zones', 'global_incidents', 'country_risk', 'cyber_geo', 'gps_jamming', 'infrastructure', 'osm_critical', 'space_weather_layer', 'day_night'].forEach(key => { next[key] = true; });
+      if (preset === 'ops') ['military', 'tankers_isr', 'frontlines', 'mil_conflict_events', 'maritime', 'maritime_dark_activity', 'naval_bases', 'airbases', 'french_airbases', 'port_congestion', 'risk_heatmap', 'satellite_scenes', 'sar_watch', 'satellites', 'balloons', 'conflict_zones', 'global_incidents', 'country_risk', 'cyber_geo', 'gps_jamming', 'infrastructure', 'osm_critical', 'space_weather_layer', 'day_night'].forEach(key => { next[key] = true; });
 
       return next;
     });

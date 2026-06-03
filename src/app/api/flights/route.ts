@@ -132,8 +132,77 @@ function classifyFlight(f: any) {
 // For a globally shared cache, migrate to Vercel KV or similar persistent store.
 let cachedData: any = null;
 let lastFetchTime = 0;
-const CACHE_TTL = 45000; // 45 seconds cache window
+const CACHE_TTL = 120000; // 2 minutes: avoid hammering adsb.lol / rate limits
+const STALE_TTL = 10 * 60 * 1000; // keep last known aircraft up to 10 minutes
 let fetchPromise: Promise<any> | null = null;
+
+function allFlights(data: any): any[] {
+  if (!data) return [];
+  return [
+    ...(Array.isArray(data.commercial_flights) ? data.commercial_flights : []),
+    ...(Array.isArray(data.private_flights) ? data.private_flights : []),
+    ...(Array.isArray(data.private_jets) ? data.private_jets : []),
+    ...(Array.isArray(data.military_flights) ? data.military_flights : []),
+  ];
+}
+
+function flightKey(f: any) {
+  return String(f.icao24 || f.callsign || `${f.lat},${f.lng},${f.model}`).toLowerCase();
+}
+
+function splitFlights(flights: any[]) {
+  const commercial_flights: any[] = [];
+  const private_flights: any[] = [];
+  const private_jets: any[] = [];
+  const military_flights: any[] = [];
+
+  for (const flight of flights) {
+    switch (flight.category) {
+      case 'military': military_flights.push(flight); break;
+      case 'jet': private_jets.push(flight); break;
+      case 'private': private_flights.push(flight); break;
+      default: commercial_flights.push(flight);
+    }
+  }
+
+  return { commercial_flights, private_flights, private_jets, military_flights };
+}
+
+function mergeWithStaleFreshData(freshData: any, previousData: any) {
+  if (!previousData) return freshData;
+  const now = Date.now();
+  const fresh = allFlights(freshData).map((f) => ({ ...f, last_seen: now, stale: false }));
+  const previous = allFlights(previousData);
+  const merged = new Map<string, any>();
+
+  for (const flight of fresh) merged.set(flightKey(flight), flight);
+
+  for (const flight of previous) {
+    const key = flightKey(flight);
+    if (merged.has(key)) continue;
+    const lastSeen = Number(flight.last_seen || previousData.fetched_at || previousData.timestamp_ms || now);
+    if (now - lastSeen <= STALE_TTL) {
+      merged.set(key, {
+        ...flight,
+        last_seen: lastSeen,
+        stale: true,
+        stale_age_seconds: Math.round((now - lastSeen) / 1000),
+      });
+    }
+  }
+
+  const split = splitFlights(Array.from(merged.values()));
+  return {
+    ...freshData,
+    ...split,
+    total: merged.size,
+    fresh_total: fresh.length,
+    stale_total: merged.size - fresh.length,
+    timestamp: new Date(now).toISOString(),
+    timestamp_ms: now,
+    cache_strategy: 'fresh-plus-stale-merge',
+  };
+}
 
 export async function GET() {
   const now = Date.now();
@@ -141,7 +210,7 @@ export async function GET() {
   // Return cached data if within TTL
   if (cachedData && now - lastFetchTime < CACHE_TTL) {
     return NextResponse.json(cachedData, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
     });
   }
 
@@ -150,10 +219,15 @@ export async function GET() {
     try {
       const data = await fetchPromise;
       return NextResponse.json(data, {
-        headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+        headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
       });
     } catch {
-      // Fallback to error if the pending fetch failed
+      // Fallback to stale cache if the pending fetch failed
+      if (cachedData) {
+        return NextResponse.json({ ...cachedData, stale_response: true, warning: 'Upstream ADS-B fetch failed; serving cached aircraft.' }, {
+          headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+        });
+      }
       return NextResponse.json({ error: 'Failed to fetch flight data' }, { status: 500 });
     }
   }
@@ -221,24 +295,40 @@ export async function GET() {
       military_flights: military,
       gps_jamming: jammingZones,
       total: allRaw.length,
+      fresh_total: allRaw.length,
+      stale_total: 0,
       timestamp: new Date().toISOString(),
+      timestamp_ms: Date.now(),
+      cache_strategy: 'fresh',
     };
   })();
 
   try {
-    const data = await fetchPromise;
+    const freshData = await fetchPromise;
+    const hasFreshAircraft = allFlights(freshData).length > 0;
+    const data = hasFreshAircraft
+      ? mergeWithStaleFreshData(freshData, cachedData)
+      : cachedData
+        ? { ...cachedData, stale_response: true, warning: 'Upstream returned no aircraft; preserving last known aircraft.' }
+        : freshData;
+
     cachedData = data;
     lastFetchTime = Date.now();
     fetchPromise = null;
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
       },
     });
   } catch (error) {
     console.error('Flight fetch error:', error);
     fetchPromise = null;
+    if (cachedData) {
+      return NextResponse.json({ ...cachedData, stale_response: true, warning: 'Upstream ADS-B fetch failed; serving cached aircraft.' }, {
+        headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+      });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch flight data' },
       { status: 500 }

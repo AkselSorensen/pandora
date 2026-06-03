@@ -33,7 +33,7 @@ Pandora is a production-grade OSINT platform that provides situational awareness
 | **Fires** | Active Hotspots | NASA FIRMS |
 | **News** | 24/7 Live Streams | 25+ Global Broadcasters |
 | **Weather** | Severe Events | NASA EONET |
-| **Space** | Solar Weather, Satellites | NOAA SWPC, N2YO |
+| **Space** | Solar Weather, Satellites | NOAA SWPC, CelesTrak |
 | **Cyber** | CVE Threats, Vulnerability Scanning | NVD, Custom Scanner |
 | **Conflict** | 13 Active Zones | Static OSINT Intel |
 
@@ -59,7 +59,7 @@ Pandora is a production-grade OSINT platform that provides situational awareness
 ├─────────────────────────────────────────────────┤
 │              EXTERNAL DATA SOURCES               │
 │  OpenSky · USGS · NASA · NOAA · TfL · NVD      │
-│  GDACS · EONET · FIRMS · N2YO · RSS Feeds      │
+│  GDACS · EONET · FIRMS · CelesTrak · RSS Feeds │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -156,7 +156,6 @@ SCANNER_KEY=
 FIRMS_API_KEY=                # NASA FIRMS  — firms.modaps.eosdis.nasa.gov/api/map_key/
 OPENSKY_CLIENT_ID=            # OpenSky OAuth2 (since Mar 2025) — opensky-network.org
 OPENSKY_CLIENT_SECRET=
-N2YO_API_KEY=                 # N2YO satellites — n2yo.com (Profile → API key)
 AIS_API_KEY=                 # aisstream.io maritime
 ```
 

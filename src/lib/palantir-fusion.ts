@@ -84,6 +84,8 @@ const SOURCE_DEFS = [
   { key: 'earthquakes', label: 'USGS seismic', confidence: 90 },
   { key: 'weather_events', label: 'Weather hazards', confidence: 76 },
   { key: 'infrastructure', label: 'Critical infra', confidence: 74 },
+  { key: 'airbases', label: 'Global air bases Wikidata', confidence: 72 },
+  { key: 'french_airbases', label: 'French air bases OSM', confidence: 72 },
   { key: 'news', label: 'OSINT news', confidence: 61 },
 ] as const;
 
@@ -182,6 +184,8 @@ function buildEntities(dataValue: unknown): FusionEntity[] {
   add(asArray(data.earthquakes), 'hazard', 'USGS', 50);
   add(asArray(data.weather_events), 'weather', 'NOAA/Weather', 35);
   add(asArray(data.infrastructure), 'infrastructure', 'Critical Infra', 45);
+  add(asArray(data.airbases), 'infrastructure', 'Wikidata Air Bases', 120);
+  add(asArray(data.french_airbases), 'infrastructure', 'OSM French Air Bases', 60);
   add(asArray(data.maritime_ships), 'ship', 'AIS', 60);
   add(asArray(data.dark_vessels), 'ship', 'AIS Dark Vessel', 40);
   add(asArray(data.maritime_dark_activity), 'incident', 'Maritime Dark Activity', 45);
