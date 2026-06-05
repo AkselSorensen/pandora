@@ -57,6 +57,36 @@ export async function scrapeTwitter(query: string, maxResults: number = 10): Pro
   }
 }
 
+function fallbackResults(query: string, platform: OSINTResult['platform'], maxResults: number): OSINTResult[] {
+  const sources: Record<OSINTResult['platform'], { name: string; url: (q: string) => string; title: string }[]> = {
+    twitter: [
+      { name: 'X/Twitter Search', title: 'Open X/Twitter search', url: (q) => `https://twitter.com/search?q=${encodeURIComponent(q)}` },
+      { name: 'Nitter Search', title: 'Open public Nitter search', url: (q) => `https://nitter.net/search?f=tweets&q=${encodeURIComponent(q)}` },
+    ],
+    facebook: [
+      { name: 'Facebook Search', title: 'Open Facebook public search', url: (q) => `https://www.facebook.com/search/top?q=${encodeURIComponent(q)}` },
+    ],
+    linkedin: [
+      { name: 'LinkedIn Search', title: 'Open LinkedIn public search', url: (q) => `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(q)}` },
+    ],
+    web: [
+      { name: 'DuckDuckGo', title: 'Open DuckDuckGo web search', url: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}` },
+      { name: 'Google News', title: 'Open Google News search', url: (q) => `https://news.google.com/search?q=${encodeURIComponent(q)}` },
+      { name: 'Internet Archive', title: 'Open Internet Archive text search', url: (q) => `https://archive.org/search?query=${encodeURIComponent(q)}` },
+    ],
+  };
+
+  return sources[platform].slice(0, Math.max(1, Math.min(maxResults, sources[platform].length))).map((source, index) => ({
+    id: `fallback-${platform}-${index}-${Date.now()}`,
+    title: `${source.title}: ${query}`,
+    source: source.name,
+    url: source.url(query),
+    content: `Direct scraping for ${platform} can be blocked by anti-bot or login requirements. This fallback opens a public search for "${query}".`,
+    timestamp: new Date().toISOString(),
+    platform,
+  }));
+}
+
 export async function scrapeFacebook(query: string, maxResults: number = 10): Promise<OSINTResult[]> {
   try {
     // Note: Facebook requires login, so this is a simplified example
@@ -192,10 +222,15 @@ export async function runOSINTQuery(query: OSINTQuery): Promise<OSINTResult[]> {
           results = await scrapeWeb(searchQuery, maxResults);
           break;
       }
+
+      if (results.length === 0) {
+        results = fallbackResults(searchQuery, platform, maxResults);
+      }
       
       allResults.push(...results);
     } catch (error) {
       console.warn(`Failed to scrape ${platform}:`, error);
+      allResults.push(...fallbackResults(searchQuery, platform, maxResults));
     }
   }
   

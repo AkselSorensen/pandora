@@ -550,6 +550,140 @@ html, body {
 }
 
 /* ===================================================================
+   SPACE BACKDROP — stars, planets, galaxies behind the operational UI
+   =================================================================== */
+.pandora-space-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle at 50% 54%, transparent 0 15%, rgba(0,0,0,0.15) 27%, black 52%, black 100%);
+  -webkit-mask-image: radial-gradient(circle at 50% 54%, transparent 0 15%, rgba(0,0,0,0.15) 27%, black 52%, black 100%);
+}
+
+.pandora-starfield {
+  position: absolute;
+  inset: -20%;
+  background-repeat: repeat;
+  transform-origin: center;
+  opacity: 0.62;
+}
+
+.pandora-starfield--far {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.58) 0 0.7px, transparent 1px),
+    radial-gradient(circle, rgba(143,183,255,0.38) 0 0.9px, transparent 1.2px),
+    radial-gradient(circle, rgba(208,168,92,0.32) 0 0.6px, transparent 1px);
+  background-size: 92px 92px, 137px 137px, 181px 181px;
+  background-position: 12px 18px, 66px 41px, 23px 97px;
+  animation: pandora-star-drift-far 90s linear infinite;
+}
+
+.pandora-starfield--near {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.86) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(143,183,255,0.72) 0 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,0.42) 0 0.8px, transparent 1.5px);
+  background-size: 240px 240px, 310px 310px, 390px 390px;
+  background-position: 22px 34px, 140px 70px, 280px 180px;
+  opacity: 0.42;
+  animation: pandora-star-drift-near 54s linear infinite;
+}
+
+.pandora-nebula {
+  position: absolute;
+  width: 46vw;
+  height: 46vw;
+  min-width: 520px;
+  min-height: 520px;
+  border-radius: 999px;
+  filter: blur(36px);
+  opacity: 0.22;
+}
+
+.pandora-nebula--left {
+  left: -18vw;
+  top: 10vh;
+  background:
+    radial-gradient(circle at 42% 44%, rgba(91,112,255,0.38), transparent 34%),
+    radial-gradient(circle at 58% 62%, rgba(208,168,92,0.20), transparent 42%);
+  animation: pandora-nebula-breathe 18s ease-in-out infinite;
+}
+
+.pandora-nebula--right {
+  right: -20vw;
+  top: 2vh;
+  background:
+    radial-gradient(circle at 44% 48%, rgba(143,183,255,0.34), transparent 32%),
+    radial-gradient(circle at 62% 58%, rgba(224,106,106,0.16), transparent 44%);
+  animation: pandora-nebula-breathe 22s ease-in-out infinite reverse;
+}
+
+.pandora-galaxy {
+  position: absolute;
+  width: 340px;
+  height: 128px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center, rgba(255,255,255,0.56) 0 2%, rgba(143,183,255,0.28) 8%, rgba(143,183,255,0.10) 24%, transparent 62%),
+    conic-gradient(from 30deg, transparent 0 18%, rgba(255,255,255,0.20) 22%, transparent 34%, rgba(208,168,92,0.12) 48%, transparent 62%, rgba(143,183,255,0.16) 72%, transparent 88%);
+  filter: blur(0.4px);
+  opacity: 0.28;
+  transform: rotate(-18deg);
+}
+
+.pandora-galaxy--upper {
+  right: 9vw;
+  top: 13vh;
+}
+
+.pandora-planet {
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0.34;
+  box-shadow: inset -18px -14px 30px rgba(0,0,0,0.42), 0 0 34px rgba(143,183,255,0.12);
+}
+
+.pandora-planet--mars {
+  width: 70px;
+  height: 70px;
+  right: 14vw;
+  bottom: 18vh;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,217,163,0.55), transparent 12%),
+    radial-gradient(circle at 62% 58%, rgba(126,57,43,0.42), transparent 22%),
+    linear-gradient(145deg, #C18447, #6C2F2A 72%);
+}
+
+.pandora-planet--ice {
+  width: 46px;
+  height: 46px;
+  left: 11vw;
+  top: 23vh;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255,255,255,0.7), transparent 14%),
+    linear-gradient(145deg, #8FB7FF, #243B68 74%);
+}
+
+@keyframes pandora-star-drift-far {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-92px, 92px, 0); }
+}
+
+@keyframes pandora-star-drift-near {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(120px, -120px, 0) scale(1.015); }
+}
+
+@keyframes pandora-nebula-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.18; }
+  50% { transform: scale(1.08); opacity: 0.28; }
+}
+
+/* ===================================================================
    CRT & VIGNETTE — Effets visuels
    =================================================================== */
 .crt-scanlines {
@@ -1496,6 +1630,145 @@ body::before {
   }
 }
 
+/* ===================================================================
+   BOTTOM HUD CLEANUP — compact tactical controls
+   Reduces the oversized “mystic block” look around map controls/HUD.
+   =================================================================== */
+.map-view-controls {
+  left: 50% !important;
+  bottom: 92px !important;
+  transform: translateX(-50%) !important;
+  gap: 8px !important;
+}
+
+.map-view-controls .glass-panel {
+  min-width: 0 !important;
+  width: auto !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018)),
+    rgba(8, 12, 20, 0.82) !important;
+  border-color: rgba(164,178,199,0.20) !important;
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.38),
+    0 1px 0 rgba(255,255,255,0.06) inset !important;
+}
+
+.map-view-controls .glass-panel::before {
+  opacity: 0.12 !important;
+}
+
+.map-view-controls button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.map-view-controls button::after {
+  content: attr(title);
+  max-width: 86px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #A9B4C5;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.map-view-controls button[title='Switch to 2D Map']::after { content: '2D MAP'; }
+.map-view-controls button[title='Switch to 3D Globe']::after { content: '3D GLOBE'; }
+.map-view-controls button[title='Satellite View']::after { content: 'SATELLITE'; }
+.map-view-controls button[title='Night View']::after { content: 'NIGHT'; }
+
+.map-view-controls button > span {
+  display: none !important;
+}
+
+.bottom-command-hud {
+  bottom: 20px !important;
+  width: auto !important;
+  max-width: min(760px, calc(100vw - 160px)) !important;
+}
+
+.bottom-command-hud > .glass-panel {
+  min-width: 0 !important;
+  padding: 8px 12px !important;
+  gap: 0 !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)),
+    rgba(8, 12, 20, 0.88) !important;
+  border-color: rgba(164,178,199,0.18) !important;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.42),
+    0 1px 0 rgba(255,255,255,0.055) inset !important;
+}
+
+.bottom-command-hud > .glass-panel::before {
+  opacity: 0.10 !important;
+}
+
+.bottom-command-hud .flex.flex-col.items-center {
+  min-width: auto !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.bottom-command-hud .hud-label {
+  font-size: 6px !important;
+  letter-spacing: 0.12em !important;
+  color: #7E8BA0 !important;
+}
+
+.bottom-command-hud .text-\[10px\],
+.bottom-command-hud .hud-value,
+.bottom-command-hud .font-bold {
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+}
+
+.bottom-command-hud .text-\[9px\] {
+  font-size: 9px !important;
+}
+
+.bottom-command-hud .w-px {
+  height: 26px !important;
+  opacity: 0.55;
+}
+
+.bottom-command-hud svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.scale-bar-wrap {
+  left: 50% !important;
+  bottom: 72px !important;
+  transform: translateX(-50%) !important;
+  opacity: 0.72;
+}
+
+@media (max-width: 1500px) and (min-width: 1281px) {
+  .bottom-command-hud {
+    max-width: min(680px, calc(100vw - 120px)) !important;
+  }
+  .map-view-controls {
+    bottom: 86px !important;
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 769px) {
+  .bottom-command-hud {
+    max-width: min(620px, calc(100vw - 80px)) !important;
+    transform: translateX(-50%) scale(0.94) !important;
+  }
+}
+
 @media (min-width: 1900px) and (max-height: 950px) {
   .desktop-panel-left {
     width: 356px !important;
@@ -1649,6 +1922,53 @@ body::before {
   pointer-events: auto;
 }
 
+.tool-sidebar-toggle {
+  position: absolute;
+  top: calc(clamp(96px, 12vh, 124px) + 44px);
+  left: calc(clamp(104px, 6.2vw, 124px) + clamp(380px, 30vw, 560px) - 14px);
+  z-index: 260;
+  width: 32px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 183, 255, 0.34);
+  color: var(--cyan-primary);
+  background:
+    linear-gradient(180deg, rgba(143,183,255,0.15), rgba(7,11,19,0.88)),
+    rgba(7, 11, 19, 0.92);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.36),
+    0 0 22px rgba(143,183,255,0.18);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  pointer-events: auto;
+  transition: left 0.24s ease, transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.tool-sidebar-toggle:hover {
+  transform: translateX(-1px) scale(1.03);
+  border-color: rgba(143, 183, 255, 0.62);
+  background:
+    linear-gradient(180deg, rgba(143,183,255,0.22), rgba(7,11,19,0.92)),
+    rgba(7, 11, 19, 0.95);
+}
+
+.tool-sidebar-toggle.collapsed {
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 72px;
+  border-radius: 0 999px 999px 0;
+  border-left-color: rgba(143, 183, 255, 0.12);
+}
+
+.tool-sidebar-toggle.collapsed:hover {
+  transform: translateY(-50%) translateX(2px) scale(1.03);
+}
+
 .tool-workspace-header {
   position: sticky;
   top: 0;
@@ -1720,6 +2040,10 @@ body::before {
     left: clamp(112px, 6vw, 132px);
     width: clamp(480px, 28vw, 640px);
   }
+
+  .tool-sidebar-toggle.expanded {
+    left: calc(clamp(112px, 6vw, 132px) + clamp(480px, 28vw, 640px) - 14px);
+  }
 }
 
 @media (max-width: 1280px) and (min-width: 769px) {
@@ -1751,6 +2075,11 @@ body::before {
     width: min(390px, calc(100vw - 102px));
   }
 
+  .tool-sidebar-toggle.expanded {
+    top: 128px;
+    left: calc(86px + min(390px, calc(100vw - 102px)) - 14px);
+  }
+
   .tool-workspace-header {
     padding: 13px 14px 11px;
   }
@@ -1765,6 +2094,10 @@ body::before {
   .tool-workspace {
     top: 78px;
     bottom: 82px;
+  }
+
+  .tool-sidebar-toggle.expanded {
+    top: 118px;
   }
 
   .tool-rail {

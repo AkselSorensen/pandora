@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect, memo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Radar, Globe, Shield, FileText, Radio,
+  Search, Radar, Globe, Shield, FileText,
   ChevronDown, ChevronUp, Loader2, AlertTriangle, Server,
-  Wifi, Lock, MapPin, Bug, Code, Layers, Network, Fingerprint,
+  Wifi, Lock, Bug, Code, Layers, Fingerprint,
   CheckCircle, XCircle, Clock, ExternalLink, Crosshair,
   Maximize2, Minimize2
 } from 'lucide-react';
@@ -75,6 +77,7 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
     // IP Sweep / Vuln Scan — separate flow
     if (activeTab === 'sweep' || activeTab === 'vuln') {
       setSweepResult(null);
+      setResults(null);
       setSweepProgress({ current: 0, total: Math.pow(2, 32 - sweepCidr) });
       try {
         const cidr = sweepCidr;
@@ -82,6 +85,7 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || `Sweep failed (${res.status})`); }
         const data = await res.json();
         setSweepResult(data);
+        setResults({ sweep: data, mode: activeTab });
         setSweepProgress(null);
         setHistory(prev => [{ tab: activeTab, query, time: new Date().toLocaleTimeString() }, ...prev.slice(0, 9)]);
       } catch (err: any) {
@@ -130,7 +134,7 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
       }
     } catch { setError('Network error'); }
     finally { setLoading(false); }
-  }, [query, activeTab, scanType, loading, sweepCidr]);
+  }, [query, activeTab, scanType, loading, sweepCidr, onScanGeolocate]);
 
   const currentTab = TABS.find(t => t.id === activeTab);
 
@@ -428,7 +432,7 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
         {activeTab === 'scanner' && (
           <select value={scanType} onChange={e => setScanType(e.target.value)}
             className="bg-[var(--bg-primary)]/60 border border-[var(--border-primary)] rounded-lg px-2 py-1.5 text-[10px] font-mono text-[var(--text-muted)] outline-none w-full">
-            <option value="quick">QUICK SCAN</option><option value="deep">DEEP SCAN</option><option value="ports">TOP 1000 PORTS</option>
+            <option value="quick">QUICK SAFE SCAN</option>
           </select>
         )}
         {(activeTab === 'sweep' || activeTab === 'vuln') && (

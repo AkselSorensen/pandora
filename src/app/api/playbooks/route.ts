@@ -2,6 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { NextResponse } from 'next/server';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export const runtime = 'nodejs';
 
 interface PlaybookStep {

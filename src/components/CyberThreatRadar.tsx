@@ -1,5 +1,5 @@
 'use client';
-import { Shield, AlertTriangle, Globe, Wifi, Database } from 'lucide-react';
+import { Shield, AlertTriangle, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Threat {

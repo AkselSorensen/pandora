@@ -176,6 +176,7 @@ const jsonLd = {
 import { Analytics } from "@vercel/analytics/next";
 
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { I18nProvider } from '@/components/I18nProvider';
 
 export default function RootLayout({
   children,
@@ -201,7 +202,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ErrorBoundary name="PANDORA Core">
-          {children}
+          <I18nProvider>{children}</I18nProvider>
         </ErrorBoundary>
         <Analytics />
       </body>

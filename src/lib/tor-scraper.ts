@@ -2,6 +2,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export interface DarkWebAlert {
   id: string;
   title: string;

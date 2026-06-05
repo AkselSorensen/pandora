@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  - job_name: pandora-metrics
+    scrape_interval: 60s
+    scrape_timeout: 55s
+    static_configs:
+      - targets: ["pandora-metrics:7710"]
+
+  - job_name: pandora-services-health
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://pandora:3000/api/health
+          - http://pandora-ai:7701/health
+          - http://pandora-digest:7702/health
+          - http://pandora-alerts:7703/health
+          - http://pandora-ontology:7704/health
+          - http://pandora-cases:7705/health
+          - http://pandora-hotspots:7706/health
+          - http://pandora-copilot:7707/health
+          - http://pandora-risk:7708/health
+          - http://pandora-metrics:7710/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

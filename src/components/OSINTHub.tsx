@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Search, Bird, Globe, FileText, Download } from 'lucide-react';
 import { Icon } from '@iconify/react';
 
+type IconProps = { className?: string };
+
 interface OSINTResult {
   id: string;
   title: string;
@@ -21,6 +23,7 @@ export default function OSINTHub() {
   const [reportMode, setReportMode] = useState(false);
   const [reportHtml, setReportHtml] = useState('');
   const [maxResults, setMaxResults] = useState(10);
+  const [error, setError] = useState('');
 
   const handleSearch = async () => {
     if (!query.trim() || selectedPlatforms.length === 0) return;
@@ -28,6 +31,7 @@ export default function OSINTHub() {
     setLoading(true);
     setResults([]);
     setReportHtml('');
+    setError('');
 
     try {
       const response = await fetch('/api/osint', {
@@ -44,7 +48,8 @@ export default function OSINTHub() {
       });
 
       if (!response.ok) {
-        throw new Error('OSINT query failed');
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || 'OSINT query failed');
       }
 
       const data = await response.json();
@@ -57,7 +62,7 @@ export default function OSINTHub() {
       }
     } catch (error) {
       console.error('OSINT search error:', error);
-      alert('Failed to perform OSINT search. See console for details.');
+      setError(error instanceof Error ? error.message : 'Failed to perform OSINT search');
     } finally {
       setLoading(false);
     }
@@ -125,8 +130,8 @@ export default function OSINTHub() {
             <div className="flex gap-2">
               {[
                 { id: 'twitter', icon: Bird, color: 'text-[#1DA1F2]' },
-                { id: 'facebook', icon: (props: any) => <Icon icon="fa-brands:facebook" {...props} />, color: 'text-[#1877F2]' },
-                { id: 'linkedin', icon: (props: any) => <Icon icon="fa-brands:linkedin" {...props} />, color: 'text-[#0A66C2]' },
+                { id: 'facebook', icon: (props: IconProps) => <Icon icon="fa-brands:facebook" {...props} />, color: 'text-[#1877F2]' },
+                { id: 'linkedin', icon: (props: IconProps) => <Icon icon="fa-brands:linkedin" {...props} />, color: 'text-[#0A66C2]' },
                 { id: 'web', icon: Globe, color: 'text-[var(--cyan-primary)]' }
               ].map((platform) => (
                 <button
@@ -170,6 +175,8 @@ export default function OSINTHub() {
             </div>
           </div>
         </div>
+
+        {error && <div className="glass-panel-sm p-3 mb-3 text-xs text-[var(--alert-orange)]">{error}</div>}
 
         {/* Results */}
         {loading ? (

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { CYBER_RSS_FEEDS } from '@/lib/intel-sources';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 type Severity = 'critical' | 'high' | 'medium' | 'low';
 
 interface ThreatRecord {

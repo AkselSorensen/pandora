@@ -30,6 +30,8 @@ export default function ReconPlaybooks() {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [runLog, setRunLog] = useState<string[]>([]);
+  const [running, setRunning] = useState(false);
 
   const refreshPlaybooks = async () => {
     setLoading(true);
@@ -51,8 +53,29 @@ export default function ReconPlaybooks() {
   };
 
   useEffect(() => {
-    refreshPlaybooks();
+    const timer = window.setTimeout(() => {
+      void refreshPlaybooks();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  const resolveStepRequest = (step: PlaybookStep) => {
+    const tool = step.tool.toLowerCase();
+    const params = step.parameters || {};
+    const target = params.target || params.domain || params.ip || params.query || '';
+
+    if (tool.includes('dns') && target) return `/api/osint/dns?domain=${encodeURIComponent(target)}`;
+    if (tool.includes('whois') && target) return `/api/osint/whois?domain=${encodeURIComponent(target)}`;
+    if (tool.includes('cert') && target) return `/api/osint/certs?domain=${encodeURIComponent(target)}`;
+    if (tool.includes('threat') && target) return `/api/osint/threats?query=${encodeURIComponent(target)}`;
+    if ((tool.includes('sweep') || tool.includes('vuln')) && target) return `/api/osint/sweep?ip=${encodeURIComponent(target)}&cidr=${encodeURIComponent(params.cidr || '28')}`;
+    if (tool.includes('header') && target) return `/api/scanner?target=${encodeURIComponent(target)}&type=headers`;
+    if (tool.includes('ssl') && target) return `/api/scanner?target=${encodeURIComponent(target)}&type=ssl`;
+    if (tool.includes('subdomain') && target) return `/api/scanner?target=${encodeURIComponent(target)}&type=subdomains`;
+    if (tool.includes('tech') && target) return `/api/scanner?target=${encodeURIComponent(target)}&type=tech`;
+    if ((tool.includes('port') || tool.includes('scanner')) && target) return `/api/scanner?target=${encodeURIComponent(target)}&type=quick`;
+    return null;
+  };
 
   const filteredPlaybooks = playbooks.filter(playbook =>
     playbook.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,6 +149,32 @@ export default function ReconPlaybooks() {
     await savePlaybook(updatedPlaybook);
   };
 
+  const handleRunPlaybook = async () => {
+    if (!selectedPlaybook || running) return;
+    setRunning(true);
+    setRunLog([`Starting ${selectedPlaybook.name} (${selectedPlaybook.steps.length} step${selectedPlaybook.steps.length > 1 ? 's' : ''})`]);
+
+    for (const step of [...selectedPlaybook.steps].sort((a, b) => a.order - b.order)) {
+      const url = resolveStepRequest(step);
+      if (!url) {
+        setRunLog((log) => [...log, `SKIP #${step.order} ${step.title}: missing supported tool/parameters`]);
+        continue;
+      }
+
+      try {
+        const response = await fetch(url);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || payload.detail || `HTTP ${response.status}`);
+        setRunLog((log) => [...log, `OK #${step.order} ${step.title}: ${url}`]);
+      } catch (err) {
+        setRunLog((log) => [...log, `ERR #${step.order} ${step.title}: ${err instanceof Error ? err.message : 'request failed'}`]);
+      }
+    }
+
+    setRunLog((log) => [...log, 'Playbook run complete']);
+    setRunning(false);
+  };
+
   return (
     <div className="glass-panel">
       <div className="tool-workspace-header">
@@ -194,8 +243,16 @@ export default function ReconPlaybooks() {
                     </div>
                     <button onClick={handleAddStep} className="glass-panel-sm p-2 hover:bg-[var(--bg-tertiary)] transition-colors" title="Add Step"><Plus className="w-4 h-4 text-[var(--cyan-primary)]" /></button>
                   </div>
-                  <button className="w-full glass-panel-sm p-2 text-xs text-[var(--alert-green)] hover:bg-[var(--alert-green)] hover:text-black transition-colors"><Play className="w-3 h-3 inline mr-2" /> Run Playbook</button>
+                  <button onClick={handleRunPlaybook} disabled={running || selectedPlaybook.steps.length === 0} className="w-full glass-panel-sm p-2 text-xs text-[var(--alert-green)] hover:bg-[var(--alert-green)] hover:text-black transition-colors disabled:opacity-50"><Play className="w-3 h-3 inline mr-2" /> {running ? 'Running...' : 'Run Playbook'}</button>
                 </div>
+                {runLog.length > 0 && (
+                  <div className="glass-panel-sm mb-4 p-3">
+                    <h4 className="hud-label mb-2">Run Log</h4>
+                    <div className="space-y-1 max-h-32 overflow-y-auto styled-scrollbar">
+                      {runLog.map((line, index) => <div key={`${line}-${index}`} className="text-[9px] font-mono text-[var(--text-secondary)]">{line}</div>)}
+                    </div>
+                  </div>
+                )}
                 <div className="glass-panel-sm flex-1 overflow-y-auto">
                   <h4 className="hud-label mb-2">Steps</h4>
                   <div className="space-y-3">

@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
-  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, EyeOff, BookOpen
+  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, EyeOff, BookOpen, FileText,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
 import MarketsPanel from '@/components/MarketsPanel';
@@ -29,6 +30,7 @@ import CyberThreatRadar from '@/components/CyberThreatRadar';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
 import OSINTHub from '@/components/OSINTHub';
+import { LanguageToggle, useI18n } from '@/components/I18nProvider';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
 const LayerPanel = dynamic(() => import('@/components/LayerPanel'));
@@ -299,6 +301,7 @@ const DataThroughput = () => {
 
 // --- Main Component ---
 export default function Dashboard() {
+  const { t } = useI18n();
   const dataRef = useRef<any>({});
   const [, setDataVersion] = useState(0);
   const data = dataRef.current;
@@ -320,6 +323,7 @@ export default function Dashboard() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
   const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'darkweb' | 'playbooks' | 'osint'>('layers');
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
   const [sweepData, setSweepData] = useState<any>(null);
@@ -1047,6 +1051,19 @@ export default function Dashboard() {
       </ErrorBoundary>
 
       {/* ===================================================================
+         SPACE BACKDROP — subtle stars / planets / galaxies over the void
+         =================================================================== */}
+      <div className="pandora-space-backdrop" aria-hidden="true">
+        <div className="pandora-starfield pandora-starfield--near" />
+        <div className="pandora-starfield pandora-starfield--far" />
+        <div className="pandora-nebula pandora-nebula--left" />
+        <div className="pandora-nebula pandora-nebula--right" />
+        <div className="pandora-galaxy pandora-galaxy--upper" />
+        <div className="pandora-planet pandora-planet--mars" />
+        <div className="pandora-planet pandora-planet--ice" />
+      </div>
+
+      {/* ===================================================================
          MAP VIEW CONTROLS (3D/2D + SATELLITE TOGGLE)
          =================================================================== */}
       <motion.div
@@ -1133,7 +1150,7 @@ export default function Dashboard() {
             <span className="hidden xl:inline-flex gotham-tag gotham-tag--info">ATLAS MODE</span>
           </div>
           <span className="text-[8px] md:text-[9px] text-[var(--gold-primary)] font-mono tracking-[0.2em] md:tracking-[0.3em] opacity-80">
-            GLOBAL SITUATIONAL ATLAS
+            {t('status.globalAtlas')}
           </span>
         </div>
       </motion.div>
@@ -1164,6 +1181,43 @@ export default function Dashboard() {
           <span className="text-[var(--cyan-primary)] font-bold">{activeFeedCount}/{totalFeedCount}</span>
           <span className="text-[var(--text-muted)]/60">FEEDS</span>
         </span>
+        <LanguageToggle />
+        <a
+          href="/digest"
+          className="pointer-events-auto hidden md:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-[var(--gold-primary)]/10 px-2 py-0.5 text-[var(--gold-primary)] transition hover:border-[var(--gold-primary)]/50 hover:bg-[var(--gold-primary)]/15"
+          title="Open Threat Intel Digest"
+        >
+          <FileText className="w-3 h-3" />
+          DIGEST
+        </a>
+        <a
+          href="/alerts"
+          className="pointer-events-auto hidden md:inline-flex items-center gap-1.5 rounded-sm border border-[var(--alert-red)]/30 bg-[var(--alert-red)]/10 px-2 py-0.5 text-[var(--alert-red)] transition hover:border-[var(--alert-red)]/50 hover:bg-[var(--alert-red)]/15"
+          title="Open Pandora Alerts"
+        >
+          <AlertTriangle className="w-3 h-3" />
+          ALERTS
+        </a>
+        <a
+          href="/ontology"
+          className="pointer-events-auto hidden xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--cyan-primary)]/30 bg-[var(--cyan-primary)]/10 px-2 py-0.5 text-[var(--cyan-primary)] transition hover:border-[var(--cyan-primary)]/50 hover:bg-[var(--cyan-primary)]/15"
+          title="Open Pandora Ontology Graph"
+        >
+          <Database className="w-3 h-3" />
+          ONTOLOGY
+        </a>
+        <a href="/cases" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-black/30 px-2 py-0.5 text-[var(--text-secondary)] transition hover:border-[var(--gold-primary)]/40 hover:text-[var(--gold-primary)]" title="Open Pandora Cases">
+          <BookOpen className="w-3 h-3" /> CASES
+        </a>
+        <a href="/hotspots" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-black/30 px-2 py-0.5 text-[var(--text-secondary)] transition hover:border-[var(--gold-primary)]/40 hover:text-[var(--gold-primary)]" title="Open AI Hotspots">
+          <MapPinned className="w-3 h-3" /> HOTSPOTS
+        </a>
+        <a href="/copilot" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-black/30 px-2 py-0.5 text-[var(--text-secondary)] transition hover:border-[var(--gold-primary)]/40 hover:text-[var(--gold-primary)]" title="Open Pandora Copilot">
+          <Brain className="w-3 h-3" /> COPILOT
+        </a>
+        <a href="/risk" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-black/30 px-2 py-0.5 text-[var(--text-secondary)] transition hover:border-[var(--gold-primary)]/40 hover:text-[var(--gold-primary)]" title="Open Risk Engine">
+          <Activity className="w-3 h-3" /> RISK
+        </a>
         <UptimeClock />
         <a
           href="https://ko-fi.com/M8D41ZYW4Z"
@@ -1201,85 +1255,108 @@ export default function Dashboard() {
          =================================================================== */}
       {!isMobile && (
         <>
-          <nav className="tool-rail desktop-only" aria-label="Pandora tools">
-            {[
-              { id: 'layers' as const, icon: Layers, label: 'Layers' },
-              { id: 'foundry' as const, icon: Database, label: 'Foundry' },
-              { id: 'mission' as const, icon: Activity, label: 'Mission' },
-              { id: 'aip' as const, icon: Brain, label: 'Analyst' },
-              { id: 'recon' as const, icon: Radar, label: 'Recon' },
-              { id: 'ops' as const, icon: MapPinned, label: 'Ops' },
-              { id: 'lab' as const, icon: Satellite, label: 'Lab' },
-              { id: 'sources' as const, icon: Globe, label: 'Sources' },
-              { id: 'markets' as const, icon: BarChart3, label: 'Markets' },
-              { id: 'intel' as const, icon: Newspaper, label: 'Intel' },
-              { id: 'search' as const, icon: Search, label: 'Search' },
-              { id: 'alerts' as const, icon: AlertTriangle, label: 'Alerts' },
-              { id: 'cyber' as const, icon: Shield, label: 'Cyber' },
-              { id: 'darkweb' as const, icon: EyeOff, label: 'Dark Web' },
-              { id: 'playbooks' as const, icon: BookOpen, label: 'Playbooks' },
-              { id: 'osint' as const, icon: Search, label: 'OSINT' },
-            ].map((tool) => {
-            const Icon = tool.icon;
-            return (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => setDesktopTool(tool.id)}
-                  className={`tool-rail-button ${desktopTool === tool.id ? 'active' : ''}`}
-                  title={tool.label}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tool.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          <button
+            type="button"
+            aria-label={isDesktopSidebarCollapsed ? 'Show Pandora sidebar' : 'Hide Pandora sidebar'}
+            title={isDesktopSidebarCollapsed ? t('action.showSidebar') : t('action.hideSidebar')}
+            onClick={() => setIsDesktopSidebarCollapsed((value) => !value)}
+            className={`tool-sidebar-toggle desktop-only ${isDesktopSidebarCollapsed ? 'collapsed' : 'expanded'}`}
+          >
+            {isDesktopSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+
+          <AnimatePresence>
+            {!isDesktopSidebarCollapsed && (
+              <motion.nav
+                key="desktop-tool-rail"
+                initial={{ opacity: 0, x: -96 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -112 }}
+                transition={{ duration: 0.24, ease: 'easeOut' }}
+                className="tool-rail desktop-only"
+                aria-label="Pandora tools"
+              >
+                {[
+              { id: 'layers' as const, icon: Layers, label: t('nav.layers') },
+              { id: 'foundry' as const, icon: Database, label: t('nav.foundry') },
+              { id: 'mission' as const, icon: Activity, label: t('nav.mission') },
+              { id: 'aip' as const, icon: Brain, label: t('nav.analyst') },
+              { id: 'recon' as const, icon: Radar, label: t('nav.recon') },
+              { id: 'ops' as const, icon: MapPinned, label: t('nav.ops') },
+              { id: 'lab' as const, icon: Satellite, label: t('nav.lab') },
+              { id: 'sources' as const, icon: Globe, label: t('nav.sources') },
+              { id: 'markets' as const, icon: BarChart3, label: t('nav.markets') },
+              { id: 'intel' as const, icon: Newspaper, label: t('nav.intel') },
+              { id: 'search' as const, icon: Search, label: t('nav.search') },
+              { id: 'alerts' as const, icon: AlertTriangle, label: t('nav.alerts') },
+              { id: 'cyber' as const, icon: Shield, label: t('nav.cyber') },
+              { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb') },
+              { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks') },
+              { id: 'osint' as const, icon: Search, label: t('nav.osint') },
+                ].map((tool) => {
+                const Icon = tool.icon;
+                return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => setDesktopTool(tool.id)}
+                      className={`tool-rail-button ${desktopTool === tool.id ? 'active' : ''}`}
+                      title={tool.label}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{tool.label}</span>
+                    </button>
+                  );
+                })}
+              </motion.nav>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence mode="wait">
-            <motion.section
-              key={desktopTool}
-              initial={{ opacity: 0, x: -12, filter: 'blur(6px)' }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, x: -12, filter: 'blur(6px)' }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="tool-workspace desktop-only glass-panel styled-scrollbar"
-            >
+            {!isDesktopSidebarCollapsed && (
+              <motion.section
+                key={desktopTool}
+                initial={{ opacity: 0, x: -32, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, x: -420, filter: 'blur(6px)' }}
+                transition={{ duration: 0.24, ease: 'easeOut' }}
+                className="tool-workspace desktop-only glass-panel styled-scrollbar"
+              >
               <div className="tool-workspace-header">
                 <div>
-                  <span className="hud-label">PANDORA WORKSPACE</span>
+                  <span className="hud-label">{t('workspace.label')}</span>
                   <h2>
                     {desktopTool === 'layers'
-                      ? 'Data Layers'
+                      ? t('workspace.layers')
                       : desktopTool === 'cyber'
-                      ? 'Cyber Threat Radar'
+                      ? t('workspace.cyber')
                       : desktopTool === 'darkweb'
-                      ? 'Dark Web Monitor'
+                      ? t('workspace.darkweb')
                       : desktopTool === 'playbooks'
-                      ? 'Recon Playbooks'
+                      ? t('workspace.playbooks')
                       : desktopTool === 'osint'
-                      ? 'OSINT Automation Hub'
+                      ? t('workspace.osint')
                       : desktopTool === 'foundry'
-                      ? 'Data Foundry'
+                      ? t('workspace.foundry')
                       : desktopTool === 'mission'
-                      ? 'Mission Control'
+                      ? t('workspace.mission')
                       : desktopTool === 'aip'
-                      ? 'Analyst Copilot'
+                      ? t('workspace.aip')
                       : desktopTool === 'recon'
-                      ? 'Recon Toolkit'
+                      ? t('workspace.recon')
                       : desktopTool === 'ops'
-                      ? 'Command Deck'
+                      ? t('workspace.ops')
                       : desktopTool === 'lab'
-                      ? 'Innovation Lab'
+                      ? t('workspace.lab')
                       : desktopTool === 'sources'
-                      ? 'Public Intel Catalog'
+                      ? t('workspace.sources')
                       : desktopTool === 'markets'
-                      ? 'Markets & Intel'
+                      ? t('workspace.markets')
                       : desktopTool === 'intel'
-                      ? 'Intel Feed'
+                      ? t('workspace.intel')
                       : desktopTool === 'search'
-                      ? 'Locate & Share'
-                      : 'Live Alerts'}
+                      ? t('workspace.search')
+                      : t('workspace.alerts')}
                   </h2>
                 </div>
                 <span className="gotham-tag gotham-tag--info">
@@ -1336,7 +1413,8 @@ export default function Dashboard() {
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
                 {desktopTool === 'osint' && <OSINTHub />}
               </div>
-            </motion.section>
+              </motion.section>
+            )}
           </AnimatePresence>
         </>
       )}
@@ -1684,7 +1762,7 @@ export default function Dashboard() {
 
             {/* COORDINATES */}
             <div className="flex flex-col items-center min-w-[110px] px-3">
-              <div className="hud-label">COORDINATES</div>
+              <div className="hud-label">{t('hud.coordinates')}</div>
               <div className="text-[10px] font-mono font-bold text-[var(--gold-primary)] tracking-wide tabular-nums">
                 {mouseCoords ? `${mouseCoords.lat.toFixed(4)}, ${mouseCoords.lng.toFixed(4)}` : '—'}
               </div>
@@ -1694,9 +1772,9 @@ export default function Dashboard() {
 
             {/* LOCATION */}
             <div className="flex flex-col items-center min-w-[160px] max-w-[280px] px-3">
-              <div className="hud-label">LOCATION</div>
+              <div className="hud-label">{t('hud.location')}</div>
               <div className="text-[9px] text-[var(--text-secondary)] font-mono truncate max-w-[280px]">
-                {locationLabel || 'Hover over map...'}
+                {locationLabel || t('hud.hoverMap')}
               </div>
             </div>
 
@@ -1704,7 +1782,7 @@ export default function Dashboard() {
 
             {/* ZOOM */}
             <div className="flex flex-col items-center px-3">
-              <div className="hud-label">ZOOM</div>
+              <div className="hud-label">{t('hud.zoom')}</div>
               <div className="text-[10px] font-mono font-bold text-[var(--gold-primary)] tabular-nums">
                 {mapView.zoom.toFixed(1)}
               </div>
@@ -1714,7 +1792,7 @@ export default function Dashboard() {
 
             {/* ACTIVE LAYERS */}
             <div className="flex flex-col items-center px-3 min-w-[60px]">
-              <div className="hud-label">ACTIVE LAYERS</div>
+              <div className="hud-label">{t('hud.activeLayers')}</div>
               <div className="flex items-center gap-1">
                 <Layers className="w-3 h-3 text-[var(--gold-primary)]" />
                 <span className="text-[10px] font-mono font-bold text-[var(--gold-primary)] tabular-nums">
@@ -1727,7 +1805,7 @@ export default function Dashboard() {
 
             {/* DATA FEEDS */}
             <div className="flex flex-col items-center px-3 min-w-[60px]">
-              <div className="hud-label">FEEDS</div>
+              <div className="hud-label">{t('hud.feeds')}</div>
               <div className="flex items-center gap-1">
                 <Activity className="w-3 h-3 text-[var(--cyan-primary)]" />
                 <span className="text-[10px] font-mono font-bold text-[var(--cyan-primary)] tabular-nums">
@@ -1740,7 +1818,7 @@ export default function Dashboard() {
 
             {/* THROUGHPUT */}
             <div className="flex flex-col items-center px-3 min-w-[70px]">
-              <div className="hud-label">THROUGHPUT</div>
+              <div className="hud-label">{t('hud.throughput')}</div>
               <div className="flex items-center gap-1">
                 <Database className="w-3 h-3 text-[var(--alert-green)]" />
                 <DataThroughput />

@@ -12,6 +12,193 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
     restart: unless-stopped
 
+  pandora-digest:
+    build:
+      context: ./ai/pandora-digest-service
+      dockerfile: Dockerfile
+    container_name: pandora-digest
+    ports:
+      - "${PANDORA_DIGEST_PORT:-7702}:7702"
+    environment:
+      - PANDORA_BASE_URL=${PANDORA_BASE_URL:-http://pandora:3000}
+    restart: unless-stopped
+
+  pandora-alerts:
+    build:
+      context: ./ai/pandora-alerts-service
+      dockerfile: Dockerfile
+    container_name: pandora-alerts
+    ports:
+      - "${PANDORA_ALERTS_PORT:-7703}:7703"
+    environment:
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+    depends_on:
+      - pandora-digest
+    restart: unless-stopped
+
+  pandora-ontology:
+    build:
+      context: ./ai/pandora-ontology-service
+      dockerfile: Dockerfile
+    container_name: pandora-ontology
+    ports:
+      - "${PANDORA_ONTOLOGY_PORT:-7704}:7704"
+    environment:
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+    depends_on:
+      - pandora-digest
+      - pandora-alerts
+    restart: unless-stopped
+
+  pandora-cases:
+    build:
+      context: ./ai/pandora-cases-service
+      dockerfile: Dockerfile
+    container_name: pandora-cases
+    ports:
+      - "${PANDORA_CASES_PORT:-7705}:7705"
+    environment:
+      - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+    depends_on:
+      - pandora-ontology
+      - pandora-alerts
+    restart: unless-stopped
+
+  pandora-hotspots:
+    build:
+      context: ./ai/pandora-hotspots-service
+      dockerfile: Dockerfile
+    container_name: pandora-hotspots
+    ports:
+      - "${PANDORA_HOTSPOTS_PORT:-7706}:7706"
+    environment:
+      - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
+    depends_on:
+      - pandora-ontology
+    restart: unless-stopped
+
+  pandora-copilot:
+    build:
+      context: ./ai/pandora-copilot-service
+      dockerfile: Dockerfile
+    container_name: pandora-copilot
+    ports:
+      - "${PANDORA_COPILOT_PORT:-7707}:7707"
+    environment:
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
+    depends_on:
+      - pandora-digest
+      - pandora-alerts
+      - pandora-ontology
+    restart: unless-stopped
+
+  pandora-risk:
+    build:
+      context: ./ai/pandora-risk-service
+      dockerfile: Dockerfile
+    container_name: pandora-risk
+    ports:
+      - "${PANDORA_RISK_PORT:-7708}:7708"
+    environment:
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_HOTSPOTS_URL=${PANDORA_HOTSPOTS_URL:-http://pandora-hotspots:7706}
+    depends_on:
+      - pandora-digest
+      - pandora-alerts
+      - pandora-hotspots
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: pandora-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    depends_on:
+      - blackbox-exporter
+      - cadvisor
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: pandora-blackbox
+    ports:
+      - "${BLACKBOX_PORT:-9115}:9115"
+    volumes:
+      - ./observability/prometheus/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: pandora-cadvisor
+    ports:
+      - "${CADVISOR_PORT:-8080}:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:11.3.0
+    container_name: pandora-grafana
+    ports:
+      - "${GRAFANA_PORT:-3002}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-pandora}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  pandora-metrics:
+    build:
+      context: ./observability/pandora-metrics
+      dockerfile: Dockerfile
+    container_name: pandora-metrics
+    ports:
+      - "${PANDORA_METRICS_PORT:-7710}:7710"
+    environment:
+      - PANDORA_BASE_URL=${PANDORA_BASE_URL:-http://pandora:3000}
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
+      - PANDORA_CASES_URL=${PANDORA_CASES_URL:-http://pandora-cases:7705}
+      - PANDORA_HOTSPOTS_URL=${PANDORA_HOTSPOTS_URL:-http://pandora-hotspots:7706}
+      - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
+    depends_on:
+      - pandora-digest
+      - pandora-alerts
+      - pandora-ontology
+      - pandora-cases
+      - pandora-hotspots
+      - pandora-risk
+    restart: unless-stopped
+
   pandora:
     # Pulls the prebuilt image from GitHub Container Registry. The `build:`
     # block is kept as a fallback: `docker compose up -d` uses the registry
@@ -35,9 +222,23 @@ services:
       - PORT=3000
       - HOSTNAME=0.0.0.0
       - PANDORA_AI_URL=${PANDORA_AI_URL:-http://pandora-ai:7701}
+      - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
+      - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
+      - PANDORA_CASES_URL=${PANDORA_CASES_URL:-http://pandora-cases:7705}
+      - PANDORA_HOTSPOTS_URL=${PANDORA_HOTSPOTS_URL:-http://pandora-hotspots:7706}
+      - PANDORA_COPILOT_URL=${PANDORA_COPILOT_URL:-http://pandora-copilot:7707}
+      - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
     depends_on:
       - pandora-ai
+      - pandora-digest
+      - pandora-alerts
+      - pandora-ontology
+      - pandora-cases
+      - pandora-hotspots
+      - pandora-copilot
+      - pandora-risk
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──
@@ -93,3 +294,7 @@ x-casaos:
     - container: "3000"
       description:
         en_us: "Web UI (HTTP)."
+
+volumes:
+  prometheus-data:
+  grafana-data:
