@@ -115,6 +115,15 @@ services:
       - pandora-hotspots
     restart: unless-stopped
 
+  pandora-nuclear:
+    build:
+      context: ./ai/pandora-nuclear-service
+      dockerfile: Dockerfile
+    container_name: pandora-nuclear
+    ports:
+      - "${PANDORA_NUCLEAR_PORT:-7709}:7709"
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: pandora-prometheus
@@ -190,6 +199,7 @@ services:
       - PANDORA_CASES_URL=${PANDORA_CASES_URL:-http://pandora-cases:7705}
       - PANDORA_HOTSPOTS_URL=${PANDORA_HOTSPOTS_URL:-http://pandora-hotspots:7706}
       - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
+      - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
     depends_on:
       - pandora-digest
       - pandora-alerts
@@ -197,6 +207,7 @@ services:
       - pandora-cases
       - pandora-hotspots
       - pandora-risk
+      - pandora-nuclear
     restart: unless-stopped
 
   pandora:
@@ -229,6 +240,7 @@ services:
       - PANDORA_HOTSPOTS_URL=${PANDORA_HOTSPOTS_URL:-http://pandora-hotspots:7706}
       - PANDORA_COPILOT_URL=${PANDORA_COPILOT_URL:-http://pandora-copilot:7707}
       - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
+      - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
     depends_on:
       - pandora-ai
@@ -239,6 +251,7 @@ services:
       - pandora-hotspots
       - pandora-copilot
       - pandora-risk
+      - pandora-nuclear
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──

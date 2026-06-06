@@ -1218,6 +1218,9 @@ export default function Dashboard() {
         <a href="/risk" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-primary)] bg-black/30 px-2 py-0.5 text-[var(--text-secondary)] transition hover:border-[var(--gold-primary)]/40 hover:text-[var(--gold-primary)]" title="Open Risk Engine">
           <Activity className="w-3 h-3" /> RISK
         </a>
+        <a href="/deterrence" className="pointer-events-auto hidden 2xl:inline-flex items-center gap-1.5 rounded-sm border border-[var(--alert-red)]/30 bg-[var(--alert-red)]/10 px-2 py-0.5 text-[var(--alert-red)] transition hover:border-[var(--alert-red)]/50 hover:bg-[var(--alert-red)]/15" title="Open Strategic Deterrence Lab">
+          <Shield className="w-3 h-3" /> NUCLEAR
+        </a>
         <UptimeClock />
         <a
           href="https://ko-fi.com/M8D41ZYW4Z"

@@ -1,6 +1,10 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0 Pandora-OSINT/1.0';
+const GDELT_DOC_URL = 'https://api.gdeltproject.org/api/v2/doc/doc';
+const GOOGLE_NEWS_RSS_URL = 'https://news.google.com/rss/search';
+
 interface OSINTResult {
   id: string;
   title: string;
@@ -17,40 +21,138 @@ interface OSINTQuery {
   maxResults?: number;
 }
 
+type RawArticle = {
+  title: string;
+  source: string;
+  url: string;
+  content: string;
+  timestamp?: string;
+};
+
+function cleanText(value: string | undefined | null): string {
+  return (value || '')
+    .replace(/<!\[CDATA\[/g, '')
+    .replace(/\]\]>/g, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function xmlTag(item: string, tag: string): string {
+  const match = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return cleanText(match?.[1]);
+}
+
+function decodeDuckDuckGoUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://duckduckgo.com${url}`);
+    const uddg = parsed.searchParams.get('uddg');
+    return uddg ? decodeURIComponent(uddg) : parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function toResult(article: RawArticle, platform: OSINTResult['platform'], index: number, prefix: string): OSINTResult {
+  return {
+    id: `${prefix}-${index}-${Date.now()}`,
+    title: article.title || article.url,
+    source: article.source,
+    url: article.url,
+    content: article.content || article.title,
+    timestamp: article.timestamp || new Date().toISOString(),
+    platform,
+  };
+}
+
+function dedupeResults(results: OSINTResult[]): OSINTResult[] {
+  const seen = new Set<string>();
+  return results.filter((result) => {
+    const key = (result.url || result.title).toLowerCase().split('?')[0];
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return Boolean(result.title && result.url);
+  });
+}
+
+async function searchDuckDuckGo(query: string, maxResults: number, platform: OSINTResult['platform'] = 'web'): Promise<OSINTResult[]> {
+  const response = await axios.get(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+    headers: { 'User-Agent': USER_AGENT },
+    timeout: 9000,
+  });
+
+  const $ = cheerio.load(response.data);
+  const results: OSINTResult[] = [];
+  $('.result').slice(0, maxResults).each((index, element) => {
+    const link = $(element).find('a.result__a').first();
+    const title = cleanText(link.text());
+    const url = decodeDuckDuckGoUrl(link.attr('href') || '');
+    const content = cleanText($(element).find('.result__snippet').text());
+    const source = cleanText($(element).find('.result__url').text()) || 'DuckDuckGo';
+    if (title && url) {
+      results.push(toResult({ title, source, url, content }, platform, index, `duckduckgo-${platform}`));
+    }
+  });
+  return results;
+}
+
+async function searchGoogleNews(query: string, maxResults: number): Promise<OSINTResult[]> {
+  const response = await axios.get(`${GOOGLE_NEWS_RSS_URL}?q=${encodeURIComponent(query)}&hl=fr&gl=FR&ceid=FR:fr`, {
+    headers: { 'User-Agent': USER_AGENT },
+    timeout: 9000,
+  });
+  const items = String(response.data).match(/<item[\s\S]*?<\/item>/gi) || [];
+  return items.slice(0, maxResults).map((item, index) => {
+    const title = xmlTag(item, 'title');
+    const url = xmlTag(item, 'link');
+    const source = xmlTag(item, 'source') || 'Google News';
+    const content = xmlTag(item, 'description') || title;
+    const pubDate = xmlTag(item, 'pubDate');
+    return toResult({ title, source, url, content, timestamp: pubDate ? new Date(pubDate).toISOString() : undefined }, 'web', index, 'google-news');
+  }).filter((result) => result.title && result.url);
+}
+
+async function searchGdelt(query: string, maxResults: number): Promise<OSINTResult[]> {
+  const url = `${GDELT_DOC_URL}?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=${Math.min(maxResults, 250)}&sort=HybridRel&timespan=30d`;
+  const response = await axios.get(url, {
+    headers: { 'User-Agent': USER_AGENT },
+    timeout: 9000,
+  });
+  const articles = (response.data?.articles || []) as { title?: string; domain?: string; url?: string; seendate?: string; sourceCountry?: string }[];
+  return articles.slice(0, maxResults).map((article, index) => toResult({
+    title: article.title || '',
+    source: article.domain || 'GDELT',
+    url: article.url || '',
+    content: `${article.domain || 'GDELT'}${article.sourceCountry ? ` • ${article.sourceCountry}` : ''}`,
+    timestamp: article.seendate ? new Date(article.seendate).toISOString() : undefined,
+  }, 'web', index, 'gdelt')).filter((result) => result.title && result.url);
+}
+
+async function searchInternetArchive(query: string, maxResults: number): Promise<OSINTResult[]> {
+  const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier&fl[]=title&fl[]=description&fl[]=date&rows=${Math.min(maxResults, 50)}&page=1&output=json`;
+  const response = await axios.get(url, {
+    headers: { 'User-Agent': USER_AGENT },
+    timeout: 9000,
+  });
+  const docs = (response.data?.response?.docs || []) as { identifier?: string; title?: string; description?: string; date?: string }[];
+  return docs.slice(0, maxResults).map((doc, index) => toResult({
+    title: doc.title || doc.identifier || 'Internet Archive item',
+    source: 'Internet Archive',
+    url: doc.identifier ? `https://archive.org/details/${encodeURIComponent(doc.identifier)}` : 'https://archive.org',
+    content: cleanText(doc.description) || 'Archived public document / media entry.',
+    timestamp: doc.date ? new Date(doc.date).toISOString() : undefined,
+  }, 'web', index, 'archive')).filter((result) => result.title && result.url);
+}
+
 export async function scrapeTwitter(query: string, maxResults: number = 10): Promise<OSINTResult[]> {
   try {
-    // Note: In a real implementation, you would use Twitter API v2
-    // This is a simplified example using web scraping
-    const response = await axios.get(
-      `https://twitter.com/search?q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0'
-        }
-      }
-    );
-    
-    const $ = cheerio.load(response.data);
-    const results: OSINTResult[] = [];
-    
-    $('article[data-testid="tweet"]').slice(0, maxResults).each((index, element) => {
-      const title = $(element).find('div[lang]').text().trim();
-      const url = `https://twitter.com${$(element).find('a[role="link"]').attr('href')}`;
-      const content = $(element).find('div[data-testid="tweetText"]').text().trim();
-      const timestamp = $(element).find('time').attr('datetime') || new Date().toISOString();
-      
-      results.push({
-        id: `twitter-${index}-${Date.now()}`,
-        title,
-        source: 'Twitter',
-        url,
-        content,
-        timestamp,
-        platform: 'twitter'
-      });
-    });
-    
-    return results;
+    return await searchDuckDuckGo(`site:x.com OR site:twitter.com ${query}`, maxResults, 'twitter');
   } catch (error) {
     console.error('Twitter scraping error:', error);
     throw new Error('Failed to scrape Twitter');
@@ -89,36 +191,7 @@ function fallbackResults(query: string, platform: OSINTResult['platform'], maxRe
 
 export async function scrapeFacebook(query: string, maxResults: number = 10): Promise<OSINTResult[]> {
   try {
-    // Note: Facebook requires login, so this is a simplified example
-    const response = await axios.get(
-      `https://www.facebook.com/search/top?q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0'
-        }
-      }
-    );
-    
-    const $ = cheerio.load(response.data);
-    const results: OSINTResult[] = [];
-    
-    $('div[role="article"]').slice(0, maxResults).each((index, element) => {
-      const title = $(element).find('strong').text().trim();
-      const url = $(element).find('a').attr('href') || '';
-      const content = $(element).text().trim();
-      
-      results.push({
-        id: `facebook-${index}-${Date.now()}`,
-        title,
-        source: 'Facebook',
-        url: url.startsWith('http') ? url : `https://www.facebook.com${url}`,
-        content,
-        timestamp: new Date().toISOString(),
-        platform: 'facebook'
-      });
-    });
-    
-    return results;
+    return await searchDuckDuckGo(`site:facebook.com ${query}`, maxResults, 'facebook');
   } catch (error) {
     console.error('Facebook scraping error:', error);
     throw new Error('Failed to scrape Facebook');
@@ -127,36 +200,7 @@ export async function scrapeFacebook(query: string, maxResults: number = 10): Pr
 
 export async function scrapeLinkedIn(query: string, maxResults: number = 10): Promise<OSINTResult[]> {
   try {
-    const response = await axios.get(
-      `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0'
-        }
-      }
-    );
-    
-    const $ = cheerio.load(response.data);
-    const results: OSINTResult[] = [];
-    
-    $('li.reusable-search__result-container').slice(0, maxResults).each((index, element) => {
-      const title = $(element).find('h3').text().trim();
-      const url = $(element).find('a').attr('href') || '';
-      const content = $(element).find('p').text().trim();
-      const timestamp = $(element).find('time').attr('datetime') || new Date().toISOString();
-      
-      results.push({
-        id: `linkedin-${index}-${Date.now()}`,
-        title,
-        source: 'LinkedIn',
-        url: url.startsWith('http') ? url : `https://www.linkedin.com${url}`,
-        content,
-        timestamp,
-        platform: 'linkedin'
-      });
-    });
-    
-    return results;
+    return await searchDuckDuckGo(`site:linkedin.com/in OR site:linkedin.com/company ${query}`, maxResults, 'linkedin');
   } catch (error) {
     console.error('LinkedIn scraping error:', error);
     throw new Error('Failed to scrape LinkedIn');
@@ -164,40 +208,15 @@ export async function scrapeLinkedIn(query: string, maxResults: number = 10): Pr
 }
 
 export async function scrapeWeb(query: string, maxResults: number = 10): Promise<OSINTResult[]> {
-  try {
-    const response = await axios.get(
-      `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0'
-        }
-      }
-    );
-    
-    const $ = cheerio.load(response.data);
-    const results: OSINTResult[] = [];
-    
-    $('div.g').slice(0, maxResults).each((index, element) => {
-      const title = $(element).find('h3').text().trim();
-      const url = $(element).find('a').attr('href') || '';
-      const content = $(element).find('div[data-sncf]').text().trim();
-      
-      results.push({
-        id: `web-${index}-${Date.now()}`,
-        title,
-        source: 'Web Search',
-        url,
-        content,
-        timestamp: new Date().toISOString(),
-        platform: 'web'
-      });
-    });
-    
-    return results;
-  } catch (error) {
-    console.error('Web search error:', error);
-    throw new Error('Failed to perform web search');
-  }
+  const perSource = Math.max(3, Math.ceil(maxResults / 3));
+  const settled = await Promise.allSettled([
+    searchGoogleNews(query, perSource),
+    searchGdelt(query, perSource),
+    searchDuckDuckGo(query, perSource, 'web'),
+    searchInternetArchive(query, Math.max(2, Math.ceil(maxResults / 4))),
+  ]);
+  const results = settled.flatMap((item) => item.status === 'fulfilled' ? item.value : []);
+  return dedupeResults(results).slice(0, maxResults);
 }
 
 export async function runOSINTQuery(query: OSINTQuery): Promise<OSINTResult[]> {
@@ -222,6 +241,8 @@ export async function runOSINTQuery(query: OSINTQuery): Promise<OSINTResult[]> {
           results = await scrapeWeb(searchQuery, maxResults);
           break;
       }
+
+      results = dedupeResults(results).slice(0, maxResults);
 
       if (results.length === 0) {
         results = fallbackResults(searchQuery, platform, maxResults);
