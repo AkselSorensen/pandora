@@ -171,7 +171,7 @@ export default function DeterrencePage() {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(216,162,74,0.18),transparent_58%)]" />
                 <div className="absolute inset-x-0 top-1/2 h-px animate-pulse bg-[var(--gold-primary)]/50 shadow-[0_0_30px_var(--gold-primary)]" />
                 <div className="relative rounded-2xl border border-[var(--gold-primary)]/40 bg-black/70 p-5 shadow-2xl shadow-[var(--gold-primary)]/20">
-                  <img src="/asset/pi-euler.gif" alt="Analyse OSINT en cours" className="mx-auto h-[360px] w-[360px] object-contain md:h-[430px] md:w-[430px]" />
+                  <img src="/asset/nuclear.gif" alt="Analyse  nucléaire en cours" className="mx-auto h-[360px] w-[360px] object-contain md:h-[430px] md:w-[430px]" />
                 </div>
               </div>
 
@@ -180,7 +180,7 @@ export default function DeterrencePage() {
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--gold-primary)]" /> Live analysis
                 </div>
                 <h2 className="font-mono text-3xl font-black uppercase tracking-[.18em] text-[var(--text-primary)] md:text-4xl">
-                  Analyse OSINT
+                  Analyse Nucléaire
                 </h2>
                 <p className="mt-3 text-sm uppercase tracking-[.35em] text-[var(--gold-primary)]">
                   {actorName} → {targetName}
@@ -194,7 +194,7 @@ export default function DeterrencePage() {
                     <span>Sources web</span><span className="text-[var(--gold-primary)]">Collecte</span>
                   </div>
                   <div className="flex items-center justify-between rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-2">
-                    <span>Signaux OSINT</span><span className="text-[var(--gold-primary)]">Analyse</span>
+                    <span>Signaux OSINT</span><span className="text-[var(--gold-primary)]">Analyse Nucléaire</span>
                   </div>
                   <div className="flex items-center justify-between rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-2">
                     <span>Risque nucléaire</span><span className="text-[var(--gold-primary)]">Calcul</span>
@@ -224,7 +224,7 @@ export default function DeterrencePage() {
             </div>
           </div>
           <button onClick={analyze} className="glass-panel px-4 py-2 font-mono text-xs text-[var(--gold-primary)]">
-            <RefreshCw className={`mr-2 inline h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Analyser
+            <RefreshCw className={`mr-2 inline h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Analyser Le Pays
           </button>
         </header>
 
