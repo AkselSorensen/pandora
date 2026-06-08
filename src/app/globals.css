@@ -1418,6 +1418,403 @@ body::before {
   opacity: 1;
 }
 
+/* ===================================================================
+   DETERRENCE / NUCLEAR OSINT — immersive command-room skin
+   =================================================================== */
+.deterrence-page {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(191, 164, 106, 0.13), transparent 28%),
+    radial-gradient(circle at 86% 26%, rgba(198, 93, 78, 0.13), transparent 30%),
+    linear-gradient(135deg, #030405 0%, #080b0d 45%, #0d1015 100%) !important;
+}
+
+.deterrence-bg-grid {
+  z-index: 0;
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(191, 164, 106, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(191, 164, 106, 0.075) 1px, transparent 1px),
+    linear-gradient(rgba(198, 93, 78, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(198, 93, 78, 0.03) 1px, transparent 1px);
+  background-size: 72px 72px, 72px 72px, 18px 18px, 18px 18px;
+  mask-image: radial-gradient(circle at center, black, transparent 88%);
+}
+
+.deterrence-bg-orb {
+  z-index: 0;
+  width: 42vw;
+  height: 42vw;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.22;
+}
+
+.deterrence-bg-orb--gold {
+  left: -14vw;
+  top: 18vh;
+  background: rgba(191, 164, 106, 0.5);
+}
+
+.deterrence-bg-orb--red {
+  right: -16vw;
+  top: 4vh;
+  background: rgba(198, 93, 78, 0.44);
+}
+
+.deterrence-shell .glass-panel,
+.deterrence-control-panel {
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    rgba(6, 9, 13, 0.82) !important;
+  border-color: rgba(191, 164, 106, 0.18) !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(240, 233, 216, 0.055);
+}
+
+.deterrence-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 22% 35%, rgba(191, 164, 106, 0.18), transparent 36%),
+    radial-gradient(circle at 82% 30%, rgba(198, 93, 78, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(8, 11, 15, 0.96), rgba(13, 16, 21, 0.86));
+  box-shadow: 0 30px 95px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(240, 233, 216, 0.08);
+}
+
+.deterrence-hero::before,
+.deterrence-hero::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.deterrence-hero::before {
+  inset: 0;
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(191, 164, 106, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(191, 164, 106, 0.10) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.deterrence-hero::after {
+  left: -10%;
+  right: -10%;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(215, 193, 139, 0.75), transparent);
+  box-shadow: 0 0 34px rgba(215, 193, 139, 0.35);
+}
+
+.deterrence-icon-btn,
+.deterrence-primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(191, 164, 106, 0.36);
+  background: linear-gradient(180deg, rgba(191, 164, 106, 0.17), rgba(191, 164, 106, 0.06));
+  color: var(--gold-light);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35), 0 0 26px rgba(191, 164, 106, 0.08);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.deterrence-icon-btn {
+  padding: 10px;
+}
+
+.deterrence-primary-action:hover:not(:disabled),
+.deterrence-icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(215, 193, 139, 0.68);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42), 0 0 34px rgba(191, 164, 106, 0.16);
+}
+
+.deterrence-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.deterrence-hero-stat {
+  min-height: 104px;
+  border: 1px solid rgba(191, 164, 106, 0.18);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.34);
+  padding: 14px;
+  color: var(--gold-primary);
+  font-family: var(--font-hud);
+}
+
+.deterrence-hero-stat span {
+  display: block;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.deterrence-hero-stat strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--gold-light);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.deterrence-gauge {
+  position: relative;
+  overflow: hidden;
+}
+
+.deterrence-gauge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  background: linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.09) 48%, transparent 56%);
+  transform: translateX(-80%);
+  animation: deterrence-card-sheen 5.5s ease-in-out infinite;
+}
+
+.deterrence-loader {
+  background:
+    radial-gradient(circle at 28% 50%, rgba(191, 164, 106, 0.15), transparent 34%),
+    radial-gradient(circle at 74% 44%, rgba(198, 93, 78, 0.15), transparent 34%),
+    rgba(2, 4, 6, 0.96);
+}
+
+.deterrence-loader-grid,
+.deterrence-loader-noise,
+.deterrence-loader-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.deterrence-loader-grid {
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(215, 193, 139, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 193, 139, 0.11) 1px, transparent 1px);
+  background-size: 54px 54px;
+  animation: deterrence-grid-drift 9s linear infinite;
+}
+
+.deterrence-loader-noise {
+  opacity: 0.12;
+  background-image: repeating-radial-gradient(circle at 30% 40%, rgba(255,255,255,0.28) 0 1px, transparent 1px 6px);
+  mix-blend-mode: screen;
+}
+
+.deterrence-loader-scan {
+  background: linear-gradient(180deg, transparent, rgba(215, 193, 139, 0.11), transparent);
+  height: 34%;
+  animation: deterrence-scan 2.8s ease-in-out infinite;
+}
+
+.deterrence-loader-frame {
+  background: rgba(6, 10, 16, 0.9);
+  border: 1px solid rgba(191, 164, 106, 0.28);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.72), 0 0 80px rgba(191, 164, 106, 0.1);
+}
+
+.deterrence-loader-topline {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+  box-shadow: 0 0 26px rgba(215, 193, 139, 0.55);
+  z-index: 2;
+}
+
+.deterrence-radar-shell {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(78%, 560px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(191, 164, 106, 0.13), rgba(0, 0, 0, 0.74) 60%, transparent 70%);
+}
+
+.deterrence-radar-ring,
+.deterrence-radar-cross,
+.deterrence-radar-sweep,
+.deterrence-nuclear-core {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+}
+
+.deterrence-radar-ring {
+  border-radius: 999px;
+  border: 1px solid rgba(215, 193, 139, 0.18);
+}
+
+.deterrence-radar-ring--one { width: 96%; height: 96%; }
+.deterrence-radar-ring--two { width: 70%; height: 70%; border-color: rgba(215, 193, 139, 0.27); }
+.deterrence-radar-ring--three { width: 43%; height: 43%; border-color: rgba(215, 193, 139, 0.36); }
+
+.deterrence-radar-cross--h,
+.deterrence-radar-cross--v {
+  background: linear-gradient(90deg, transparent, rgba(215, 193, 139, 0.35), transparent);
+}
+
+.deterrence-radar-cross--h { width: 100%; height: 1px; }
+.deterrence-radar-cross--v { width: 1px; height: 100%; background: linear-gradient(180deg, transparent, rgba(215, 193, 139, 0.35), transparent); }
+
+.deterrence-radar-sweep {
+  width: 48%;
+  height: 48%;
+  transform-origin: 0 0;
+  background: conic-gradient(from -16deg, rgba(215, 193, 139, 0.46), transparent 28%);
+  animation: deterrence-radar-sweep 3.4s linear infinite;
+  border-radius: 0 100% 0 0;
+}
+
+.deterrence-nuclear-core {
+  width: min(46%, 270px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(215, 193, 139, 0.5);
+  background: black;
+  box-shadow: 0 0 65px rgba(191, 164, 106, 0.22);
+}
+
+.deterrence-loader-title,
+.deterrence-loader-percent {
+  text-shadow: 0 0 34px rgba(191, 164, 106, 0.18);
+}
+
+.deterrence-stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 46px;
+  border: 1px solid rgba(221, 214, 193, 0.08);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.24);
+  padding: 12px 14px;
+  color: var(--text-muted);
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.deterrence-stage-row.is-active {
+  color: var(--gold-light);
+  border-color: rgba(215, 193, 139, 0.64);
+  background: rgba(191, 164, 106, 0.10);
+  box-shadow: 0 0 35px rgba(191, 164, 106, 0.08);
+}
+
+.deterrence-stage-row.is-done {
+  color: var(--alert-green);
+}
+
+.deterrence-stage-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(221, 214, 193, 0.2);
+}
+
+.deterrence-stage-row.is-active .deterrence-stage-dot {
+  background: var(--gold-light);
+  box-shadow: 0 0 18px rgba(215, 193, 139, 0.75);
+  animation: pandora-pulse 1.15s ease-in-out infinite;
+}
+
+.deterrence-stage-row.is-done .deterrence-stage-dot {
+  background: var(--alert-green);
+}
+
+.deterrence-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.68);
+  border: 1px solid rgba(191, 164, 106, 0.18);
+}
+
+.deterrence-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f6330, #f1d49a, var(--gold-primary));
+  box-shadow: 0 0 26px rgba(215, 193, 139, 0.58);
+  transition: width 0.5s ease;
+}
+
+.deterrence-loader-stat {
+  min-width: 0;
+  border: 1px solid rgba(191, 164, 106, 0.16);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.38);
+  padding: 12px;
+}
+
+.deterrence-loader-stat span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.deterrence-loader-stat strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--gold-light);
+  font-size: 22px;
+  line-height: 1;
+}
+
+@keyframes deterrence-grid-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(54px, 54px, 0); }
+}
+
+@keyframes deterrence-scan {
+  0% { transform: translateY(-120%); opacity: 0; }
+  18%, 78% { opacity: 1; }
+  100% { transform: translateY(310%); opacity: 0; }
+}
+
+@keyframes deterrence-radar-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes deterrence-card-sheen {
+  0%, 58% { transform: translateX(-90%); }
+  100% { transform: translateX(120%); }
+}
+
+@media (max-width: 768px) {
+  .deterrence-hero h1,
+  .deterrence-loader-title {
+    letter-spacing: 0.08em !important;
+  }
+
+  .deterrence-stage-row {
+    letter-spacing: 0.12em;
+  }
+}
+
 @media (max-width: 768px) {
   .public-intel-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
