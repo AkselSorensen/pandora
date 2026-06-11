@@ -4,12 +4,12 @@
 
 - Nom du module 168H : **Pandora**
 - Type de projet : plateforme de veille OSINT et de visualisation de signaux publics
-- Configuration choisie : volet 168H uniquement pour le moment
-- Volet GPE : non traité dans cette fiche
-- Équipe : À compléter
-- Référent ou contact : À compléter
+- Configuration choisie : volet 168H avec lien fonctionnel vers le GPE
+- Volet GPE associé : **Meditracks**, projet de traçabilité blockchain du cycle de vie d'un médicament
+- Équipe : boukro_t
+- Référent ou contact : boukro_t
 - Version de la fiche : v1
-- Date de remise : À compléter
+- Date de remise : 07/06/2026
 
 ## Dossiers prévus
 
@@ -20,11 +20,33 @@
 - Dossier prototype : `volet-168h/prototype/`
 - Dossier soutenance : `volet-168h/soutenance/`
 
-Le dossier `volet-gpe/` existe dans l'arborescence, mais il n'est pas traité pour le moment. Cette fiche concerne uniquement **Pandora** dans le cadre du module 168H.
+Le dossier `volet-gpe/` existe dans l'arborescence afin de documenter le lien entre **Pandora** et le GPE **Meditracks**. Cette fiche concerne principalement **Pandora** dans le cadre du module 168H, tout en explicitant son rôle complémentaire pour Meditracks.
 
 ## Elevator pitch
 
 > Pandora est une plateforme de veille OSINT qui centralise des signaux publics liés à la géopolitique, la cybersécurité, les risques pays, les flux d'actualité, les transports et les zones sensibles. Le problème adressé est la dispersion de l'information : lorsqu'une équipe veut comprendre rapidement une situation mondiale, elle doit consulter de nombreuses sources séparées. Pandora propose une interface unique permettant d'observer, croiser et expliquer ces signaux plus rapidement. En 168h, l'objectif est de livrer un prototype démontrable, documenté et défendable en soutenance.
+
+## Lien avec le GPE Meditracks
+
+Le GPE associé au projet est **Meditracks**, une solution visant à retracer le cycle de vie d'un médicament grâce à la blockchain. Meditracks permet de suivre les étapes importantes du parcours d'un médicament : fabrication, contrôle qualité, transport, stockage, distribution et remise au patient ou à la pharmacie.
+
+Pandora peut être utilisé en complément de Meditracks comme une couche de veille OSINT et d'analyse des risques autour de cette chaîne pharmaceutique. La blockchain apporte la preuve du parcours du médicament, tandis que Pandora apporte le contexte externe pouvant influencer ou fragiliser ce parcours.
+
+Concrètement, Pandora peut aider Meditracks à surveiller :
+
+- les risques pays liés aux zones de fabrication ou de transit ;
+- les perturbations logistiques pouvant impacter le transport des lots ;
+- les alertes sanitaires ou rappels de médicaments ;
+- les cybermenaces visant les laboratoires, transporteurs ou systèmes de santé ;
+- les signaux publics liés à la contrefaçon pharmaceutique ;
+- les événements géopolitiques pouvant affecter la chaîne d'approvisionnement.
+
+L'association de Meditracks et Pandora permet donc de construire une vision plus complète : Meditracks permet de savoir où est passé un médicament et de garantir l'intégrité de son historique, tandis que Pandora permet de comprendre si son parcours présente un risque externe.
+
+Formule synthétique :
+
+> Meditracks = preuve blockchain et traçabilité du médicament.  
+> Pandora = veille OSINT et analyse des risques autour de son parcours.
 
 ## Problème adressé
 
@@ -72,13 +94,14 @@ L'objectif du sprint est de produire un prototype cohérent de Pandora, avec :
 - Finaliser un prototype démontrable de Pandora.
 - Documenter l'architecture générale du projet.
 - Présenter l'organisation en services et flux de données.
+- Expliquer le lien fonctionnel avec Meditracks comme cas d'usage complémentaire.
 - Préparer une démonstration guidée.
 - Produire les preuves attendues : captures, journal de sprint, historique Git, documentation.
 - Assumer les limites des sources ouvertes et du prototype.
 
 ### Hors périmètre
 
-- Traiter le volet GPE.
+- Développer techniquement Meditracks ou sa blockchain dans Pandora.
 - Produire un outil de renseignement professionnel complet.
 - Garantir l'exhaustivité ou l'exactitude parfaite des informations.
 - Remplacer une analyse humaine.
@@ -101,7 +124,7 @@ Le démonstrateur doit permettre de montrer :
 
 1. une carte ou interface principale ;
 2. plusieurs catégories de signaux publics ;
-3. un scénario de veille ;
+3. un scénario de veille pouvant être relié à Meditracks, par exemple le suivi des risques autour du parcours d'un lot de médicaments ;
 4. une lecture synthétique de la situation ;
 5. les limites du prototype.
 
@@ -154,12 +177,4 @@ Le démonstrateur doit permettre de montrer :
 - Les preuves sont présentes.
 - Les limites sont assumées.
 
-## Retours de prévalidation
 
-À remplir après retour coach/intervenant :
-
-- Décision : prévalidé / à corriger / refusé
-- Points à corriger : À compléter
-- Points à réduire : À compléter
-- Points à clarifier : À compléter
-- Date cible de nouvelle version : À compléter

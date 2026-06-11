@@ -46,6 +46,29 @@ type LoadingStage = {
   progress: number;
 };
 
+type DeterrenceHistoryItem = {
+  id: string;
+  generatedAt: string;
+  actor: string;
+  target: string;
+  actorName: string;
+  targetName: string;
+  escalation: number;
+  stability: number;
+  deterrence: number;
+  miscalc: number;
+  nuclearMentions: number;
+  militaryMentions: number;
+  sourceCount: number;
+  articleCount: number;
+  level: number;
+  levelLabel: string;
+};
+
+type TimelineFilter = 'all' | 'nuclear' | 'military' | 'diplomacy' | 'sanctions' | 'high_trust' | 'institutional';
+type WatchlistItem = { actor: string; target: string; label: string; addedAt: string };
+type AlertThresholds = { risk: number; nuclearMentions: number; delta: number; minSources: number };
+
 const LOADING_STAGES: LoadingStage[] = [
   { id: 'prepare', label: 'Préparation requête', progress: 8 },
   { id: 'collect', label: 'Collecte sources web', progress: 34 },
@@ -63,6 +86,31 @@ const SCENARIO_OPTIONS = [
   { key: 'accidental_launch_fear', label: 'Crainte de lancement accidentel' },
   { key: 'major_escalation', label: 'Escalade majeure' },
 ] as const;
+
+const CRISIS_PRESETS = [
+  { label: 'Baltique / OTAN-Russie', actor: 'france', target: 'russia', note: 'Flanc Est européen' },
+  { label: 'Taïwan / USA-Chine', actor: 'united_states', target: 'china', note: 'Indo-Pacifique' },
+  { label: 'Inde-Pakistan', actor: 'india', target: 'pakistan', note: 'Dissuasion régionale' },
+  { label: 'Corée du Nord-USA', actor: 'north_korea', target: 'united_states', note: 'Missiles / garanties' },
+  { label: 'France-Russie', actor: 'france', target: 'russia', note: 'Europe stratégique' },
+] as const;
+
+const HISTORY_STORAGE_KEY = 'pandora.deterrence.history.v1';
+const WATCHLIST_STORAGE_KEY = 'pandora.deterrence.watchlist.v1';
+const ALERT_THRESHOLDS_STORAGE_KEY = 'pandora.deterrence.thresholds.v1';
+
+const DEFAULT_ALERT_THRESHOLDS: AlertThresholds = { risk: 65, nuclearMentions: 2, delta: 10, minSources: 3 };
+const AUTO_REFRESH_OPTIONS = [0, 5, 15, 30] as const;
+
+const TIMELINE_FILTERS: { key: TimelineFilter; label: string }[] = [
+  { key: 'all', label: 'Tout' },
+  { key: 'nuclear', label: 'Nucléaire' },
+  { key: 'military', label: 'Militaire' },
+  { key: 'diplomacy', label: 'Diplomatie' },
+  { key: 'sanctions', label: 'Sanctions' },
+  { key: 'high_trust', label: 'Haute confiance' },
+  { key: 'institutional', label: 'Institutionnel' },
+];
 
 const loadingStageById = LOADING_STAGES.reduce<Record<LoadingStage['id'], LoadingStage>>(
   (acc, stage) => ({ ...acc, [stage.id]: stage }),
@@ -92,6 +140,11 @@ function riskColor(score: number) {
 
 function formatElapsed(ms: number) {
   return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function formatDelta(value: number) {
+  if (value > 0) return `+${value}`;
+  return `${value}`;
 }
 
 function strategicLevel(score: number) {
@@ -153,6 +206,78 @@ function formatSourceDate(value?: string) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
 }
 
+function compactDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
+function trendLabel(delta: number) {
+  if (delta >= 10) return 'Hausse forte';
+  if (delta >= 3) return 'Hausse modérée';
+  if (delta <= -10) return 'Baisse forte';
+  if (delta <= -3) return 'Baisse modérée';
+  return 'Stable';
+}
+
+function clampScore(value: number) {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function loadJsonArray<T>(key: string): T[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function loadJsonObject<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return { ...fallback, ...parsed };
+  } catch {
+    return fallback;
+  }
+}
+
+function sourceSearchText(source: SourceItem) {
+  return `${source.title || ''} ${source.domain || ''} ${source.connector || ''}`.toLowerCase();
+}
+
+function sourceTags(source: SourceItem) {
+  const raw = sourceSearchText(source);
+  const credibility = sourceCredibility(source);
+  const tags: string[] = [];
+  if (/nuclear|warhead|atomic|missile|icbm|deterrence|nucléaire/.test(raw)) tags.push('NUCLEAR');
+  if (/military|troop|army|navy|air force|defense|defence|strike|drill|exercice|militaire/.test(raw)) tags.push('MILITARY');
+  if (/diplomacy|talks|summit|minister|treaty|negotiation|diplomatie/.test(raw)) tags.push('DIPLOMACY');
+  if (/sanction|embargo|restriction/.test(raw)) tags.push('SANCTIONS');
+  if (credibility.score >= 80) tags.push('HIGH TRUST');
+  if (/sipri|iaea|un|nato|gov|defense|defence/.test(raw)) tags.push('INSTITUTIONAL');
+  if (/gdelt|google news|rss|search/.test(raw)) tags.push('AGGREGATOR');
+  return tags.length ? tags : ['OSINT'];
+}
+
+function sourceMatchesFilter(source: SourceItem, filter: TimelineFilter) {
+  if (filter === 'all') return true;
+  const tags = sourceTags(source);
+  if (filter === 'nuclear') return tags.includes('NUCLEAR');
+  if (filter === 'military') return tags.includes('MILITARY');
+  if (filter === 'diplomacy') return tags.includes('DIPLOMACY');
+  if (filter === 'sanctions') return tags.includes('SANCTIONS');
+  if (filter === 'high_trust') return tags.includes('HIGH TRUST');
+  if (filter === 'institutional') return tags.includes('INSTITUTIONAL');
+  return true;
+}
+
 function FactorList({ title, items, color }: { title: string; items: string[]; color: string }) {
   return (
     <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-4">
@@ -210,8 +335,26 @@ export default function DeterrencePage() {
   const [scenarioError, setScenarioError] = useState('');
   const [animatedScores, setAnimatedScores] = useState({ escalation: 0, stability: 0, deterrence: 0, miscalc: 0 });
   const [analysisCompleteFlash, setAnalysisCompleteFlash] = useState(false);
+  const [history, setHistory] = useState<DeterrenceHistoryItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => loadJsonArray<WatchlistItem>(WATCHLIST_STORAGE_KEY).slice(0, 8));
+  const [alertThresholds, setAlertThresholds] = useState<AlertThresholds>(() => loadJsonObject(ALERT_THRESHOLDS_STORAGE_KEY, DEFAULT_ALERT_THRESHOLDS));
+  const [autoRefreshMinutes, setAutoRefreshMinutes] = useState<(typeof AUTO_REFRESH_OPTIONS)[number]>(0);
+  const [timelineFilter, setTimelineFilter] = useState<TimelineFilter>('all');
   const [error, setError] = useState('');
   const activeAnalysisRef = useRef(0);
+  const activePairRef = useRef({ actor, target });
+  const persistedResultRef = useRef<string | null>(null);
 
   async function loadCountries() {
     const r = await fetch('/api/deterrence?resource=countries', { cache: 'no-store' });
@@ -219,9 +362,11 @@ export default function DeterrencePage() {
     if (Array.isArray(d.countries)) setCountries(d.countries);
   }
 
-  async function analyze() {
+  async function analyze(nextActor = actor, nextTarget = target) {
     const analysisId = activeAnalysisRef.current + 1;
     activeAnalysisRef.current = analysisId;
+    activePairRef.current = { actor: nextActor, target: nextTarget };
+    // eslint-disable-next-line react-hooks/purity
     const startedAt = Date.now();
     setLoading(true);
     setLoadingStartedAt(startedAt);
@@ -232,8 +377,8 @@ export default function DeterrencePage() {
     try {
       const payload = {
         action: 'deterrence',
-        actor,
-        target,
+        actor: nextActor,
+        target: nextTarget,
         tension: 50,
         alliance_involvement: 50,
         communication_quality: 50,
@@ -277,6 +422,47 @@ export default function DeterrencePage() {
         setLoadingStartedAt(null);
       }
     }
+  }
+
+  function applyPreset(preset: typeof CRISIS_PRESETS[number]) {
+    setActor(preset.actor);
+    setTarget(preset.target);
+    setScenarioResults([]);
+    setScenarioError('');
+    analyze(preset.actor, preset.target);
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    window.localStorage.removeItem(HISTORY_STORAGE_KEY);
+  }
+
+  function toggleWatchlist() {
+    const key = `${actor}:${target}`;
+    setWatchlist((prev) => {
+      const exists = prev.some((item) => `${item.actor}:${item.target}` === key);
+      const next = exists
+        ? prev.filter((item) => `${item.actor}:${item.target}` !== key)
+        : [{ actor, target, label: `${actorName} → ${targetName}`, addedAt: new Date().toISOString() }, ...prev].slice(0, 8);
+      window.localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function updateThreshold<K extends keyof AlertThresholds>(key: K, value: number) {
+    setAlertThresholds((prev) => {
+      const next = { ...prev, [key]: value };
+      window.localStorage.setItem(ALERT_THRESHOLDS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function analyzeWatchlist() {
+    const first = watchlist[0];
+    if (!first || loading) return;
+    setActor(first.actor);
+    setTarget(first.target);
+    analyze(first.actor, first.target);
   }
 
   async function compareScenarios() {
@@ -331,6 +517,15 @@ export default function DeterrencePage() {
     return () => window.clearInterval(timer);
   }, [loading, loadingStartedAt]);
 
+  useEffect(() => {
+    if (!autoRefreshMinutes || loading || actor === target) return;
+    const timer = window.setInterval(() => {
+      analyze();
+    }, autoRefreshMinutes * 60 * 1000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefreshMinutes, loading, actor, target]);
+
   const actorName = countries.find((c) => c.key === actor)?.name || actor;
   const targetName = countries.find((c) => c.key === target)?.name || target;
   const scores = useMemo(() => result?.scores || {}, [result]);
@@ -379,6 +574,49 @@ export default function DeterrencePage() {
   const pandoraLevel = strategicLevel(escalation);
   const osintCoverage = coverageAssessment(articleCount, uniqueSourceCount, Boolean(nuclearContext));
   const pairFactorScore = Math.min(100, Math.round((nuclearContext?.nuclearPairFactor ?? 0) * 100));
+
+  useEffect(() => {
+    if (!result) return;
+    const pair = activePairRef.current;
+    const generatedAt = result.generatedAt || new Date().toISOString();
+    const persistKey = `${pair.actor}:${pair.target}:${generatedAt}:${escalation}:${articleCount}:${uniqueSourceCount}`;
+    if (persistedResultRef.current === persistKey) return;
+    persistedResultRef.current = persistKey;
+    setCurrentHistoryId(persistKey);
+
+    const item: DeterrenceHistoryItem = {
+      id: persistKey,
+      generatedAt,
+      actor: pair.actor,
+      target: pair.target,
+      actorName: countries.find((c) => c.key === pair.actor)?.name || pair.actor,
+      targetName: countries.find((c) => c.key === pair.target)?.name || pair.target,
+      escalation,
+      stability,
+      deterrence,
+      miscalc,
+      nuclearMentions,
+      militaryMentions,
+      sourceCount: uniqueSourceCount,
+      articleCount,
+      level: pandoraLevel.level,
+      levelLabel: pandoraLevel.label,
+    };
+
+    setHistory((prev) => {
+      const next = [item, ...prev.filter((entry) => entry.id !== item.id)].slice(0, 12);
+      window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [result, countries, escalation, stability, deterrence, miscalc, nuclearMentions, militaryMentions, uniqueSourceCount, articleCount, pandoraLevel.level, pandoraLevel.label]);
+
+  const previousPairAnalysis = useMemo(() => {
+    if (!history.length) return null;
+    return history.find((entry) => entry.actor === actor && entry.target === target && entry.id !== currentHistoryId) || null;
+  }, [history, actor, target, currentHistoryId]);
+
+  const trendDelta = previousPairAnalysis ? escalation - previousPairAnalysis.escalation : 0;
+  const trendColor = trendDelta > 0 ? 'var(--alert-red)' : trendDelta < 0 ? 'var(--alert-green)' : 'var(--gold-primary)';
 
   const aggravatingFactors = useMemo(() => {
     const factors: string[] = [];
@@ -450,6 +688,49 @@ export default function DeterrencePage() {
     return Array.from(byName.values()).sort((a, b) => b.credibility.score - a.credibility.score || b.count - a.count).slice(0, 9);
   }, [sourceCounts, sources]);
 
+  const currentPairKey = `${actor}:${target}`;
+  const isWatchlisted = watchlist.some((item) => `${item.actor}:${item.target}` === currentPairKey);
+  const highTrustSourceCount = sourceCredibilityItems.filter((item) => item.credibility.score >= 80).length;
+  const sourceDiversityScore = clampScore(uniqueSourceCount * 9 + highTrustSourceCount * 10 - Math.max(0, articleCount - uniqueSourceCount) * 2);
+  const analyticalConfidence = clampScore(
+    osintCoverage.score * 0.45 +
+    sourceDiversityScore * 0.25 +
+    highTrustSourceCount * 8 +
+    (nuclearContext ? 12 : 0) -
+    contradictionSignals.length * 8
+  );
+  const confidenceLabel = analyticalConfidence >= 75 ? 'Confiance forte' : analyticalConfidence >= 50 ? 'Confiance moyenne' : 'Confiance faible';
+  const activeAlerts = [
+    escalation >= alertThresholds.risk ? `Risque ${escalation}/100 supérieur au seuil ${alertThresholds.risk}.` : '',
+    nuclearMentions >= alertThresholds.nuclearMentions ? `${nuclearMentions} mention(s) nucléaire(s), seuil ${alertThresholds.nuclearMentions}.` : '',
+    previousPairAnalysis && Math.abs(trendDelta) >= alertThresholds.delta ? `Variation de risque ${formatDelta(trendDelta)}, seuil ±${alertThresholds.delta}.` : '',
+    escalation >= alertThresholds.risk && uniqueSourceCount <= alertThresholds.minSources ? `Risque élevé avec seulement ${uniqueSourceCount} source(s) unique(s).` : '',
+  ].filter(Boolean);
+  const heatmapSignals = [
+    { label: 'Nucléaire', value: clampScore(nuclearMentions * 18), detail: `${nuclearMentions} mention(s)`, color: 'var(--gold-primary)' },
+    { label: 'Militaire', value: clampScore(militaryMentions * 14), detail: `${militaryMentions} mention(s)`, color: '#C18447' },
+    { label: 'Diplomatie', value: clampScore(diplomacyMentions * 18), detail: `${diplomacyMentions} mention(s)`, color: 'var(--alert-green)' },
+    { label: 'Sanctions', value: clampScore(sanctionMentions * 18), detail: `${sanctionMentions} mention(s)`, color: 'var(--text-secondary)' },
+    { label: 'Stabilité', value: stability, detail: `${stability}/100`, color: 'var(--gold-primary)' },
+    { label: 'Mauvais calcul', value: miscalc, detail: `${miscalc}/100`, color: '#C18447' },
+    { label: 'Couverture', value: osintCoverage.score, detail: osintCoverage.label, color: 'var(--gold-primary)' },
+    { label: 'Dissuasion', value: deterrence, detail: `${deterrence}/100`, color: 'var(--alert-green)' },
+  ];
+  const filteredTimelineItems = useMemo(() => timelineItems.filter((item) => sourceMatchesFilter(item, timelineFilter)), [timelineItems, timelineFilter]);
+  const whatChanged = previousPairAnalysis ? [
+    `Risque : ${previousPairAnalysis.escalation} → ${escalation} (${formatDelta(trendDelta)}).`,
+    `Mentions nucléaire/militaire : ${previousPairAnalysis.nuclearMentions + previousPairAnalysis.militaryMentions} → ${nuclearMentions + militaryMentions}.`,
+    `Sources uniques : ${previousPairAnalysis.sourceCount} → ${uniqueSourceCount}.`,
+    `Niveau stratégique précédent : ${previousPairAnalysis.level} — ${previousPairAnalysis.levelLabel}.`,
+  ] : ['Aucun snapshot précédent pour cette paire : tendance locale en cours de constitution.'];
+  const escalationLadder = [
+    { level: 1, label: 'Crise majeure' },
+    { level: 2, label: 'Escalade critique' },
+    { level: 3, label: 'Risque actif' },
+    { level: 4, label: 'Tension faible' },
+    { level: 5, label: 'Surveillance normale' },
+  ];
+
   const scenarioDashboard = useMemo(() => {
     if (!scenarioResults.length) return null;
     const sorted = [...scenarioResults].sort((a, b) => scenarioPostEventScore(a) - scenarioPostEventScore(b));
@@ -464,7 +745,7 @@ export default function DeterrencePage() {
     };
   }, [scenarioResults, escalation]);
 
-  const summary = useMemo(() => {
+  const summary = (() => {
     if (!result) return 'Sélectionne deux pays puis lance l’analyse OSINT.';
     const articles = signals?.articleCount ?? sources.length;
     const nuclear = signals?.nuclearMentions ?? 0;
@@ -483,9 +764,9 @@ export default function DeterrencePage() {
       ? `${articles} article(s)/source(s) OSINT ont été analysé(s)${sourceCountText}.`
       : `Aucun article direct fort n’a été trouvé, le moteur utilise alors des recherches OSINT de référence listées ci-dessous.`;
     return `${riskLabel(escalation)} entre ${actorName} et ${targetName}. ${pairContext}${why} Indicateurs pris en compte : ${nuclear} mention(s) nucléaire(s), ${military} mention(s) militaire(s), ${diplomacy} mention(s) diplomatique(s), ${sanctions} mention(s) sanctions. ${sourceText}`;
-  }, [result, signals, sources.length, escalation, stability, actorName, targetName, uniqueSourceCount, nuclearContext]);
+  })();
 
-  const briefingMarkdown = useMemo(() => {
+  const briefingMarkdown = (() => {
     const lines = [
       `# Briefing Pandora Nuclear — ${actorName} → ${targetName}`,
       '',
@@ -527,7 +808,7 @@ export default function DeterrencePage() {
       ...(sources.slice(0, 10).map((source) => `- ${source.title || source.domain || 'Source'} — ${source.domain || source.connector || 'source inconnue'}${source.url ? ` (${source.url})` : ''}`)),
     ];
     return lines.join('\n');
-  }, [actorName, targetName, result, pandoraLevel, escalation, stability, deterrence, miscalc, osintCoverage, summary, nuclearContext, articleCount, uniqueSourceCount, nuclearMentions, militaryMentions, diplomacyMentions, sanctionMentions, aggravatingFactors, stabilizingFactors, contradictionSignals, sources]);
+  })();
 
   function downloadBriefing() {
     const blob = new Blob([briefingMarkdown], { type: 'text/markdown;charset=utf-8' });
@@ -535,6 +816,35 @@ export default function DeterrencePage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `pandora-nuclear-${actor}-${target}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJson() {
+    const payload = {
+      generatedAt: result?.generatedAt || new Date().toISOString(),
+      actor: { key: actor, name: actorName },
+      target: { key: target, name: targetName },
+      scores: { escalation, stability, deterrence, miscalc, level: pandoraLevel },
+      confidence: { analyticalConfidence, confidenceLabel, sourceDiversityScore, highTrustSourceCount },
+      alerts: activeAlerts,
+      trend: { previous: previousPairAnalysis, delta: trendDelta, whatChanged },
+      signals: { articleCount, uniqueSourceCount, nuclearMentions, militaryMentions, diplomacyMentions, sanctionMentions },
+      nuclearContext,
+      recommendations: result?.recommendations || [],
+      sources,
+      dataProvenance: {
+        scores: '/api/deterrence action=deterrence',
+        sources: 'result.liveSignals.topArticles/sourceCounts',
+        history: 'localStorage pandora.deterrence.history.v1',
+        scenarios: '/api/deterrence action=scenario',
+      },
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pandora-nuclear-${actor}-${target}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -566,6 +876,59 @@ export default function DeterrencePage() {
           <div className="deterrence-loader-grid" />
           <div className="deterrence-loader-noise" />
           <div className="deterrence-loader-scan" />
+
+          <div className="nuclear-sim-frame absolute inset-4 overflow-hidden rounded-sm border border-red-300/25 sm:inset-7">
+            <div className="nuclear-sim-map" />
+            <div className="nuclear-sim-vignette" />
+            <div className="nuclear-sim-hud-lines" />
+            <div className="nuclear-sim-corner nuclear-sim-corner--tl" />
+            <div className="nuclear-sim-corner nuclear-sim-corner--tr" />
+            <div className="nuclear-sim-corner nuclear-sim-corner--bl" />
+            <div className="nuclear-sim-corner nuclear-sim-corner--br" />
+
+            <div className="nuclear-sim-title">
+              <h2>GLOBAL NUCLEAR<br className="hidden sm:block" /> STRIKE SIMULATION LOADER</h2>
+              <p>HYPER-IMMERSIVE LOADING PROGRESS</p>
+            </div>
+
+            <div className="nuclear-sim-alert nuclear-sim-alert--left">
+              <strong>GLOBAL STRIKE DETECTED</strong>
+              <span>ATMOSPHERIC RISK ANALYSIS</span>
+              <span>OSINT SIGNAL FUSION</span>
+              <span>ESCALATION MODEL ACTIVE</span>
+            </div>
+            <div className="nuclear-sim-alert nuclear-sim-alert--right">
+              <span>MIRV COUNT:</span> <b>{Math.max(1400, loadingStats.articles * 100)}</b>
+            </div>
+
+            <div className="nuclear-sim-orbit">
+              <div className="nuclear-sim-gif-shell">
+                <Image src="/asset/nuclear.gif" alt="Simulation nucléaire" width={620} height={420} unoptimized className="nuclear-sim-gif" />
+              </div>
+              <div className="nuclear-sim-gif-glow" />
+            </div>
+
+            {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((arc) => <span key={arc} className={`nuclear-sim-arc nuclear-sim-arc--${arc}`} />)}
+            {['na', 'eu', 'ru', 'in', 'cn', 'pac'].map((dot) => <span key={dot} className={`nuclear-sim-dot nuclear-sim-dot--${dot}`} />)}
+
+            <div className="nuclear-sim-percent"><b>{loadingStage.progress}%</b> COMPLETE</div>
+            <div className="nuclear-sim-bottom-left">
+              <strong>GLOBAL STRIKE DETECTED</strong>
+              <span>MIRV COUNT: {Math.max(1400, loadingStats.sources * 280)}</span>
+              <span>ATMOSPHERIC CONTAMINATION: {Math.min(99, Math.max(12, loadingStats.articles + uniqueSourceCount))}%</span>
+            </div>
+            <div className="nuclear-sim-bottom-center">
+              <span>{loadingStats.status || loadingStage.label}</span>
+              <div className="nuclear-sim-progress"><i style={{ width: `${loadingStage.progress}%` }} /></div>
+            </div>
+            <div className="nuclear-sim-stage-list">
+              {LOADING_STAGES.filter((stage) => stage.id !== 'done').map((stage, index) => {
+                const isDone = index < loadingStageIndex || loadingStage.id === 'done';
+                const isActive = stage.id === loadingStage.id;
+                return <span key={stage.id} className={isActive ? 'is-active' : isDone ? 'is-done' : ''}>{stage.label}</span>;
+              })}
+            </div>
+          </div>
 
           <div className="deterrence-loader-frame relative w-full max-w-7xl overflow-hidden rounded-[34px]">
             <div className="deterrence-loader-topline" />
@@ -701,7 +1064,7 @@ export default function DeterrencePage() {
               <div className="deterrence-hero-stat"><Activity className="h-4 w-4" /><span>Escalade</span><strong style={{ color: riskColor(escalation) }}>{escalation}</strong></div>
               <div className="deterrence-hero-stat"><TriangleAlert className="h-4 w-4" /><span>Mentions</span><strong>{nuclearMentions + militaryMentions}</strong></div>
               <div className="deterrence-hero-stat"><Zap className="h-4 w-4" /><span>Niveau</span><strong>{pandoraLevel.level}</strong></div>
-              <button disabled={loading || actor === target} onClick={analyze} className="deterrence-primary-action sm:col-span-3">
+              <button disabled={loading || actor === target} onClick={() => analyze()} className="deterrence-primary-action sm:col-span-3">
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Relancer l’analyse live
               </button>
             </div>
@@ -722,14 +1085,62 @@ export default function DeterrencePage() {
               <select value={target} onChange={(e) => setTarget(e.target.value)} className="w-full rounded border border-[var(--border-secondary)] bg-black/50 p-3 font-mono text-sm">
                 {countries.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
               </select>
-              <button disabled={loading || actor === target} onClick={analyze} className="deterrence-primary-action w-full justify-center">Analyser le risque</button>
+              <button disabled={loading || actor === target} onClick={() => analyze()} className="deterrence-primary-action w-full justify-center">Analyser le risque</button>
               {error && <p className="text-xs text-[var(--alert-red)]">{error}</p>}
+              <div className="rounded-2xl border border-[var(--gold-primary)]/25 bg-[var(--gold-primary)]/5 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[.25em] text-[var(--gold-primary)]">Presets crise</div>
+                  <span className="rounded border border-[var(--gold-primary)]/30 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Quick launch</span>
+                </div>
+                <div className="space-y-2">
+                  {CRISIS_PRESETS.map((preset) => {
+                    const isActive = actor === preset.actor && target === preset.target;
+                    return (
+                      <button
+                        key={preset.label}
+                        disabled={loading}
+                        onClick={() => applyPreset(preset)}
+                        className={`w-full rounded border px-3 py-2 text-left transition-colors disabled:opacity-40 ${isActive ? 'border-[var(--gold-primary)] bg-[var(--gold-primary)]/15' : 'border-[var(--border-secondary)] bg-black/25 hover:border-[var(--gold-primary)]/50'}`}
+                      >
+                        <span className="block font-mono text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">{preset.label}</span>
+                        <span className="mt-1 block text-xs text-[var(--text-muted)]">{preset.note}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="rounded-2xl border border-[var(--border-secondary)] bg-black/25 p-4">
                 <div className="font-mono text-[10px] uppercase tracking-[.25em] text-[var(--text-muted)]">Canal actif</div>
                 <div className="mt-3 flex items-center justify-between gap-3 font-mono text-xs uppercase tracking-widest text-[var(--gold-primary)]">
                   <span>{actorName}</span><span>→</span><span>{targetName}</span>
                 </div>
                 <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full bg-[var(--gold-primary)]" style={{ width: `${Math.max(8, osintCoverage.score)}%` }} /></div>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-secondary)] bg-black/25 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[.25em] text-[var(--text-muted)]">Watchlist</div>
+                  <button onClick={toggleWatchlist} className="rounded border border-[var(--gold-primary)]/40 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-[var(--gold-primary)]">
+                    {isWatchlisted ? 'Retirer' : 'Épingler'}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {watchlist.length > 0 ? watchlist.slice(0, 4).map((item) => (
+                    <button key={`${item.actor}:${item.target}`} onClick={() => { setActor(item.actor); setTarget(item.target); }} className="w-full rounded border border-[var(--border-secondary)]/70 bg-black/20 px-3 py-2 text-left text-xs text-[var(--text-secondary)] hover:border-[var(--gold-primary)]/50">
+                      {item.label}
+                    </button>
+                  )) : <p className="text-xs text-[var(--text-muted)]">Aucune paire épinglée.</p>}
+                </div>
+                <button disabled={!watchlist.length || loading} onClick={analyzeWatchlist} className="mt-3 w-full rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] disabled:opacity-40">Analyser la première paire</button>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-secondary)] bg-black/25 p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[.25em] text-[var(--text-muted)]">Auto-refresh</div>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {AUTO_REFRESH_OPTIONS.map((minutes) => (
+                    <button key={minutes} onClick={() => setAutoRefreshMinutes(minutes)} className={`rounded border px-2 py-2 font-mono text-[10px] uppercase tracking-widest ${autoRefreshMinutes === minutes ? 'border-[var(--gold-primary)] bg-[var(--gold-primary)]/15 text-[var(--gold-primary)]' : 'border-[var(--border-secondary)] bg-black/20 text-[var(--text-muted)]'}`}>
+                      {minutes ? `${minutes}m` : 'Off'}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </aside>
@@ -740,6 +1151,165 @@ export default function DeterrencePage() {
               <Gauge label="Stabilité" value={animatedScores.stability || stability} color="var(--gold-primary)" />
               <Gauge label="Dissuasion" value={animatedScores.deterrence || deterrence} color="var(--alert-green)" />
               <Gauge label="Mauvais calcul" value={animatedScores.miscalc || miscalc} color="#C18447" />
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
+              <div className="glass-panel p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h2 className="hud-text text-sm">War Room Briefing</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+                      Décision : <b style={{ color: riskColor(escalation) }}>{pandoraLevel.label}</b>. {activeAlerts.length ? activeAlerts[0] : 'Aucune alerte locale prioritaire.'} Confiance : {confidenceLabel.toLowerCase()}.
+                    </p>
+                  </div>
+                  <div className="rounded border px-4 py-3 text-center font-mono" style={{ borderColor: riskColor(escalation), color: riskColor(escalation) }}>
+                    <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Verdict</div>
+                    <div className="mt-1 text-xl font-black uppercase">Niveau {pandoraLevel.level}</div>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Confiance analytique</div>
+                    <div className="mt-2 text-3xl font-mono font-black text-[var(--gold-primary)]">{analyticalConfidence}</div>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">{confidenceLabel}</p>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Diversité sources</div>
+                    <div className="mt-2 text-3xl font-mono font-black text-[var(--text-secondary)]">{sourceDiversityScore}</div>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">{highTrustSourceCount} haute confiance</p>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Prochaine action</div>
+                    <div className="mt-2 text-sm font-semibold text-[var(--text-secondary)]">{escalation >= 60 ? 'Comparer les scénarios et exporter le briefing.' : 'Surveiller la tendance et les nouvelles sources.'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-panel p-5">
+                <h2 className="hud-text text-sm">Seuils & alertes locales</h2>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {([
+                    ['risk', 'Risque'],
+                    ['nuclearMentions', 'Mentions N'],
+                    ['delta', 'Delta'],
+                    ['minSources', 'Sources min'],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="rounded border border-[var(--border-secondary)] bg-black/25 p-3">
+                      <span className="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
+                      <input type="number" value={alertThresholds[key]} onChange={(e) => updateThreshold(key, Number(e.target.value))} className="mt-2 w-full rounded border border-[var(--border-secondary)] bg-black/40 px-2 py-1 font-mono text-sm" />
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-4 space-y-2">
+                  {activeAlerts.length > 0 ? activeAlerts.map((alert) => (
+                    <div key={alert} className="rounded border border-[var(--alert-red)]/35 bg-[var(--alert-red)]/10 p-3 text-sm text-[var(--text-secondary)]">{alert}</div>
+                  )) : <div className="rounded border border-[var(--alert-green)]/30 bg-[var(--alert-green)]/10 p-3 text-sm text-[var(--text-secondary)]">Aucune alerte locale active.</div>}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[1fr_.75fr]">
+              <div className="glass-panel p-5">
+                <h2 className="hud-text text-sm">Heatmap des signaux</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {heatmapSignals.map((signal) => (
+                    <div key={signal.label} className="rounded border border-[var(--border-secondary)] bg-black/25 p-3">
+                      <div className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]"><span>{signal.label}</span><span>{signal.value}</span></div>
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/50"><div className="h-full rounded-full" style={{ width: `${signal.value}%`, background: signal.color }} /></div>
+                      <p className="mt-2 line-clamp-1 text-xs text-[var(--text-muted)]">{signal.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="glass-panel p-5">
+                <h2 className="hud-text text-sm">Graphe d’escalade</h2>
+                <div className="mt-4 space-y-2">
+                  {escalationLadder.map((step) => (
+                    <div key={step.level} className={`flex items-center justify-between rounded border px-3 py-2 ${step.level === pandoraLevel.level ? 'border-[var(--gold-primary)] bg-[var(--gold-primary)]/15' : 'border-[var(--border-secondary)] bg-black/20'}`}>
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">N{step.level} · {step.label}</span>
+                      {step.level === pandoraLevel.level && <span className="h-2 w-2 rounded-full bg-[var(--gold-primary)] shadow-[0_0_12px_var(--gold-primary)]" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
+              <div className="glass-panel p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="hud-text text-sm">Tendance locale</h2>
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">Compare l’analyse actuelle avec le dernier snapshot sauvegardé pour cette même paire.</p>
+                  </div>
+                  <span className="rounded border px-3 py-1 font-mono text-xs uppercase tracking-widest" style={{ color: trendColor, borderColor: trendColor }}>
+                    {previousPairAnalysis ? trendLabel(trendDelta) : 'Baseline'}
+                  </span>
+                </div>
+                {previousPairAnalysis ? (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Delta risque</div>
+                      <div className="mt-2 text-3xl font-mono font-black" style={{ color: trendColor }}>{formatDelta(trendDelta)}</div>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">vs {compactDateTime(previousPairAnalysis.generatedAt)}</p>
+                    </div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Mentions N/M</div>
+                      <div className="mt-2 text-3xl font-mono font-black text-[var(--gold-primary)]">
+                        {formatDelta((nuclearMentions + militaryMentions) - (previousPairAnalysis.nuclearMentions + previousPairAnalysis.militaryMentions))}
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">nucléaire + militaire</p>
+                    </div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Sources</div>
+                      <div className="mt-2 text-3xl font-mono font-black text-[var(--text-secondary)]">{formatDelta(uniqueSourceCount - previousPairAnalysis.sourceCount)}</div>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">couverture unique</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded border border-[var(--border-secondary)] bg-black/25 p-4 text-sm text-[var(--text-muted)]">
+                    Première mesure locale pour {actorName} → {targetName}. Relance plus tard pour obtenir une tendance.
+                  </div>
+                )}
+              </div>
+
+              <div className="glass-panel p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="hud-text text-sm">Historique local</h2>
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">Derniers snapshots conservés dans ce navigateur uniquement.</p>
+                  </div>
+                  <button
+                    disabled={!history.length}
+                    onClick={clearHistory}
+                    className="rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)] disabled:opacity-40"
+                  >
+                    Vider
+                  </button>
+                </div>
+                <div className="max-h-[250px] space-y-2 overflow-y-auto pr-1 styled-scrollbar">
+                  {history.length > 0 ? history.slice(0, 6).map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => { setActor(item.actor); setTarget(item.target); }}
+                      className="w-full rounded border border-[var(--border-secondary)] bg-black/20 p-3 text-left transition-colors hover:border-[var(--gold-primary)]/50"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate font-mono text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">{item.actorName} → {item.targetName}</span>
+                        <span className="shrink-0 font-mono text-lg font-black" style={{ color: riskColor(item.escalation) }}>{item.escalation}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
+                        <span>{compactDateTime(item.generatedAt)}</span>
+                        <span>·</span>
+                        <span>Niveau {item.level}</span>
+                        <span>·</span>
+                        <span>{item.sourceCount} source(s)</span>
+                      </div>
+                    </button>
+                  )) : (
+                    <p className="rounded border border-[var(--border-secondary)] bg-black/20 p-4 text-sm text-[var(--text-muted)]">Aucun historique local pour le moment.</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="glass-panel p-6">
@@ -759,6 +1329,13 @@ export default function DeterrencePage() {
                     className="rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-1 font-mono text-xs uppercase tracking-widest text-[var(--text-secondary)] disabled:opacity-40"
                   >
                     Export PDF
+                  </button>
+                  <button
+                    disabled={!result}
+                    onClick={exportJson}
+                    className="rounded border border-[var(--border-secondary)] bg-black/30 px-3 py-1 font-mono text-xs uppercase tracking-widest text-[var(--text-secondary)] disabled:opacity-40"
+                  >
+                    Export JSON
                   </button>
                   <span className="rounded border px-3 py-1 text-xs font-bold uppercase tracking-widest" style={{ color: riskColor(escalation), borderColor: riskColor(escalation) }}>{riskLabel(escalation)}</span>
                 </div>
@@ -864,11 +1441,23 @@ export default function DeterrencePage() {
                     <h2 className="hud-text text-sm">Timeline OSINT réelle</h2>
                     <p className="mt-2 text-xs text-[var(--text-muted)]">Articles/liens réellement retournés par le service, triés selon l’ordre de pertinence reçu.</p>
                   </div>
-                  <span className="rounded border border-[var(--border-secondary)] px-3 py-1 font-mono text-xs uppercase tracking-widest text-[var(--gold-primary)]">{timelineItems.length}</span>
+                  <span className="rounded border border-[var(--border-secondary)] px-3 py-1 font-mono text-xs uppercase tracking-widest text-[var(--gold-primary)]">{filteredTimelineItems.length}/{timelineItems.length}</span>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {TIMELINE_FILTERS.map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setTimelineFilter(filter.key)}
+                      className={`rounded border px-3 py-1 font-mono text-[10px] uppercase tracking-widest ${timelineFilter === filter.key ? 'border-[var(--gold-primary)] bg-[var(--gold-primary)]/15 text-[var(--gold-primary)]' : 'border-[var(--border-secondary)] bg-black/25 text-[var(--text-muted)] hover:border-[var(--gold-primary)]/50'}`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="space-y-3">
-                  {timelineItems.length > 0 ? timelineItems.map((item) => (
+                  {filteredTimelineItems.length > 0 ? filteredTimelineItems.map((item) => (
                     <a
                       key={`${item.url || item.title}-${item.rank}`}
                       href={item.url || '#'}
@@ -885,6 +1474,11 @@ export default function DeterrencePage() {
                             <span>·</span>
                             <span>{item.displayDate}</span>
                             {item.connector && <><span>·</span><span>{item.connector}</span></>}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {sourceTags(item).map((tag) => (
+                              <span key={tag} className="rounded border border-[var(--gold-primary)]/25 bg-[var(--gold-primary)]/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[var(--gold-primary)]">{tag}</span>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -1055,6 +1649,50 @@ export default function DeterrencePage() {
                 ) : (
                   <p className="text-sm text-[var(--text-muted)]">Aucune source web directe à afficher.</p>
                 )}
+              </div>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[1fr_.85fr]">
+              <div className="glass-panel p-5">
+                <h2 className="hud-text text-sm">Rapport analyste structuré</h2>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--gold-primary)]">Situation</div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{actorName} → {targetName}, niveau {pandoraLevel.level} ({pandoraLevel.label}), risque {escalation}/100.</p>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--gold-primary)]">Évaluation</div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{confidenceLabel} · couverture {osintCoverage.label.toLowerCase()} · diversité sources {sourceDiversityScore}/100.</p>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--alert-red)]">Indicateurs d’escalade</div>
+                    <ul className="mt-2 space-y-1 text-sm text-[var(--text-secondary)]">{aggravatingFactors.slice(0, 3).map((item) => <li key={item}>• {item}</li>)}</ul>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-4">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--alert-green)]">Stabilisation</div>
+                    <ul className="mt-2 space-y-1 text-sm text-[var(--text-secondary)]">{stabilizingFactors.slice(0, 3).map((item) => <li key={item}>• {item}</li>)}</ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="glass-panel p-5">
+                  <h2 className="hud-text text-sm">What changed?</h2>
+                  <div className="mt-4 space-y-2">
+                    {whatChanged.map((item) => (
+                      <div key={item} className="rounded border border-[var(--border-secondary)] bg-black/20 p-3 text-sm text-[var(--text-secondary)]">{item}</div>
+                    ))}
+                  </div>
+                </div>
+                <div className="glass-panel p-5">
+                  <h2 className="hud-text text-sm">Data provenance</h2>
+                  <div className="mt-4 space-y-2 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Scores · /api/deterrence action=deterrence</div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Sources · liveSignals.topArticles/sourceCounts</div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Historique/watchlist · localStorage navigateur</div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Scénarios · /api/deterrence action=scenario</div>
+                  </div>
+                </div>
               </div>
             </div>
 
