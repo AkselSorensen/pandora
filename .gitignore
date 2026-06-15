@@ -1,42 +1,140 @@
-# Dependencies
-/node_modules
-/.pnp
+# ═══════════════════════════════════════════════════════════════════════════
+# Pandora — Git ignore
+# Keep source/config/templates in git, ignore generated files, local secrets,
+# Docker/runtime noise, Python caches and heavy AI training artifacts.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Dependencies / package managers ───────────────────────────────────────
+node_modules/
+.pnp/
 .pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 .yarn/install-state.gz
 
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-
-# Production
-/build
-
-# Misc
-.DS_Store
-*.pem
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Local env files
-.env*.local
-.env
-
-# Vercel
-.vercel
-
-# TypeScript
+# ── Next.js / React / TypeScript outputs ──────────────────────────────────
+.next/
+out/
+build/
+dist/
+coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-# Scanner backend (API key in env, not in git)
-scanner/
-.vercel
+# ── Environment / secrets ─────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.template
+*.local
+*.secret
+*.secrets
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+firebase-admin*.json
+google-credentials*.json
 
-# Security - prevent accidental backup commits
+# ── Logs / debug ──────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+debug.log
+logs/
+
+# ── OS / editor files ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# ── Vercel / deployment cache ─────────────────────────────────────────────
+.vercel/
+
+# ── Python caches / virtualenvs ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+
+# ── AI / ML heavy artifacts ────────────────────────────────────────────────
+ai/**/outputs/
+ai/**/runs/
+ai/**/checkpoints/
+ai/**/wandb/
+ai/**/mlruns/
+ai/**/*.safetensors
+ai/**/*.bin
+ai/**/*.pt
+ai/**/*.pth
+ai/**/*.ckpt
+ai/**/*.onnx
+ai/**/*.gguf
+ai/**/*.ggml
+ai/**/*.adapter_model.bin
+ai/**/*.adapter_model.safetensors
+ai/**/trainer_state.json
+ai/**/optimizer.pt
+ai/**/scheduler.pt
+ai/**/rng_state*.pth
+
+# Keep small source datasets/config/docs for reproducibility
+!ai/**/train.jsonl
+!ai/**/eval.jsonl
+!ai/**/country_taxonomy.json
+!ai/**/README.md
+!ai/**/Modelfile
+!ai/**/Modelfile.gguf.example
+
+# ── Docker / local runtime data ────────────────────────────────────────────
+docker-data/
+data/docker/
+volumes/
+tmp/
+temp/
+.cache/
+
+# ── Scanner backend / security local files ────────────────────────────────
+scanner/
+src/app/api/scanner/
 scanner_backend_backup.js
+
+# ── Local generated reports / exports ─────────────────────────────────────
+exports/
+reports/
+*.pdf
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# ── Misc generated lock/caches from tools ─────────────────────────────────
+.eslintcache
+.parcel-cache/
+.turbo/
+.swc/

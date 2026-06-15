@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Activity, ArrowLeft, Download, Radio, RefreshCw, Satellite, Shield, TriangleAlert, Zap } from 'lucide-react';
 
 type Country = { key: string; name: string; region: string; arsenal_band: string; estimated_warheads_band: string };
-type SourceItem = { title?: string; domain?: string; url?: string; connector?: string };
+type SourceItem = { title?: string; domain?: string; url?: string; connector?: string; category?: string; sourceType?: string };
 type TimelineSourceItem = SourceItem & { seenDate?: string; pubDate?: string };
 type SourceCount = { name: string; count: number };
 type NuclearContext = {
@@ -23,6 +23,14 @@ type Result = {
   scores?: Record<string, number>;
   scenario?: { key?: string; label?: string; regionFocus?: string; note?: string };
   scenarioScores?: Record<string, number>;
+  aiAssessment?: {
+    enabled?: boolean;
+    mode?: string;
+    model?: string;
+    generatedAt?: string;
+    warning?: string;
+    text?: string;
+  };
   recommendations?: string[];
   nuclearContext?: NuclearContext;
   liveSignals?: {
@@ -35,6 +43,11 @@ type Result = {
     sourceCount?: number;
     sourceNames?: string[];
     sourceCounts?: SourceCount[];
+    sourceCategories?: string[];
+    sourceCategoryCounts?: SourceCount[];
+    connectorCounts?: SourceCount[];
+    sourceRegistrySize?: number;
+    sourceRegistryCategories?: string[];
     maxAnalyzedArticles?: number;
     topArticles?: TimelineSourceItem[];
   };
@@ -178,9 +191,9 @@ function coverageAssessment(articleCount: number, sourceCount: number, hasNuclea
   return { label: 'Couverture OSINT absente', score: 0, detail: 'Aucun article/source direct reçu par l’interface pour cette analyse.' };
 }
 
-function sourceCredibility(source: { name?: string; domain?: string; connector?: string }) {
-  const raw = `${source.name || source.domain || ''} ${source.connector || ''}`.toLowerCase();
-  if (/sipri|iaea|un|nato|gov|defense|defence|reuters|ap news|associated press|afp|bbc|france24|dw|rfi/.test(raw)) {
+function sourceCredibility(source: { name?: string; domain?: string; connector?: string; category?: string }) {
+  const raw = `${source.name || source.domain || ''} ${source.connector || ''} ${source.category || ''}`.toLowerCase();
+  if (/sipri|iaea|un|nato|gov|defense|defence|reuters|ap news|associated press|afp|bbc|france24|dw|rfi|nuclear_institutional|nuclear_regulator|nuclear_safety|nonproliferation|defense_research|institutional/.test(raw)) {
     return { type: 'Haute confiance', score: 90, detail: 'Institutionnel ou média international reconnu', color: 'var(--alert-green)' };
   }
   if (/gdelt|google news|rss|search/.test(raw)) {
@@ -249,7 +262,7 @@ function loadJsonObject<T>(key: string, fallback: T): T {
 }
 
 function sourceSearchText(source: SourceItem) {
-  return `${source.title || ''} ${source.domain || ''} ${source.connector || ''}`.toLowerCase();
+  return `${source.title || ''} ${source.domain || ''} ${source.connector || ''} ${source.category || ''} ${source.sourceType || ''}`.toLowerCase();
 }
 
 function sourceTags(source: SourceItem) {
@@ -261,8 +274,10 @@ function sourceTags(source: SourceItem) {
   if (/diplomacy|talks|summit|minister|treaty|negotiation|diplomatie/.test(raw)) tags.push('DIPLOMACY');
   if (/sanction|embargo|restriction/.test(raw)) tags.push('SANCTIONS');
   if (credibility.score >= 80) tags.push('HIGH TRUST');
-  if (/sipri|iaea|un|nato|gov|defense|defence/.test(raw)) tags.push('INSTITUTIONAL');
-  if (/gdelt|google news|rss|search/.test(raw)) tags.push('AGGREGATOR');
+  if (/sipri|iaea|un|nato|gov|defense|defence|nuclear_institutional|nuclear_regulator|institutional/.test(raw)) tags.push('INSTITUTIONAL');
+  if (/gdelt|google news|rss|search|registry|atom|json/.test(raw)) tags.push('AGGREGATOR');
+  if (/cyber_critical_infra|cisa|nvd|cert|enisa|anssi|ncsc/.test(raw)) tags.push('CYBER/INFRA');
+  if (/crisis_hazards|earthquake|gdacs|reliefweb|copernicus/.test(raw)) tags.push('CRISIS');
   return tags.length ? tags : ['OSINT'];
 }
 
@@ -562,10 +577,29 @@ export default function DeterrencePage() {
 
   const signals = result?.liveSignals;
   const nuclearContext = result?.nuclearContext;
+  const aiAssessment = result?.aiAssessment;
   const sources = useMemo(() => signals?.topArticles || [], [signals]);
   const sourceCounts = useMemo(() => signals?.sourceCounts || [], [signals]);
   const uniqueSourceCount = signals?.sourceCount ?? sourceCounts.length;
   const loadingStageIndex = LOADING_STAGES.findIndex((stage) => stage.id === loadingStage.id);
+  const animatedLoadingProgress = useMemo(() => {
+    if (!loading) return loadingStage.progress;
+    if (loadingStage.id === 'done') return 100;
+
+    const stageFloors: Record<LoadingStage['id'], number> = {
+      idle: 0,
+      prepare: 4,
+      collect: 18,
+      receive: 58,
+      parse: 72,
+      render: 88,
+      done: 100,
+    };
+
+    const elapsedProgress = 96 * (1 - Math.exp(-elapsedMs / 7200));
+    const stageProgress = Math.max(stageFloors[loadingStage.id], loadingStage.progress - 8);
+    return Math.min(99, Math.max(stageProgress, Math.round(elapsedProgress)));
+  }, [elapsedMs, loading, loadingStage.id, loadingStage.progress]);
   const articleCount = signals?.articleCount ?? sources.length;
   const nuclearMentions = signals?.nuclearMentions ?? 0;
   const militaryMentions = signals?.militaryMentions ?? 0;
@@ -781,6 +815,9 @@ export default function DeterrencePage() {
       '## Résumé',
       summary,
       '',
+      '## Analyse Pandora Nuclear AI',
+      aiAssessment?.text || 'Analyse IA non disponible dans cette réponse.',
+      '',
       '## Contexte nucléaire',
       `- Type de paire : ${pairTypeLabel(nuclearContext?.pairType)}`,
       `- Capacité acteur : ${nuclearContext?.actorNuclearCapability ?? 0}/100 (${nuclearStatusLabel(nuclearContext?.actorNuclearStatus)})`,
@@ -831,6 +868,7 @@ export default function DeterrencePage() {
       trend: { previous: previousPairAnalysis, delta: trendDelta, whatChanged },
       signals: { articleCount, uniqueSourceCount, nuclearMentions, militaryMentions, diplomacyMentions, sanctionMentions },
       nuclearContext,
+      aiAssessment,
       recommendations: result?.recommendations || [],
       sources,
       dataProvenance: {
@@ -888,7 +926,7 @@ export default function DeterrencePage() {
 
             <div className="nuclear-sim-title">
               <h2>GLOBAL NUCLEAR<br className="hidden sm:block" /> STRIKE SIMULATION LOADER</h2>
-              <p>HYPER-IMMERSIVE LOADING PROGRESS</p>
+              
             </div>
 
             <div className="nuclear-sim-alert nuclear-sim-alert--left">
@@ -911,15 +949,14 @@ export default function DeterrencePage() {
             {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((arc) => <span key={arc} className={`nuclear-sim-arc nuclear-sim-arc--${arc}`} />)}
             {['na', 'eu', 'ru', 'in', 'cn', 'pac'].map((dot) => <span key={dot} className={`nuclear-sim-dot nuclear-sim-dot--${dot}`} />)}
 
-            <div className="nuclear-sim-percent"><b>{loadingStage.progress}%</b> COMPLETE</div>
+            <div className="nuclear-sim-percent"><b>{animatedLoadingProgress}%</b> COMPLETE</div>
             <div className="nuclear-sim-bottom-left">
               <strong>GLOBAL STRIKE DETECTED</strong>
               <span>MIRV COUNT: {Math.max(1400, loadingStats.sources * 280)}</span>
-              <span>ATMOSPHERIC CONTAMINATION: {Math.min(99, Math.max(12, loadingStats.articles + uniqueSourceCount))}%</span>
             </div>
             <div className="nuclear-sim-bottom-center">
               <span>{loadingStats.status || loadingStage.label}</span>
-              <div className="nuclear-sim-progress"><i style={{ width: `${loadingStage.progress}%` }} /></div>
+              <div className="nuclear-sim-progress"><i style={{ width: `${animatedLoadingProgress}%` }} /></div>
             </div>
             <div className="nuclear-sim-stage-list">
               {LOADING_STAGES.filter((stage) => stage.id !== 'done').map((stage, index) => {
@@ -986,7 +1023,7 @@ export default function DeterrencePage() {
                   </div>
                   <div className="deterrence-loader-percent font-mono">
                     <div className="text-[10px] uppercase tracking-[.3em] text-[var(--text-muted)]">Progression</div>
-                    <div className="mt-1 text-6xl font-black text-[var(--gold-light)]">{loadingStage.progress}<span className="text-2xl">%</span></div>
+                    <div className="mt-1 text-6xl font-black text-[var(--gold-light)]">{animatedLoadingProgress}<span className="text-2xl">%</span></div>
                   </div>
                 </div>
 
@@ -1185,21 +1222,7 @@ export default function DeterrencePage() {
                 </div>
               </div>
 
-              <div className="glass-panel p-5">
-                <h2 className="hud-text text-sm">Seuils & alertes locales</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  {([
-                    ['risk', 'Risque'],
-                    ['nuclearMentions', 'Mentions N'],
-                    ['delta', 'Delta'],
-                    ['minSources', 'Sources min'],
-                  ] as const).map(([key, label]) => (
-                    <label key={key} className="rounded border border-[var(--border-secondary)] bg-black/25 p-3">
-                      <span className="block font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
-                      <input type="number" value={alertThresholds[key]} onChange={(e) => updateThreshold(key, Number(e.target.value))} className="mt-2 w-full rounded border border-[var(--border-secondary)] bg-black/40 px-2 py-1 font-mono text-sm" />
-                    </label>
-                  ))}
-                </div>
+              <div className="glass-panel p-5">              
                 <div className="mt-4 space-y-2">
                   {activeAlerts.length > 0 ? activeAlerts.map((alert) => (
                     <div key={alert} className="rounded border border-[var(--alert-red)]/35 bg-[var(--alert-red)]/10 p-3 text-sm text-[var(--text-secondary)]">{alert}</div>
@@ -1341,6 +1364,31 @@ export default function DeterrencePage() {
                 </div>
               </div>
               <p className="text-base leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+            </div>
+
+            <div className="glass-panel p-6">
+              <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <span className="gotham-tag">OLLAMA · {aiAssessment?.model || 'pandora-nuclear-ai'}</span>
+                  <h2 className="hud-text mt-2 text-sm">Pandora Nuclear AI — analyse augmentée live</h2>
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">
+                    Fusion IA des scores déterministes, du pack OSINT public multi-sources (~100 flux), de GDELT/Google News, du contexte pays et des capacités nucléaires.
+                  </p>
+                </div>
+                <span className={`rounded border px-3 py-1 font-mono text-[10px] uppercase tracking-widest ${aiAssessment?.mode === 'ollama-pandora-nuclear-ai' ? 'border-[var(--alert-green)]/40 text-[var(--alert-green)]' : 'border-[#C18447]/40 text-[#C18447]'}`}>
+                  {aiAssessment?.mode === 'ollama-pandora-nuclear-ai' ? 'IA active' : aiAssessment?.mode || 'IA standby'}
+                </span>
+              </div>
+              <div className="rounded border border-[var(--border-secondary)] bg-black/25 p-4">
+                {aiAssessment?.warning && (
+                  <p className="mb-3 rounded border border-[#C18447]/40 bg-[#C18447]/10 p-3 text-xs text-[#C18447]">
+                    Avertissement IA: {aiAssessment.warning}
+                  </p>
+                )}
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-secondary)]">
+                  {aiAssessment?.text || 'Analyse IA non encore disponible. Lance une analyse pour interroger Pandora Nuclear AI avec les sources live.'}
+                </div>
+              </div>
             </div>
 
             <div className="glass-panel overflow-hidden p-0">
@@ -1622,6 +1670,7 @@ export default function DeterrencePage() {
                   <p className="mt-2 text-xs text-[var(--text-muted)]">
                     {signals?.articleCount ?? sources.length} article(s) analysé(s)
                     {uniqueSourceCount ? ` · ${uniqueSourceCount} média(s)/source(s) unique(s)` : ''}
+                    {signals?.sourceRegistrySize ? ` · registre ${signals.sourceRegistrySize} source(s)` : ''}
                     {signals?.maxAnalyzedArticles ? ` · plafond actuel ${signals.maxAnalyzedArticles}` : ''}
                   </p>
                 </div>
@@ -1650,6 +1699,31 @@ export default function DeterrencePage() {
                   <p className="text-sm text-[var(--text-muted)]">Aucune source web directe à afficher.</p>
                 )}
               </div>
+
+              {(signals?.sourceCategoryCounts?.length || signals?.connectorCounts?.length) ? (
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">
+                    <div className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Catégories OSINT</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(signals?.sourceCategoryCounts || []).slice(0, 12).map((category) => (
+                        <span key={category.name} className="rounded border border-[var(--gold-primary)]/25 bg-[var(--gold-primary)]/10 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[var(--gold-primary)]">
+                          {category.name} · {category.count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">
+                    <div className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Connecteurs actifs</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(signals?.connectorCounts || []).slice(0, 12).map((connector) => (
+                        <span key={connector.name} className="rounded border border-[var(--border-secondary)] bg-black/30 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[var(--text-secondary)]">
+                          {connector.name} · {connector.count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-5 xl:grid-cols-[1fr_.85fr]">
@@ -1688,7 +1762,7 @@ export default function DeterrencePage() {
                   <h2 className="hud-text text-sm">Data provenance</h2>
                   <div className="mt-4 space-y-2 font-mono text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
                     <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Scores · /api/deterrence action=deterrence</div>
-                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Sources · liveSignals.topArticles/sourceCounts</div>
+                    <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Sources · liveSignals.topArticles/sourceCounts/sourceCategoryCounts</div>
                     <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Historique/watchlist · localStorage navigateur</div>
                     <div className="rounded border border-[var(--border-secondary)] bg-black/20 p-3">Scénarios · /api/deterrence action=scenario</div>
                   </div>

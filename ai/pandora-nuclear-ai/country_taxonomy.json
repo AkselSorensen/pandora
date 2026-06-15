@@ -1,0 +1,146 @@
+{
+  "schema_version": "0.1.0",
+  "purpose": "Taxonomie publique indicative pour entrainer/evaluer Pandora Nuclear AI. Elle guide la distinction entre arme nucleaire, nucleaire civil, recherche, fusion et dissuasion elargie. Les valeurs doivent etre confirmees par sources primaires avant usage analytique.",
+  "status_labels": {
+    "nuclear_weapon_status": [
+      "major_nuclear_power",
+      "nuclear_power",
+      "undeclared_or_ambiguous",
+      "threshold_or_dual_use_capability",
+      "extended_deterrence_only",
+      "non_nuclear_state",
+      "unknown_or_insufficient_data"
+    ],
+    "civil_nuclear_profile": [
+      "civil_nuclear_power_reactors",
+      "research_reactors",
+      "fuel_cycle_facilities",
+      "medical_industrial_isotope_sites",
+      "fusion_research_facilities",
+      "planned_or_under_construction_reactors",
+      "decommissioning_or_legacy_sites",
+      "no_known_civil_nuclear_infrastructure",
+      "unknown_or_insufficient_data"
+    ]
+  },
+  "countries_reference_examples": [
+    {
+      "country": "United States",
+      "nuclear_weapon_status": "major_nuclear_power",
+      "extended_deterrence": true,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities", "fusion_research_facilities"],
+      "analysis_note": "Distinguer arsenal militaire, garanties d'alliance et parc civil."
+    },
+    {
+      "country": "Russia",
+      "nuclear_weapon_status": "major_nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Puissance nucleaire majeure; separer posture militaire et surete civile."
+    },
+    {
+      "country": "France",
+      "nuclear_weapon_status": "nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities", "fusion_research_facilities"],
+      "analysis_note": "Arsenal declare et parc civil important; ne pas melanger les deux volets."
+    },
+    {
+      "country": "China",
+      "nuclear_weapon_status": "major_nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities", "fusion_research_facilities"],
+      "analysis_note": "Modernisation strategique et vaste programme civil; prudence source."
+    },
+    {
+      "country": "India",
+      "nuclear_weapon_status": "nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Analyser avec contexte regional et communication de crise."
+    },
+    {
+      "country": "Pakistan",
+      "nuclear_weapon_status": "nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors"],
+      "analysis_note": "Analyser avec contexte regional et risque de mauvaise interpretation."
+    },
+    {
+      "country": "Israel",
+      "nuclear_weapon_status": "undeclared_or_ambiguous",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["research_reactors"],
+      "analysis_note": "Employer langage prudent: non declare/ambigu selon references publiques."
+    },
+    {
+      "country": "North Korea",
+      "nuclear_weapon_status": "nuclear_power",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Posture opaque; verification par sources publiques et diplomatiques."
+    },
+    {
+      "country": "Japan",
+      "nuclear_weapon_status": "extended_deterrence_only",
+      "extended_deterrence": true,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities", "fusion_research_facilities"],
+      "analysis_note": "Non dote nationalement; sous garantie americaine; parc civil/recherche avance."
+    },
+    {
+      "country": "Germany",
+      "nuclear_weapon_status": "extended_deterrence_only",
+      "extended_deterrence": true,
+      "civil_nuclear_profile": ["decommissioning_or_legacy_sites", "research_reactors", "fusion_research_facilities"],
+      "analysis_note": "Non dote nationalement; contexte OTAN; sites civils/legacy a traiter en surete."
+    },
+    {
+      "country": "South Korea",
+      "nuclear_weapon_status": "extended_deterrence_only",
+      "extended_deterrence": true,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fusion_research_facilities"],
+      "analysis_note": "Non dote nationalement; dissuasion elargie US et parc civil important."
+    },
+    {
+      "country": "Iran",
+      "nuclear_weapon_status": "threshold_or_dual_use_capability",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Programme surveille publiquement; ne pas affirmer arsenal sans source primaire."
+    },
+    {
+      "country": "Brazil",
+      "nuclear_weapon_status": "non_nuclear_state",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Civil/recherche; ne pas inferer capacite militaire sans source."
+    },
+    {
+      "country": "Argentina",
+      "nuclear_weapon_status": "non_nuclear_state",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["civil_nuclear_power_reactors", "research_reactors", "fuel_cycle_facilities"],
+      "analysis_note": "Civil/recherche; cooperation et controles regionaux a verifier."
+    },
+    {
+      "country": "Morocco",
+      "nuclear_weapon_status": "non_nuclear_state",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["research_reactors"],
+      "analysis_note": "Reacteur de recherche eventuel: surete/recherche, pas arsenal."
+    },
+    {
+      "country": "Kenya",
+      "nuclear_weapon_status": "non_nuclear_state",
+      "extended_deterrence": false,
+      "civil_nuclear_profile": ["planned_or_under_construction_reactors", "unknown_or_insufficient_data"],
+      "analysis_note": "Traiter les projets civils comme energie/regulation, non comme arme."
+    }
+  ],
+  "source_guidance": [
+    "IAEA PRIS/RRDB et rapports de garanties pour le civil/recherche.",
+    "SIPRI Yearbook, FAS et communiques officiels pour references publiques d'arsenaux.",
+    "Regulateurs nationaux de surete nucleaire pour incidents civils.",
+    "Ne jamais inferer une capacite militaire uniquement depuis une centrale civile, un reacteur de recherche ou un programme fusion."
+  ]
+}

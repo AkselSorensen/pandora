@@ -1614,6 +1614,7 @@ body::before {
   opacity: 0.12;
   background-image: repeating-radial-gradient(circle at 30% 40%, rgba(255,255,255,0.28) 0 1px, transparent 1px 6px);
   mix-blend-mode: screen;
+  animation: nuclear-noise-jitter .55s steps(2, end) infinite;
 }
 
 .deterrence-loader-scan {
@@ -1638,6 +1639,7 @@ body::before {
     radial-gradient(circle at 50% 43%, rgba(255, 58, 64, 0.13), transparent 26%),
     linear-gradient(180deg, rgba(9, 17, 28, 0.84), rgba(1, 4, 9, 0.98));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 0 90px rgba(255, 58, 64, 0.12), 0 0 80px rgba(0,0,0,.8);
+  animation: nuclear-frame-breathe 2.8s ease-in-out infinite;
 }
 
 .nuclear-sim-map,
@@ -1676,6 +1678,7 @@ body::before {
   background-size: 42px 28px, 35px 25px, 34px 24px, 39px 27px;
   mix-blend-mode: screen;
   opacity: .55;
+  animation: nuclear-target-flicker 1.4s steps(2, end) infinite;
 }
 
 .nuclear-sim-vignette {
@@ -1692,6 +1695,7 @@ body::before {
     linear-gradient(rgba(120, 210, 255, .13) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120, 210, 255, .08) 1px, transparent 1px);
   background-size: 100% 12.5%, 12.5% 100%;
+  animation: nuclear-hud-drift 5s linear infinite;
 }
 
 .nuclear-sim-title {
@@ -1730,7 +1734,7 @@ body::before {
 }
 
 .nuclear-sim-alert--left { top: 7.5%; left: 3.8%; display: grid; gap: .25rem; font-size: .55rem; }
-.nuclear-sim-alert--left strong { color: #ff3f46; font-size: clamp(.9rem, 1.2vw, 1.3rem); text-shadow: 0 0 18px rgba(255,63,70,.75); }
+.nuclear-sim-alert--left strong { color: #ff3f46; font-size: clamp(.9rem, 1.2vw, 1.3rem); text-shadow: 0 0 18px rgba(255,63,70,.75); animation: nuclear-warning-blink .9s steps(2, end) infinite; }
 .nuclear-sim-alert--right { top: 7.5%; right: 4%; font-size: clamp(.8rem, 1.2vw, 1.2rem); }
 .nuclear-sim-alert--right b { color: #ff4d65; font-weight: 400; }
 
@@ -1994,6 +1998,7 @@ body::before {
   transform: translateX(-50%);
   font-size: clamp(1rem, 1.5vw, 1.5rem);
   text-shadow: 0 0 18px rgba(255,63,70,.6);
+  animation: nuclear-percent-pulse 1.2s ease-in-out infinite;
 }
 .nuclear-sim-percent b { color: #ff454b; }
 
@@ -2025,14 +2030,27 @@ body::before {
 .nuclear-sim-progress {
   margin-top: .65rem;
   height: 4px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 999px;
   background: rgba(255,255,255,.14);
+}
+.nuclear-sim-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.72), transparent);
+  filter: blur(1px);
+  transform: translateX(-120%);
+  animation: nuclear-progress-sheen 1.05s ease-in-out infinite;
 }
 .nuclear-sim-progress i {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, #ff343d, #ff8585);
   box-shadow: 0 0 18px rgba(255,63,70,.9);
-  transition: width .5s ease;
+  transition: width .18s linear;
 }
 
 .nuclear-sim-stage-list {
@@ -2073,6 +2091,44 @@ body::before {
 @keyframes nuclear-sim-arc {
   0%, 100% { opacity: .38; filter: drop-shadow(0 0 6px rgba(255,63,70,.55)); }
   50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(255,63,70,1)); }
+}
+
+@keyframes nuclear-frame-breathe {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 0 80px rgba(255,58,64,.10), 0 0 70px rgba(0,0,0,.78); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255,145,150,.18), inset 0 0 130px rgba(255,58,64,.18), 0 0 110px rgba(255,58,64,.12); }
+}
+
+@keyframes nuclear-noise-jitter {
+  0% { transform: translate3d(0,0,0); opacity: .10; }
+  25% { transform: translate3d(-1.5%,1%,0); opacity: .16; }
+  50% { transform: translate3d(1%,-1.5%,0); opacity: .12; }
+  75% { transform: translate3d(1.5%,.5%,0); opacity: .18; }
+  100% { transform: translate3d(0,0,0); opacity: .10; }
+}
+
+@keyframes nuclear-target-flicker {
+  0%, 100% { opacity: .45; filter: brightness(1); }
+  50% { opacity: .9; filter: brightness(1.8); }
+}
+
+@keyframes nuclear-hud-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 12.5%, 12.5% 0; }
+}
+
+@keyframes nuclear-warning-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .42; }
+}
+
+@keyframes nuclear-percent-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+  50% { transform: translateX(-50%) scale(1.045); filter: brightness(1.35); }
+}
+
+@keyframes nuclear-progress-sheen {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(260%); }
 }
 
 @media (max-width: 760px) {

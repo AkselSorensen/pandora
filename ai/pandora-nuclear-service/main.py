@@ -1,14 +1,22 @@
 import os
 import re
+import json
+import asyncio
+from collections import Counter
 from datetime import datetime, timezone
 from math import log10
 from time import time
 from typing import Literal
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+try:
+    from sources import NUCLEAR_OSINT_SOURCES, source_registry_summary
+except Exception:
+    from .sources import NUCLEAR_OSINT_SOURCES, source_registry_summary
 
 APP_NAME = "Pandora Nuclear Strategic Simulator"
 RESTCOUNTRIES_URL = "https://restcountries.com/v3.1/all?fields=name,region,subregion,population,area"
@@ -18,6 +26,14 @@ PUBLIC_TIMEOUT = float(os.getenv("PANDORA_NUCLEAR_TIMEOUT", "8"))
 CACHE_TTL = 1800
 MAX_ANALYZED_ARTICLES = int(os.getenv("PANDORA_NUCLEAR_MAX_ARTICLES", "300"))
 MAX_ARTICLES_PER_QUERY = int(os.getenv("PANDORA_NUCLEAR_PER_QUERY_LIMIT", "75"))
+MAX_REGISTRY_SOURCES = int(os.getenv("PANDORA_NUCLEAR_MAX_REGISTRY_SOURCES", "110"))
+MAX_REGISTRY_ARTICLES = int(os.getenv("PANDORA_NUCLEAR_MAX_REGISTRY_ARTICLES", "160"))
+MAX_REGISTRY_PER_SOURCE = int(os.getenv("PANDORA_NUCLEAR_REGISTRY_PER_SOURCE", "4"))
+REGISTRY_CONCURRENCY = int(os.getenv("PANDORA_NUCLEAR_REGISTRY_CONCURRENCY", "28"))
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434").rstrip("/")
+OLLAMA_NUCLEAR_MODEL = os.getenv("OLLAMA_NUCLEAR_MODEL", "pandora-nuclear-ai")
+OLLAMA_TIMEOUT = float(os.getenv("PANDORA_NUCLEAR_AI_TIMEOUT", "35"))
+ENABLE_AI_ASSESSMENT = os.getenv("PANDORA_NUCLEAR_AI_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
 
 app = FastAPI(title=APP_NAME, version="0.2.0")
 _countries_cache = {"ts": 0.0, "items": []}
@@ -182,6 +198,133 @@ def source_counts(articles: list[dict]) -> list[dict]:
     return [{"name": name, "count": count} for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0].lower()))]
 
 
+def count_field(articles: list[dict], field: str) -> list[dict]:
+    counts = Counter(clean_xml(str(article.get(field) or "unknown")) for article in articles)
+    return [{"name": name, "count": count} for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0].lower()))]
+
+
+def domain_from_url(url: str) -> str:
+    try:
+        host = urlparse(url).netloc.lower().replace("www.", "")
+        return host or "Public source"
+    except Exception:
+        return "Public source"
+
+
+def article_relevance(article: dict, actor_name: str, target_name: str, scenario: str | None) -> int:
+    text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('domain', '')} {article.get('category', '')}".lower()
+    actor_tokens = [token for token in re.split(r"\W+", actor_name.lower()) if len(token) >= 4]
+    target_tokens = [token for token in re.split(r"\W+", target_name.lower()) if len(token) >= 4]
+    score = 0
+    if any(token in text for token in actor_tokens):
+        score += 6
+    if any(token in text for token in target_tokens):
+        score += 6
+    if any(word in text for word in KEYWORDS["nuclear"]):
+        score += 5
+    if any(word in text for word in KEYWORDS["military"]):
+        score += 3
+    if any(word in text for word in KEYWORDS["diplomacy"]):
+        score += 2
+    if any(word in text for word in KEYWORDS["sanction"]):
+        score += 2
+    if scenario and scenario.replace("_", " ") in text:
+        score += 2
+    if article.get("category") in {"nuclear_institutional", "nuclear_safety", "nuclear_regulator", "nonproliferation", "defense_research", "cyber_critical_infra"}:
+        score += 1
+    return score
+
+
+def parse_feed_items(xml: str, source: dict, limit: int) -> list[dict]:
+    blocks = re.findall(r"<item[\s\S]*?</item>", xml, re.I)
+    atom = False
+    if not blocks:
+        blocks = re.findall(r"<entry[\s\S]*?</entry>", xml, re.I)
+        atom = True
+    articles = []
+    for item in blocks[:limit]:
+        title = xml_tag(item, "title")
+        summary = xml_tag(item, "description") or xml_tag(item, "summary") or xml_tag(item, "content")
+        pub = xml_tag(item, "pubDate") or xml_tag(item, "updated") or xml_tag(item, "published")
+        link = xml_tag(item, "link")
+        if atom:
+            href = re.search(r"<link[^>]+href=[\"']([^\"']+)[\"']", item, re.I)
+            link = href.group(1) if href else link
+        if title and link:
+            articles.append({
+                "title": title,
+                "summary": summary[:500],
+                "domain": source.get("name") or domain_from_url(link),
+                "url": link,
+                "seenDate": pub,
+                "connector": source.get("name") or "OSINT registry",
+                "category": source.get("category") or "registry",
+                "sourceType": source.get("type") or "rss",
+            })
+    return articles
+
+
+def parse_json_source(data: dict | list, source: dict, limit: int) -> list[dict]:
+    articles = []
+    if isinstance(data, dict) and "vulnerabilities" in data and any(isinstance(item, dict) and "cveID" in item for item in (data.get("vulnerabilities") or [])[:3]):
+        for item in (data.get("vulnerabilities") or [])[:limit]:
+            articles.append({"title": f"{item.get('cveID', 'CISA KEV')} — {item.get('vulnerabilityName', '')}", "summary": item.get("shortDescription", "")[:500], "domain": source.get("name"), "url": source.get("url"), "seenDate": item.get("dateAdded"), "connector": source.get("name"), "category": source.get("category"), "sourceType": "json"})
+    elif isinstance(data, dict) and "vulnerabilities" in data:
+        for item in (data.get("vulnerabilities") or [])[:limit]:
+            cve = item.get("cve") or {}
+            title = cve.get("id") or "NVD CVE"
+            descriptions = cve.get("descriptions") or []
+            desc = next((d.get("value") for d in descriptions if d.get("lang") == "en"), "")
+            articles.append({"title": f"{title} — {desc[:180]}", "summary": desc[:500], "domain": source.get("name"), "url": source.get("url"), "seenDate": cve.get("published"), "connector": source.get("name"), "category": source.get("category"), "sourceType": "json"})
+    elif isinstance(data, dict):
+        rows = data.get("items") or data.get("results") or data.get("data") or data.get("articles") or []
+        if isinstance(rows, list):
+            for item in rows[:limit]:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("title") or item.get("name") or item.get("headline")
+                link = item.get("url") or item.get("link") or item.get("webUrl") or source.get("url")
+                if title:
+                    articles.append({"title": str(title), "summary": str(item.get("summary") or item.get("description") or "")[:500], "domain": source.get("name"), "url": link, "seenDate": item.get("date") or item.get("published") or item.get("updated"), "connector": source.get("name"), "category": source.get("category"), "sourceType": "json"})
+    return articles
+
+
+async def fetch_registry_source(client: httpx.AsyncClient, source: dict, actor_name: str, target_name: str, scenario: str | None, limit: int) -> list[dict]:
+    try:
+        r = await client.get(source["url"], headers={"User-Agent": "Pandora-Nuclear-OSINT-Registry/0.4"})
+        if r.status_code >= 400:
+            return []
+        content_type = r.headers.get("content-type", "").lower()
+        if source.get("type") == "json" or "json" in content_type or source["url"].endswith(".json"):
+            items = parse_json_source(r.json(), source, limit * 3)
+        else:
+            items = parse_feed_items(r.text, source, limit * 3)
+        ranked = sorted(items, key=lambda item: article_relevance(item, actor_name, target_name, scenario), reverse=True)
+        # Keep focused hits first; if a source is institutional/nuclear, keep at least one contextual item.
+        focused = [item for item in ranked if article_relevance(item, actor_name, target_name, scenario) >= 3]
+        contextual_categories = {"nuclear_institutional", "nuclear_safety", "nuclear_regulator", "nonproliferation", "defense_research", "cyber_critical_infra", "crisis_hazards", "sanctions_export_control"}
+        selected = focused[:limit] or (ranked[:1] if source.get("category") in contextual_categories else [])
+        return selected
+    except Exception:
+        return []
+
+
+async def fetch_registry_articles(client: httpx.AsyncClient, actor_name: str, target_name: str, scenario: str | None) -> list[dict]:
+    sources = NUCLEAR_OSINT_SOURCES[:MAX_REGISTRY_SOURCES]
+    semaphore = asyncio.Semaphore(max(1, REGISTRY_CONCURRENCY))
+
+    async def guarded(source: dict) -> list[dict]:
+        async with semaphore:
+            return await fetch_registry_source(client, source, actor_name, target_name, scenario, MAX_REGISTRY_PER_SOURCE)
+
+    batches = await asyncio.gather(*(guarded(source) for source in sources), return_exceptions=True)
+    articles: list[dict] = []
+    for batch in batches:
+        if isinstance(batch, list):
+            articles.extend(batch)
+    return sorted(dedupe_articles(articles), key=lambda item: article_relevance(item, actor_name, target_name, scenario), reverse=True)[:MAX_REGISTRY_ARTICLES]
+
+
 def nuclear_capability(country: dict) -> int:
     return clamp(
         (country.get("triad_maturity") or 0) * 0.35
@@ -301,6 +444,7 @@ def local_fallback_signals(actor: dict, target: dict) -> dict:
 async def fetch_live_signals(actor: dict, target: dict, scenario: str | None) -> dict:
     actor_name = actor["name"]
     target_name = target["name"]
+    registry = source_registry_summary()
     queries = [
         f'{actor_name} {target_name} nuclear',
         f'{actor_name} {target_name} missile',
@@ -311,11 +455,15 @@ async def fetch_live_signals(actor: dict, target: dict, scenario: str | None) ->
         f'{actor_name} {target_name}',
     ]
     query = " | ".join(queries[:6])
-    signals = {"enabled": True, "source": "GDELT 2.1 DOC API + REST Countries", "query": query, "articleCount": 0, "sourceCount": 0, "sourceNames": [], "sourceCounts": [], "militaryMentions": 0, "nuclearMentions": 0, "diplomacyMentions": 0, "sanctionMentions": 0, "communicationMentions": 0, "topArticles": [], "sourceStatus": "ok", "sourceMode": "live_web", "scenarioContext": scenario, "maxAnalyzedArticles": MAX_ANALYZED_ARTICLES}
+    signals = {"enabled": True, "source": "Pandora OSINT multi-source registry + GDELT + Google News + REST Countries", "query": query, "articleCount": 0, "sourceCount": 0, "sourceNames": [], "sourceCounts": [], "sourceCategories": [], "sourceCategoryCounts": [], "connectorCounts": [], "militaryMentions": 0, "nuclearMentions": 0, "diplomacyMentions": 0, "sanctionMentions": 0, "communicationMentions": 0, "topArticles": [], "sourceStatus": "ok", "sourceMode": "live_web_multi_source_registry", "scenarioContext": scenario, "maxAnalyzedArticles": MAX_ANALYZED_ARTICLES, "sourceRegistrySize": registry["registrySize"], "sourceRegistryCategories": registry["categories"], "registryLimits": {"maxRegistrySources": MAX_REGISTRY_SOURCES, "maxRegistryArticles": MAX_REGISTRY_ARTICLES, "perSource": MAX_REGISTRY_PER_SOURCE, "concurrency": REGISTRY_CONCURRENCY}}
     try:
         async with httpx.AsyncClient(timeout=PUBLIC_TIMEOUT) as client:
             articles = []
             connectors = []
+            registry_articles = await fetch_registry_articles(client, actor_name, target_name, scenario)
+            if registry_articles:
+                connectors.append(f"OSINT registry ({len(registry_articles)} items / {registry['registrySize']} sources)")
+                articles.extend(registry_articles)
             for q in queries:
                 gdelt = await fetch_gdelt_articles(client, q, MAX_ARTICLES_PER_QUERY)
                 if gdelt:
@@ -346,14 +494,14 @@ async def fetch_live_signals(actor: dict, target: dict, scenario: str | None) ->
                         connectors.append("Google News RSS broad-context")
                     articles.extend(broad)
                     if len(dedupe_articles(articles)) >= MAX_ANALYZED_ARTICLES:
-                        signals["sourceMode"] = "live_web_broad_context"
+                        signals["sourceMode"] = "live_web_multi_source_registry_broad_context"
                         break
-            articles = dedupe_articles(articles)[:MAX_ANALYZED_ARTICLES]
+            articles = sorted(dedupe_articles(articles), key=lambda item: article_relevance(item, actor_name, target_name, scenario), reverse=True)[:MAX_ANALYZED_ARTICLES]
             if connectors:
                 signals["source"] = " + ".join(sorted(set(connectors))) + " + REST Countries"
         signals["articleCount"] = len(articles)
         for article in articles:
-            text = f"{article.get('title', '')} {article.get('domain', '')} {article.get('url', '')} {article.get('connector', '')}"
+            text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('domain', '')} {article.get('url', '')} {article.get('connector', '')} {article.get('category', '')}"
             signals["militaryMentions"] += count_keywords(text, KEYWORDS["military"])
             signals["nuclearMentions"] += count_keywords(text, KEYWORDS["nuclear"])
             signals["diplomacyMentions"] += count_keywords(text, KEYWORDS["diplomacy"])
@@ -363,16 +511,21 @@ async def fetch_live_signals(actor: dict, target: dict, scenario: str | None) ->
         signals["sourceCount"] = len(counts)
         signals["sourceNames"] = [item["name"] for item in counts]
         signals["sourceCounts"] = counts
+        signals["sourceCategories"] = sorted({clean_xml(article.get("category") or "uncategorized") for article in articles})
+        signals["sourceCategoryCounts"] = count_field(articles, "category")
+        signals["connectorCounts"] = count_field(articles, "connector")
         signals["topArticles"] = articles
         if not articles:
             fallback = local_fallback_signals(actor, target)
             signals.update({k: fallback[k] for k in ["militaryMentions", "nuclearMentions", "diplomacyMentions", "sanctionMentions", "communicationMentions", "sourceCount", "sourceNames", "sourceCounts", "topArticles"]})
             signals["sourceMode"] = "live_web_no_articles_reference_links"
-            signals["source"] = "GDELT + Google News RSS search links + REST Countries"
+            signals["source"] = "Pandora OSINT registry + GDELT + Google News RSS search links + REST Countries"
     except Exception as exc:
         signals = local_fallback_signals(actor, target)
         signals["sourceMode"] = "local_fallback_after_web_failure"
         signals["sourceError"] = type(exc).__name__
+        signals["sourceRegistrySize"] = registry["registrySize"]
+        signals["sourceRegistryCategories"] = registry["categories"]
     return signals
 
 
@@ -381,6 +534,106 @@ def adjust_inputs(req: DeterrenceRequest, signals: dict) -> dict:
         "tension": clamp(req.tension + signals["articleCount"] * 0.4 + signals["militaryMentions"] * 1.8 + signals["nuclearMentions"] * 2.8 + signals["sanctionMentions"] * 1.2 - signals["diplomacyMentions"]),
         "communication_quality": clamp(req.communication_quality + signals["diplomacyMentions"] * 2.2 + signals["communicationMentions"] * 0.8 - signals["militaryMentions"] * 0.8),
         "alliance_involvement": clamp(req.alliance_involvement + signals["sanctionMentions"] * 1.5 + signals["articleCount"] * 0.15),
+    }
+
+
+def compact_articles(articles: list[dict], limit: int = 24) -> list[dict]:
+    return [
+        {
+            "title": clean_xml(article.get("title") or "")[:240],
+            "domain": clean_xml(article.get("domain") or article.get("connector") or "")[:120],
+            "connector": clean_xml(article.get("connector") or "")[:80],
+            "category": clean_xml(article.get("category") or "")[:80],
+            "sourceType": clean_xml(article.get("sourceType") or "")[:40],
+            "seenDate": article.get("seenDate") or article.get("pubDate"),
+            "url": article.get("url"),
+        }
+        for article in articles[:limit]
+    ]
+
+
+def build_ai_prompt(result: dict, scenario_key: str | None = None) -> str:
+    payload = {
+        "mode": result.get("mode"),
+        "scenarioContext": scenario_key,
+        "generatedAt": result.get("generatedAt"),
+        "actor": result.get("actor"),
+        "target": result.get("target"),
+        "scores": result.get("scores"),
+        "drivers": result.get("drivers"),
+        "nuclearContext": result.get("nuclearContext"),
+        "inputAdjustments": result.get("inputAdjustments"),
+        "liveSignals": {
+            **{k: v for k, v in (result.get("liveSignals") or {}).items() if k != "topArticles"},
+            "topArticles": compact_articles((result.get("liveSignals") or {}).get("topArticles") or []),
+        },
+        "safetyNotice": result.get("safetyNotice"),
+    }
+    return f"""
+Tu es Pandora Nuclear AI dans le module Deterrence de Pandora Atlas.
+
+Tache: produire une analyse analyste en français à partir des scores déterministes Pandora et des signaux OSINT live.
+
+Contraintes strictes:
+- analyser tous les pays/couples de pays en distinguant arme nucléaire, non doté, ambigu/seuil, dissuasion élargie, nucléaire civil à fission, réacteurs de recherche, cycle combustible et fusion expérimentale;
+- ne pas fournir de ciblage, coordonnées, vulnérabilités exploitables, sabotage, effets opérationnels de frappe ou fabrication d'arme;
+- signaler les incertitudes et les sources à confirmer;
+- si deux pays ne sont pas dotés, ne pas gonfler artificiellement le risque nucléaire militaire;
+- séparer risque de dissuasion militaire et risque de sûreté nucléaire civile.
+
+Format attendu en Markdown court:
+## Synthèse IA
+## Lecture du couple
+## Signaux OSINT temps réel
+## Escalade / stabilité
+## Nucléaire civil et sûreté
+## Incertitudes
+## Actions analyste défensives
+
+Snapshot JSON Pandora:
+{json.dumps(payload, ensure_ascii=False)[:18000]}
+""".strip()
+
+
+async def ai_assessment(result: dict, scenario_key: str | None = None) -> dict:
+    if not ENABLE_AI_ASSESSMENT:
+        return {"enabled": False, "model": OLLAMA_NUCLEAR_MODEL, "mode": "disabled", "text": ""}
+    prompt = build_ai_prompt(result, scenario_key)
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+            response = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": OLLAMA_NUCLEAR_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"temperature": 0.18, "top_p": 0.8, "num_predict": 900},
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            text = str(data.get("response") or "").strip()
+            if text:
+                return {
+                    "enabled": True,
+                    "mode": "ollama-pandora-nuclear-ai",
+                    "model": OLLAMA_NUCLEAR_MODEL,
+                    "generatedAt": now(),
+                    "text": text,
+                }
+    except Exception as exc:
+        return {
+            "enabled": True,
+            "mode": "ai-assessment-unavailable",
+            "model": OLLAMA_NUCLEAR_MODEL,
+            "warning": type(exc).__name__,
+            "text": "Pandora Nuclear AI indisponible: l'analyse déterministe et les signaux OSINT restent fournis. Vérifier Ollama/OLLAMA_NUCLEAR_MODEL.",
+        }
+    return {
+        "enabled": True,
+        "mode": "ai-assessment-empty",
+        "model": OLLAMA_NUCLEAR_MODEL,
+        "text": "Pandora Nuclear AI n'a pas retourné de texte exploitable; utiliser l'analyse déterministe et les sources OSINT.",
     }
 
 
@@ -414,12 +667,27 @@ async def deterrence_metrics(req: DeterrenceRequest, scenario_key: str | None = 
         recommendations.insert(0, "Live web sources were not required for continuity: Pandora used local strategic fallback signals.")
     if escalation >= 70:
         recommendations.insert(0, "High escalation index: prioritize de-escalation channels and third-party verification.")
-    return {"mode": "pandora-nuclear-deterrence-live", "generatedAt": now(), "actor": actor, "target": target, "scores": {"deterrenceCredibility": credibility, "escalationRisk": escalation, "strategicStabilityRisk": strategic_escalation, "secondStrikeConfidence": second_strike, "strategicStability": stability, "miscalculationRisk": miscalculation}, "drivers": {"actorPressure": pressure, "targetDeterrenceCredibility": credibility, "miscalculationRisk": miscalculation, "secondStrikeConfidence": second_strike, "crisisCommunication": adjusted["communication_quality"], "allianceInvolvement": adjusted["alliance_involvement"], "liveAdjustedTension": adjusted["tension"], "rawStrategicEscalation": strategic_escalation, "explicitNuclearSignal": explicit_nuclear_signal}, "nuclearContext": nuclear_context, "liveSignals": signals, "inputAdjustments": {"original": {"tension": req.tension, "communication_quality": req.communication_quality, "alliance_involvement": req.alliance_involvement}, "used": adjusted}, "recommendations": recommendations, "safetyNotice": "Educational strategic simulation only. Exact target coordinates, weapon effects, and operational strike planning are intentionally unsupported."}
+    result = {"mode": "pandora-nuclear-deterrence-live", "generatedAt": now(), "actor": actor, "target": target, "scores": {"deterrenceCredibility": credibility, "escalationRisk": escalation, "strategicStabilityRisk": strategic_escalation, "secondStrikeConfidence": second_strike, "strategicStability": stability, "miscalculationRisk": miscalculation}, "drivers": {"actorPressure": pressure, "targetDeterrenceCredibility": credibility, "miscalculationRisk": miscalculation, "secondStrikeConfidence": second_strike, "crisisCommunication": adjusted["communication_quality"], "allianceInvolvement": adjusted["alliance_involvement"], "liveAdjustedTension": adjusted["tension"], "rawStrategicEscalation": strategic_escalation, "explicitNuclearSignal": explicit_nuclear_signal}, "nuclearContext": nuclear_context, "liveSignals": signals, "inputAdjustments": {"original": {"tension": req.tension, "communication_quality": req.communication_quality, "alliance_involvement": req.alliance_involvement}, "used": adjusted}, "recommendations": recommendations, "safetyNotice": "Educational strategic simulation only. Exact target coordinates, weapon effects, and operational strike planning are intentionally unsupported."}
+    result["aiAssessment"] = await ai_assessment(result, scenario_key)
+    return result
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": APP_NAME, "timestamp": now(), "liveSources": ["REST Countries", "GDELT 2.1 DOC API"]}
+    registry = source_registry_summary()
+    return {
+        "status": "ok",
+        "service": APP_NAME,
+        "timestamp": now(),
+        "liveSources": {
+            "core": ["REST Countries", "GDELT 2.1 DOC API", "Google News RSS"],
+            "registrySize": registry["registrySize"],
+            "registryCategories": registry["categories"],
+            "registryCategoryCounts": registry["categoryCounts"],
+            "limits": {"maxRegistrySources": MAX_REGISTRY_SOURCES, "maxRegistryArticles": MAX_REGISTRY_ARTICLES, "perSource": MAX_REGISTRY_PER_SOURCE, "concurrency": REGISTRY_CONCURRENCY},
+        },
+        "aiAssessment": {"enabled": ENABLE_AI_ASSESSMENT, "model": OLLAMA_NUCLEAR_MODEL, "ollamaBaseUrl": OLLAMA_BASE_URL},
+    }
 
 
 @app.get("/countries")
