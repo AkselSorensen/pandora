@@ -171,6 +171,19 @@ services:
       - "${PANDORA_DGSI_PORT:-7712}:7712"
     restart: unless-stopped
 
+  pandora-territorial:
+    build:
+      context: ./ai/pandora-territorial-service
+      dockerfile: Dockerfile
+    container_name: pandora-territorial
+    ports:
+      - "${PANDORA_TERRITORIAL_PORT:-7714}:7714"
+    environment:
+      - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
+      - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
+      - PANDORA_DGSI_URL=${PANDORA_DGSI_URL:-http://pandora-dgsi:7712}
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: pandora-prometheus
@@ -291,6 +304,7 @@ services:
       - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
       - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
       - PANDORA_DGSI_URL=${PANDORA_DGSI_URL:-http://pandora-dgsi:7712}
+      - PANDORA_TERRITORIAL_URL=${PANDORA_TERRITORIAL_URL:-http://pandora-territorial:7714}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
       - OLLAMA_NUCLEAR_MODEL=${OLLAMA_NUCLEAR_MODEL:-pandora-nuclear-ai}
     depends_on:
@@ -306,6 +320,7 @@ services:
       - pandora-cyberdef
       - pandora-aerospace
       - pandora-dgsi
+      - pandora-territorial
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──

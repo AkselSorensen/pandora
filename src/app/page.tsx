@@ -29,6 +29,7 @@ import { buildFusionModel } from '@/lib/palantir-fusion';
 import CyberDefPanel from '@/components/CyberDefPanel';
 import AerospacePanel from '@/components/AerospacePanel';
 import DGSIPanel from '@/components/DGSIPanel';
+import TerritorialPanel from '@/components/TerritorialPanel';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
 import OSINTHub from '@/components/OSINTHub';
@@ -324,7 +325,7 @@ export default function Dashboard() {
   const [showIntel, setShowIntel] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
-  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'dgsi' | 'darkweb' | 'playbooks' | 'osint'>('layers');
+  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'dgsi' | 'territorial' | 'darkweb' | 'playbooks' | 'osint'>('layers');
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
@@ -1297,6 +1298,7 @@ export default function Dashboard() {
               { id: 'cyber' as const, icon: Shield, label: t('nav.cyber') },
               { id: 'aerospace' as const, icon: Plane, label: 'AEROSPACE' },
               { id: 'dgsi' as const, icon: Shield, label: 'DGSI' },
+              { id: 'territorial' as const, icon: Globe, label: 'TERRITORIAL' },
               { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb') },
               { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks') },
               { id: 'osint' as const, icon: Search, label: t('nav.osint') },
@@ -1341,6 +1343,8 @@ export default function Dashboard() {
                       ? 'AEROSPACE'
                       : desktopTool === 'dgsi'
                       ? 'DGSI'
+                      : desktopTool === 'territorial'
+                      ? 'TERRITORIAL'
                       : desktopTool === 'darkweb'
                       ? t('workspace.darkweb')
                       : desktopTool === 'playbooks'
@@ -1422,6 +1426,7 @@ export default function Dashboard() {
                 {desktopTool === 'cyber' && <CyberDefPanel />}
                 {desktopTool === 'aerospace' && <AerospacePanel />}
                 {desktopTool === 'dgsi' && <DGSIPanel />}
+                {desktopTool === 'territorial' && <TerritorialPanel />}
                 {desktopTool === 'darkweb' && <DarkWebMonitor />}
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
                 {desktopTool === 'osint' && <OSINTHub />}
