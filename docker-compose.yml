@@ -162,6 +162,15 @@ services:
       - PANDORA_AEROSPACE_AI_ENABLED=${PANDORA_AEROSPACE_AI_ENABLED:-true}
     restart: unless-stopped
 
+  pandora-dgsi:
+    build:
+      context: ./ai/pandora-dgsi-service
+      dockerfile: Dockerfile
+    container_name: pandora-dgsi
+    ports:
+      - "${PANDORA_DGSI_PORT:-7712}:7712"
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: pandora-prometheus
@@ -281,6 +290,7 @@ services:
       - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
       - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
       - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
+      - PANDORA_DGSI_URL=${PANDORA_DGSI_URL:-http://pandora-dgsi:7712}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
       - OLLAMA_NUCLEAR_MODEL=${OLLAMA_NUCLEAR_MODEL:-pandora-nuclear-ai}
     depends_on:
@@ -295,6 +305,7 @@ services:
       - pandora-nuclear
       - pandora-cyberdef
       - pandora-aerospace
+      - pandora-dgsi
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──

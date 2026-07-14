@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
-  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, EyeOff, BookOpen, FileText,
+  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, Plane, EyeOff, BookOpen, FileText,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
@@ -28,6 +28,7 @@ import PublicIntelCatalogPanel from '@/components/PublicIntelCatalogPanel';
 import { buildFusionModel } from '@/lib/palantir-fusion';
 import CyberDefPanel from '@/components/CyberDefPanel';
 import AerospacePanel from '@/components/AerospacePanel';
+import DGSIPanel from '@/components/DGSIPanel';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
 import OSINTHub from '@/components/OSINTHub';
@@ -323,7 +324,7 @@ export default function Dashboard() {
   const [showIntel, setShowIntel] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
-  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'darkweb' | 'playbooks' | 'osint'>('layers');
+  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'dgsi' | 'darkweb' | 'playbooks' | 'osint'>('layers');
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
@@ -1295,6 +1296,7 @@ export default function Dashboard() {
               { id: 'alerts' as const, icon: AlertTriangle, label: t('nav.alerts') },
               { id: 'cyber' as const, icon: Shield, label: t('nav.cyber') },
               { id: 'aerospace' as const, icon: Plane, label: 'AEROSPACE' },
+              { id: 'dgsi' as const, icon: Shield, label: 'DGSI' },
               { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb') },
               { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks') },
               { id: 'osint' as const, icon: Search, label: t('nav.osint') },
@@ -1337,6 +1339,8 @@ export default function Dashboard() {
                       ? t('workspace.cyber')
                       : desktopTool === 'aerospace'
                       ? 'AEROSPACE'
+                      : desktopTool === 'dgsi'
+                      ? 'DGSI'
                       : desktopTool === 'darkweb'
                       ? t('workspace.darkweb')
                       : desktopTool === 'playbooks'
@@ -1417,6 +1421,7 @@ export default function Dashboard() {
                 {desktopTool === 'alerts' && <LiveAlerts data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} onWatchFeed={(url, name, embedAllowed = true) => { setLiveFeedUrl(url); setLiveFeedName(name); setLiveFeedEmbedAllowed(embedAllowed); }} />}
                 {desktopTool === 'cyber' && <CyberDefPanel />}
                 {desktopTool === 'aerospace' && <AerospacePanel />}
+                {desktopTool === 'dgsi' && <DGSIPanel />}
                 {desktopTool === 'darkweb' && <DarkWebMonitor />}
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
                 {desktopTool === 'osint' && <OSINTHub />}

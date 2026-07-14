@@ -5,7 +5,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := help
 
 .PHONY: help up down restart restart-fast clean ps logs pull build lint urls health \
-        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk nuclear cyberdef aerospace \
+        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk nuclear cyberdef aerospace dgsi \
         logs-pandora logs-grafana logs-metrics grafana-open prometheus-open
 
 help: ## Show available commands
@@ -36,6 +36,7 @@ help: ## Show available commands
 	@echo "  make nuclear         Rebuild/restart pandora-nuclear"
 	@echo "  make cyberdef        Rebuild/restart pandora-cyberdef"
 	@echo "  make aerospace       Rebuild/restart pandora-aerospace"
+	@echo "  make dgsi            Rebuild/restart pandora-dgsi"
 	@echo ""
 	@echo "Tools:"
 	@echo "  make build           Run Next build"
@@ -108,6 +109,9 @@ cyberdef: ## Rebuild/restart cyber defense service
 
 aerospace: ## Rebuild/restart aerospace surveillance service
 	$(COMPOSE) up -d --build pandora-aerospace
+
+dgsi: ## Rebuild/restart territorial intelligence service
+	$(COMPOSE) up -d --build pandora-dgsi
 
 metrics: ## Rebuild/restart Pandora Prometheus exporter
 	$(COMPOSE) up -d --build pandora-metrics

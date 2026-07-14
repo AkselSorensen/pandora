@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from typing import Any
 from collections import Counter
 from urllib.parse import urlencode
+from urllib.request import urlopen, Request
+from urllib.error import URLError
 
-import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -21,7 +22,7 @@ except Exception:
 
 # ── Config ──
 APP_NAME = "Pandora Aerospace Service"
-DEFAULT_TIMEOUT = float(os.getenv("PANDORA_AEROSPACE_TIMEOUT", "12"))
+DEFAULT_TIMEOUT = float(os.getenv("PANDORA_AEROSPACE_TIMEOUT", "8"))
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "pandora-ai")
 ENABLE_AI = os.getenv("PANDORA_AEROSPACE_AI_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
@@ -57,31 +58,66 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-# ── ADSB.lol fetcher ──
-async def fetch_adsb_region(client: httpx.AsyncClient, region: dict) -> list[dict]:
-    url = f"https://api.adsb.lol/v2/lat/{region['lat']}/lon/{region['lon']}/dist/{region['dist']}"
-    try:
-        r = await client.get(url, timeout=12)
-        if r.is_success:
-            data = r.json()
-            return data.get("ac") or []
-    except: pass
-    return []
-
+# ── ADSB.lol fetcher (urllib — httpx ne passe pas sur Docker Windows) ──
 async def fetch_all_aircraft() -> list[dict]:
-    """Fetch from all 6 ADSB.lol regions in parallel."""
+    """Fetch from ADSB.lol (6 regions) and OpenSky in parallel for speed."""
+    loop = asyncio.get_event_loop()
     seen = set()
     all_ac = []
-    async with httpx.AsyncClient(timeout=12) as client:
-        tasks = [fetch_adsb_region(client, r) for r in REGIONS]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-    for batch in results:
+
+    # Launch ADSB.lol + OpenSky in parallel
+    async def fetch_opensky():
+        try:
+            req = Request("https://opensky-network.org/api/states/all",
+                          headers={"User-Agent": "Pandora-Aerospace/1.0", "Accept": "application/json"})
+            with urlopen(req, timeout=8) as r:
+                data = json.loads(r.read())
+                return data.get("states") or []
+        except: return []
+
+    def _fetch_adsb(region):
+        url = f"https://api.adsb.lol/v2/lat/{region['lat']}/lon/{region['lon']}/dist/{region['dist']}"
+        try:
+            req = Request(url, headers={"User-Agent": "Pandora-Aerospace/1.0", "Accept": "application/json"})
+            with urlopen(req, timeout=6) as r:
+                return json.loads(r.read()).get("ac") or []
+        except: return []
+
+    adsb_tasks = [loop.run_in_executor(None, _fetch_adsb, r) for r in REGIONS]
+    seen_opensky = asyncio.ensure_future(fetch_opensky())
+
+    # Wait for ADSB results with a short timeout
+    adsb_results = await asyncio.gather(*adsb_tasks, return_exceptions=True)
+    opensky_states = await seen_opensky
+
+    # Process ADSB.lol results
+    for batch in adsb_results:
         if isinstance(batch, list):
             for ac in batch:
                 key = ac.get("hex", "") or f"{ac.get('lat')}-{ac.get('lon')}"
                 if key not in seen:
                     seen.add(key)
                     all_ac.append(ac)
+
+    # Only use OpenSky if ADSB.lol returned too few
+    if len(all_ac) < 100:
+        all_ac = []
+        seen.clear()
+        for s in opensky_states[:500]:
+            icao24 = s[0] if len(s) > 0 else ""
+            cs = (s[1] or "").strip() if len(s) > 1 else ""
+            lat = s[6] if len(s) > 6 and s[6] else None
+            lon = s[5] if len(s) > 5 and s[5] else None
+            if lat is not None and lon is not None:
+                all_ac.append({
+                    "hex": icao24, "flight": cs, "lat": lat, "lon": lon,
+                    "alt_baro": (s[7] * 3.28084) if len(s) > 7 and s[7] else None,
+                    "gs": s[9] if len(s) > 9 and s[9] else None,
+                    "track": s[10] if len(s) > 10 and s[10] else None,
+                    "t": (s[13] or "") if len(s) > 13 else "",
+                    "r": "", "squawk": "", "dbFlags": 0,
+                })
+
     return all_ac
 
 def classify_and_enrich(ac: dict) -> dict | None:
@@ -178,15 +214,20 @@ async def ai_briefing(aircraft: list[dict], zones: list[dict], question: str = "
         return {"enabled": False, "mode": "disabled", "text": ""}
     prompt = build_briefing_prompt(aircraft, zones, question)
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": prompt[:18000],
-                       "stream": False, "options": {"temperature": 0.15, "num_predict": 1000}},
-            )
-            if r.is_success and r.json().get("response"):
-                return {"enabled": True, "mode": "ollama", "model": OLLAMA_MODEL,
-                        "text": r.json()["response"], "generatedAt": now()}
+        loop = asyncio.get_event_loop()
+        req = Request(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            data=json.dumps({"model": OLLAMA_MODEL, "prompt": prompt[:18000],
+                   "stream": False, "options": {"temperature": 0.15, "num_predict": 1000}}).encode(),
+            headers={"Content-Type": "application/json"}
+        )
+        def _do():
+            with urlopen(req, timeout=30) as r:
+                return json.loads(r.read())
+        data = await loop.run_in_executor(None, _do)
+        if data.get("response"):
+            return {"enabled": True, "mode": "ollama", "model": OLLAMA_MODEL,
+                    "text": data["response"], "generatedAt": now()}
     except: pass
     return {"enabled": True, "mode": "unavailable", "text": "", "generatedAt": now()}
 
@@ -226,9 +267,12 @@ async def airspace(lat: float = 0, lng: float = 0, radius_km: int = 200):
     }
 
 @app.get("/anomalies")
-async def anomalies():
+async def anomalies(timeout: int = 18):
     """Detect suspicious aircraft patterns."""
-    all_ac = await fetch_all_aircraft()
+    all_ac = []
+    try:
+        all_ac = await asyncio.wait_for(fetch_all_aircraft(), timeout=timeout)
+    except: pass
     classified = [classify_and_enrich(ac) for ac in all_ac]
     classified = [c for c in classified if c]
     anomalies_list = []
