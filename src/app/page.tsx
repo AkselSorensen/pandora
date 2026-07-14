@@ -27,6 +27,7 @@ import InnovationLabPanel from '@/components/InnovationLabPanel';
 import PublicIntelCatalogPanel from '@/components/PublicIntelCatalogPanel';
 import { buildFusionModel } from '@/lib/palantir-fusion';
 import CyberThreatRadar from '@/components/CyberThreatRadar';
+import CyberDefPanel from '@/components/CyberDefPanel';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
 import OSINTHub from '@/components/OSINTHub';
@@ -1411,7 +1412,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {desktopTool === 'alerts' && <LiveAlerts data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} onWatchFeed={(url, name, embedAllowed = true) => { setLiveFeedUrl(url); setLiveFeedName(name); setLiveFeedEmbedAllowed(embedAllowed); }} />}
-                {desktopTool === 'cyber' && <CyberThreatRadar />}
+                {desktopTool === 'cyber' && <CyberDefPanel />}
                 {desktopTool === 'darkweb' && <DarkWebMonitor />}
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
                 {desktopTool === 'osint' && <OSINTHub />}
