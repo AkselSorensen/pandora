@@ -134,6 +134,21 @@ services:
       - PANDORA_NUCLEAR_REGISTRY_CONCURRENCY=${PANDORA_NUCLEAR_REGISTRY_CONCURRENCY:-28}
     restart: unless-stopped
 
+  pandora-cyberdef:
+    build:
+      context: ./ai/pandora-cyberdef-service
+      dockerfile: Dockerfile
+    container_name: pandora-cyberdef
+    ports:
+      - "${PANDORA_CYBERDEF_PORT:-7711}:7711"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
+      - PANDORA_CYBERDEF_AI_ENABLED=${PANDORA_CYBERDEF_AI_ENABLED:-true}
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
+      - URLSCAN_API_KEY=${URLSCAN_API_KEY:-}
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: pandora-prometheus
@@ -251,6 +266,7 @@ services:
       - PANDORA_COPILOT_URL=${PANDORA_COPILOT_URL:-http://pandora-copilot:7707}
       - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
       - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
+      - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
       - OLLAMA_NUCLEAR_MODEL=${OLLAMA_NUCLEAR_MODEL:-pandora-nuclear-ai}
     depends_on:
@@ -263,6 +279,7 @@ services:
       - pandora-copilot
       - pandora-risk
       - pandora-nuclear
+      - pandora-cyberdef
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──

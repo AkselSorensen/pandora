@@ -32,6 +32,8 @@ scrape_configs:
           - http://pandora-hotspots:7706/health
           - http://pandora-copilot:7707/health
           - http://pandora-risk:7708/health
+          - http://pandora-nuclear:7709/health
+          - http://pandora-cyberdef:7711/health
           - http://pandora-metrics:7710/health
     relabel_configs:
       - source_labels: [__address__]

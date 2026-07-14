@@ -5,7 +5,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := help
 
 .PHONY: help up down restart restart-fast clean ps logs pull build lint urls health \
-        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk \
+        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk nuclear cyberdef \
         logs-pandora logs-grafana logs-metrics grafana-open prometheus-open
 
 help: ## Show available commands
@@ -33,6 +33,8 @@ help: ## Show available commands
 	@echo "  make hotspots        Rebuild/restart pandora-hotspots"
 	@echo "  make copilot         Rebuild/restart pandora-copilot"
 	@echo "  make risk            Rebuild/restart pandora-risk"
+	@echo "  make nuclear         Rebuild/restart pandora-nuclear"
+	@echo "  make cyberdef        Rebuild/restart pandora-cyberdef"
 	@echo ""
 	@echo "Tools:"
 	@echo "  make build           Run Next build"
@@ -97,6 +99,12 @@ copilot: ## Rebuild/restart copilot service
 risk: ## Rebuild/restart risk service
 	$(COMPOSE) up -d --build pandora-risk
 
+nuclear: ## Rebuild/restart nuclear deterrence simulator
+	$(COMPOSE) up -d --build pandora-nuclear
+
+cyberdef: ## Rebuild/restart cyber defense service
+	$(COMPOSE) up -d --build pandora-cyberdef
+
 metrics: ## Rebuild/restart Pandora Prometheus exporter
 	$(COMPOSE) up -d --build pandora-metrics
 
@@ -128,6 +136,7 @@ urls: ## Print useful local URLs
 	@echo "Hotspots:            http://localhost:3001/hotspots"
 	@echo "Copilot:             http://localhost:3001/copilot"
 	@echo "Risk:                http://localhost:3001/risk"
+	@echo "CyberDef:            http://localhost:7711/health"
 
 grafana-open: urls ## Print Grafana URL
 
@@ -143,6 +152,7 @@ health: ## Quick health checks for key services
 	@echo "\nHotspots:" && curl -fsS http://localhost:7706/health || true
 	@echo "\nCopilot:" && curl -fsS http://localhost:7707/health || true
 	@echo "\nRisk:" && curl -fsS http://localhost:7708/health || true
+	@echo "\nCyberDef:" && curl -fsS http://localhost:7711/health || true
 	@echo "\nMetrics:" && curl -fsS http://localhost:7710/health || true
 	@echo "\nGrafana:" && curl -fsS http://localhost:3002/api/health || true
 	@echo "\nPrometheus:" && curl -fsS http://localhost:9090/-/ready || true
