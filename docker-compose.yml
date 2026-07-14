@@ -149,6 +149,19 @@ services:
       - URLSCAN_API_KEY=${URLSCAN_API_KEY:-}
     restart: unless-stopped
 
+  pandora-aerospace:
+    build:
+      context: ./ai/pandora-aerospace-service
+      dockerfile: Dockerfile
+    container_name: pandora-aerospace
+    ports:
+      - "${PANDORA_AEROSPACE_PORT:-7713}:7713"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
+      - PANDORA_AEROSPACE_AI_ENABLED=${PANDORA_AEROSPACE_AI_ENABLED:-true}
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: pandora-prometheus
@@ -267,6 +280,7 @@ services:
       - PANDORA_RISK_URL=${PANDORA_RISK_URL:-http://pandora-risk:7708}
       - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
       - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
+      - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
       - OLLAMA_NUCLEAR_MODEL=${OLLAMA_NUCLEAR_MODEL:-pandora-nuclear-ai}
     depends_on:
@@ -280,6 +294,7 @@ services:
       - pandora-risk
       - pandora-nuclear
       - pandora-cyberdef
+      - pandora-aerospace
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──
