@@ -26,7 +26,6 @@ import CommandPalette from '@/components/CommandPalette';
 import InnovationLabPanel from '@/components/InnovationLabPanel';
 import PublicIntelCatalogPanel from '@/components/PublicIntelCatalogPanel';
 import { buildFusionModel } from '@/lib/palantir-fusion';
-import CyberThreatRadar from '@/components/CyberThreatRadar';
 import CyberDefPanel from '@/components/CyberDefPanel';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
