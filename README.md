@@ -35,6 +35,7 @@
 - [Raccourcis clavier](#-raccourcis-clavier)
 - [Structure du projet](#-structure-du-projet)
 - [Stack technique](#-stack-technique)
+- [Souveraineté, gouvernance & audit](#-souveraineté-gouvernance--audit)
 - [Sécurité & éthique](#-sécurité--éthique)
 - [Licence](#-licence)
 
@@ -401,6 +402,73 @@ Pandora évite de surcharger les sources :
 - sources statiques gardées côté serveur lorsque possible ;
 - rendu carte via WebGL plutôt que via DOM ;
 - désactivation des fetchs si le document est caché.
+
+---
+
+## 🔐 Souveraineté, gouvernance & audit
+
+Depuis la Phase 1, Pandora porte une couche de gouvernance complète — décision d'accès par attributs,
+journal d'audit inviolable, gestion de dossiers persistante et graphe de connaissances filtrable.
+Détails et limites assumeées : [`docs/PHASE1.md`](docs/PHASE1.md).
+
+### Classification et contrôle d'accès (ABAC)
+
+Chaque route API est classée, et une requête classifiée n'est servie qu'après une décision explicite
+du service de gouvernance — décision journalisée, y compris les refus. **Fail closed** : sans journal,
+pas d'accès classifié.
+
+| Niveau | Exemples de routes |
+|---|---|
+| NP (non protégé) | `/api/flights`, `/api/earthquakes`, `/api/gdelt`, `/api/cctv` |
+| DR (diffusion restreinte) | `/api/territorial`, `/api/hotspots`, `/api/graph`, `/api/darkweb-alerts` |
+| C (confidentiel) | `/api/digest`, `/api/dgsi`, `/api/cases`, `/api/governance/*` |
+| S (secret, compartiment `nuclear`) | `/api/deterrence` |
+
+Le profil opérateur (clearance / rôle / compartiments) se règle dans l'outil **GOUVERNANCE** du rail.
+Ce profil est **local et non authentifiant** : il rend la politique démontrable et traçable, il
+n'établit pas d'identité (§6 de `docs/PHASE1.md`).
+
+### Journal d'audit chaîné
+
+```bash
+curl -s localhost:7715/audit/verify    # vérification de la chaîne de hash
+curl -s localhost:7715/audit?limit=20  # dernières décisions (allow + deny)
+curl -s localhost:7715/posture         # taux de refus par raison, activité par acteur
+```
+
+Modifier une ligne du journal casse la chaîne au `seq` concerné et `verify` le signale : le journal
+est vérifiable par un tiers, sans clé ni service externe.
+
+### Dossiers analystes persistants
+
+Dossiers avec statut, hypothèse, priorité et classification ; preuves stockées sous forme de
+**références publiques + SHA-256 recalculable** ; chaîne de traçabilité complète ; export JSON et
+Markdown. Routes : `/api/cases`, `/api/cases/{id}`, `/api/cases/{id}/evidence`,
+`/api/cases/{id}/export?format=md`, `/api/cases/generate`.
+
+### Graphe de connaissances
+
+Fusion réelle de l'aviation, des zones de risque, des sites critiques, des indicateurs cyber, de la
+posture stratégique et de la couche de corrélation. Relations calculées (distances haversine réelles),
+pivots d'entités, filtrage par clearance **sur les données** et `degraded` explicite quand une source
+ne répond pas. Outil **GRAPHE** du rail, ou `/api/graph`, `/api/graph/entity/{id}`, `/api/graph/search`.
+
+### Souveraineté
+
+`/sovereignty` affiche l'audit des dépendances externes **calculé en scannant le code** :
+
+```bash
+npm run audit:deps     # régénère docs/dependency-audit.json
+```
+
+Nombre d'hôtes par juridiction, hôtes hors UE triés par occurrences, fichiers concernés, table de
+classification complète et état du journal — de quoi étayer (ou contester) l'argument souverain.
+
+### Ports ajoutés
+
+| Port | Service |
+|---|---|
+| 7715 | pandora-governance (ABAC + journal d'audit) |
 
 ---
 

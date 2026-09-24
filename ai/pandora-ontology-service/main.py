@@ -1,95 +1,40 @@
-import hashlib
+import json
 import os
-import re
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, Query
 
+import graph as graph_builder
+from nodes import add_edge, add_node, extract_location_node, severity_risk, stable_id
 
 APP_NAME = "Pandora Ontology Service"
+APP_VERSION = "0.2.0"
 PANDORA_DIGEST_URL = os.getenv("PANDORA_DIGEST_URL", "http://pandora-digest:7702").rstrip("/")
 PANDORA_ALERTS_URL = os.getenv("PANDORA_ALERTS_URL", "http://pandora-alerts:7703").rstrip("/")
 
-app = FastAPI(title=APP_NAME, version="0.1.0")
+app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def slug(value: Any) -> str:
-    text = re.sub(r"[^a-z0-9]+", "-", str(value or "unknown").lower()).strip("-")
-    return text[:90] or "unknown"
+def subject_from(header: str | None) -> dict[str, Any]:
+    """Subject forwarded by the Next proxy; conservative default (diffusion restreinte)."""
+    default = {"operator": "anonymous", "role": "observer", "clearance": "diffusion_restreinte",
+               "compartments": [], "attestation": None}
+    if not header:
+        return default
+    try:
+        parsed = json.loads(header)
+        if isinstance(parsed, dict):
+            return {**default, **parsed}
+    except Exception:
+        pass
+    return default
 
-
-def stable_id(prefix: str, value: Any) -> str:
-    raw = str(value or prefix)
-    digest = hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:10]
-    return f"{prefix}-{slug(raw)[:48]}-{digest}"
-
-
-def add_node(nodes: dict[str, dict[str, Any]], node: dict[str, Any]) -> dict[str, Any]:
-    node_id = str(node["id"])
-    if node_id in nodes:
-        existing = nodes[node_id]
-        existing["weight"] = max(float(existing.get("weight", 1)), float(node.get("weight", 1)))
-        existing["risk"] = max(float(existing.get("risk", 0)), float(node.get("risk", 0)))
-        existing_tags = set(existing.get("tags") or [])
-        existing_tags.update(node.get("tags") or [])
-        existing["tags"] = sorted(existing_tags)
-        existing["sources"] = sorted(set(existing.get("sources") or []) | set(node.get("sources") or []))
-        return existing
-    nodes[node_id] = node
-    return node
-
-
-def add_edge(edges: dict[str, dict[str, Any]], source: str, target: str, relation: str, weight: float = 1, evidence: str | None = None) -> None:
-    if source == target:
-        return
-    edge_id = f"edge-{source}-{relation}-{target}"
-    edges[edge_id] = {
-        "id": edge_id,
-        "source": source,
-        "target": target,
-        "relation": relation,
-        "weight": weight,
-        "evidence": evidence,
-    }
-
-
-def severity_risk(severity: str) -> int:
-    return {"critical": 95, "high": 75, "medium": 45, "low": 20}.get(str(severity).lower(), 35)
-
-
-def extract_location_node(nodes: dict[str, dict[str, Any]], value: Any) -> str | None:
-    if not value:
-        return None
-    label = str(value)
-    if re.match(r"^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$", label):
-        node_id = stable_id("geo", label)
-        add_node(nodes, {
-            "id": node_id,
-            "type": "GeoPoint",
-            "label": label,
-            "risk": 35,
-            "weight": 1,
-            "tags": ["geo"],
-            "sources": ["location"],
-        })
-        return node_id
-    node_id = stable_id("location", label)
-    add_node(nodes, {
-        "id": node_id,
-        "type": "Location",
-        "label": label,
-        "risk": 40,
-        "weight": 1,
-        "tags": ["location"],
-        "sources": ["location"],
-    })
-    return node_id
 
 
 def build_ontology(digest: dict[str, Any], alerts_payload: dict[str, Any]) -> dict[str, Any]:
@@ -238,8 +183,11 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "service": APP_NAME,
+        "version": APP_VERSION,
         "digest_url": PANDORA_DIGEST_URL,
         "alerts_url": PANDORA_ALERTS_URL,
+        "graph_sources": graph_builder.SERVICE_URLS,
+        "graph_cache_ttl_s": graph_builder.CACHE_TTL,
         "timestamp": now_iso(),
     }
 
@@ -253,3 +201,66 @@ async def ontology() -> dict[str, Any]:
         except Exception:
             alerts = {"alerts": []}
     return build_ontology(digest, alerts)
+
+
+@app.get("/graph")
+async def graph(
+    domain: str | None = Query(None),
+    type: str | None = Query(None),
+    min_risk: float = Query(0, ge=0, le=100),
+    limit: int = Query(300, ge=10, le=600),
+    force: bool = Query(False),
+    x_pandora_subject: str | None = Header(None),
+) -> dict[str, Any]:
+    """Multi-domain typed graph, filtered by the caller's clearance."""
+    subject = subject_from(x_pandora_subject)
+    graph_data, degraded = await graph_builder.get_graph(force=force)
+    filtered = graph_builder.filter_by_clearance(graph_data, subject.get("clearance"), subject.get("compartments"))
+
+    nodes = [n for n in filtered["nodes"] if float(n.get("risk") or 0) >= min_risk]
+    if type:
+        nodes = [n for n in nodes if str(n.get("type")).lower() == type.lower()]
+    if domain:
+        nodes = [n for n in nodes if any(domain.lower() in str(s).lower() for s in (n.get("sources") or []))]
+    nodes = nodes[:limit]
+    ids = {n["id"] for n in nodes}
+    edges = [e for e in filtered["edges"] if e["source"] in ids and e["target"] in ids]
+
+    return {
+        **filtered,
+        "degraded": degraded,
+        "filters": {"domain": domain, "type": type, "minRisk": min_risk, "limit": limit},
+        "returned": {"nodes": len(nodes), "edges": len(edges)},
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+@app.get("/entities")
+async def entities(
+    q: str = Query("", description="label or id substring"),
+    type: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    x_pandora_subject: str | None = Header(None),
+) -> dict[str, Any]:
+    subject = subject_from(x_pandora_subject)
+    graph_data, _ = await graph_builder.get_graph()
+    filtered = graph_builder.filter_by_clearance(graph_data, subject.get("clearance"), subject.get("compartments"))
+    results = graph_builder.search(filtered, q, type, limit)
+    return {"mode": "pandora-knowledge-graph-search", "generatedAt": now_iso(),
+            "query": q, "type": type, "count": len(results), "entities": results,
+            "acl": filtered.get("acl")}
+
+
+@app.get("/entity/{entity_id}")
+async def entity(entity_id: str, x_pandora_subject: str | None = Header(None)) -> dict[str, Any]:
+    """Entity pivot: neighbours, relations and contributing sources."""
+    subject = subject_from(x_pandora_subject)
+    graph_data, _ = await graph_builder.get_graph()
+    filtered = graph_builder.filter_by_clearance(graph_data, subject.get("clearance"), subject.get("compartments"))
+    pivot = graph_builder.ego(filtered, entity_id)
+    if not pivot:
+        return {"mode": "pandora-knowledge-graph-entity", "found": False, "entityId": entity_id,
+                "acl": filtered.get("acl"),
+                "hint": "entity unknown or filtered by the caller clearance"}
+    return {**pivot, "found": True, "generatedAt": now_iso(), "acl": filtered.get("acl")}

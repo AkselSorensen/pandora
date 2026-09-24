@@ -5,7 +5,7 @@ COMPOSE := docker compose
 .DEFAULT_GOAL := help
 
 .PHONY: help up down restart restart-fast clean ps logs pull build lint urls health \
-        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk nuclear cyberdef aerospace dgsi territorial \
+        pandora grafana obs metrics ai digest alerts ontology cases hotspots copilot risk nuclear cyberdef aerospace dgsi territorial governance graph audit-deps \
         logs-pandora logs-grafana logs-metrics grafana-open prometheus-open
 
 help: ## Show available commands
@@ -117,6 +117,15 @@ dgsi: ## Rebuild/restart territorial intelligence service
 territorial: ## Rebuild/restart global risk assessment service
 	$(COMPOSE) up -d --build pandora-territorial
 
+governance: ## Rebuild/restart governance service (ABAC + tamper-evident audit)
+	$(COMPOSE) up -d --build pandora-governance
+
+graph: ## Rebuild/restart the knowledge graph service (ontology fan-out)
+	$(COMPOSE) up -d --build pandora-ontology
+
+audit-deps: ## Recompute the external dependency audit shown on /sovereignty
+	node scripts/dependency-audit.mjs
+
 metrics: ## Rebuild/restart Pandora Prometheus exporter
 	$(COMPOSE) up -d --build pandora-metrics
 
@@ -149,6 +158,10 @@ urls: ## Print useful local URLs
 	@echo "Copilot:             http://localhost:3001/copilot"
 	@echo "Risk:                http://localhost:3001/risk"
 	@echo "CyberDef:            http://localhost:7711/health"
+	@echo "Governance:          http://localhost:3001/api/governance/posture  (service: 7715)"
+	@echo "Audit chain:         http://localhost:3001/api/governance/audit/verify"
+	@echo "Knowledge graph:     http://localhost:3001/api/graph"
+	@echo "Sovereignty:         http://localhost:3001/sovereignty"
 
 grafana-open: urls ## Print Grafana URL
 
@@ -165,6 +178,8 @@ health: ## Quick health checks for key services
 	@echo "\nCopilot:" && curl -fsS http://localhost:7707/health || true
 	@echo "\nRisk:" && curl -fsS http://localhost:7708/health || true
 	@echo "\nCyberDef:" && curl -fsS http://localhost:7711/health || true
+	@echo "\nGovernance:" && curl -fsS http://localhost:7715/health || true
+	@echo "\nAudit chain:" && curl -fsS http://localhost:7715/audit/verify || true
 	@echo "\nMetrics:" && curl -fsS http://localhost:7710/health || true
 	@echo "\nGrafana:" && curl -fsS http://localhost:3002/api/health || true
 	@echo "\nPrometheus:" && curl -fsS http://localhost:9090/-/ready || true

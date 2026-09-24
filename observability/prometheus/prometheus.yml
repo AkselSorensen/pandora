@@ -37,6 +37,7 @@ scrape_configs:
           - http://pandora-aerospace:7713/health
           - http://pandora-dgsi:7712/health
           - http://pandora-territorial:7714/health
+          - http://pandora-governance:7715/health
           - http://pandora-metrics:7710/health
     relabel_configs:
       - source_labels: [__address__]

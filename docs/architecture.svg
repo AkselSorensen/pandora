@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1040" viewBox="0 0 1560 1040">
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.6"/></pattern>
+<marker id="arr-475569" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#475569"/></marker>
+<marker id="arr-fb7185" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#fb7185"/></marker>
+</defs>
+<rect width="1560" height="1040" fill="#020617"/>
+<rect width="1560" height="1040" fill="url(#grid)"/>
+<text x="780.0" y="52" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="30" fill="#e2e8f0" text-anchor="middle" font-weight="700">PANDORA</text>
+<text x="780.0" y="76" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle" font-weight="600">Architecture de la plateforme OSINT — flux publics · 14 microservices IA · observabilité</text>
+<rect x="60" y="100" width="1440" height="150" rx="14" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/>
+<rect x="60" y="100" width="1440" height="150" rx="14" fill="rgba(8,51,68,0.45)" stroke="none"/>
+<text x="80" y="132" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="15" fill="#22d3ee" text-anchor="start" font-weight="700">PANDORA WEB CLIENT</text>
+<text x="80" y="152" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12" fill="#94a3b8" text-anchor="start" font-weight="600">Next.js 16 · React 19 · TypeScript · Framer Motion · Tailwind 4</text>
+<rect x="80" y="172" width="440" height="60" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.2"/>
+<rect x="80" y="172" width="440" height="60" rx="8" fill="rgba(8,51,68,0.45)" stroke="none"/>
+<text x="94" y="196" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Carte MapLibre GL / WebGL</text>
+<text x="94" y="216" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10" fill="#94a3b8" text-anchor="start" font-weight="600">globe · mercator · calques GeoJSON · jour/nuit</text>
+<rect x="540" y="172" width="440" height="60" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.2"/>
+<rect x="540" y="172" width="440" height="60" rx="8" fill="rgba(8,51,68,0.45)" stroke="none"/>
+<text x="554" y="196" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Panels opérationnels</text>
+<text x="554" y="216" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10" fill="#94a3b8" text-anchor="start" font-weight="600">Layers · Mission Control · Recon · CCTV · OSINT Hub · Markets</text>
+<rect x="1000" y="172" width="440" height="60" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.2"/>
+<rect x="1000" y="172" width="440" height="60" rx="8" fill="rgba(8,51,68,0.45)" stroke="none"/>
+<text x="1014" y="196" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Pages dédiées</text>
+<text x="1014" y="216" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10" fill="#94a3b8" text-anchor="start" font-weight="600">/alerts · /cases · /copilot · /deterrence · /digest · /hotspots · /ontology · /risk</text>
+<line x1="780.0" y1="250" x2="780.0" y2="288" stroke="#475569" stroke-width="1.6" marker-end="url(#arr-475569)"/>
+<rect x="60" y="288" width="1440" height="66" rx="12" fill="#0f172a" stroke="#67e8f9" stroke-width="1.5"/>
+<rect x="60" y="288" width="1440" height="66" rx="12" fill="rgba(12,74,110,0.40)" stroke="none"/>
+<text x="80" y="316" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" fill="#67e8f9" text-anchor="start" font-weight="700">NEXT.JS API ROUTES</text>
+<text x="80" y="335" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#94a3b8" text-anchor="start" font-weight="600">≈ 50 routes proxy /api/*  ·  garde-fou SSRF  ·  rate limiting 100 req/min/IP  ·  polling contrôlé</text>
+<line x1="780.0" y1="354" x2="780.0" y2="394" stroke="#475569" stroke-width="1.6" marker-end="url(#arr-475569)"/>
+<rect x="60" y="394" width="900" height="330" rx="14" fill="#0f172a" stroke="#34d399" stroke-width="1.5"/>
+<rect x="60" y="394" width="900" height="330" rx="14" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="80" y="424" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" fill="#34d399" text-anchor="start" font-weight="700">14 MICROSERVICES IA</text>
+<text x="80" y="442" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11" fill="#94a3b8" text-anchor="start" font-weight="600">FastAPI · Python 3.12 · Docker · zéro mockdata</text>
+<rect x="80" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="80" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="90" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">pandora-ai</text>
+<text x="90" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7701</text>
+<rect x="206" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="206" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="216" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">digest</text>
+<text x="216" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7702</text>
+<rect x="332" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="332" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="342" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">alerts</text>
+<text x="342" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7703</text>
+<rect x="458" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="458" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="468" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">ontology</text>
+<text x="468" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7704</text>
+<rect x="584" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="584" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="594" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">cases</text>
+<text x="594" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7705</text>
+<rect x="710" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="710" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="720" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">hotspots</text>
+<text x="720" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7706</text>
+<rect x="836" y="460" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="836" y="460" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="846" y="480" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">copilot</text>
+<text x="846" y="498" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7707</text>
+<rect x="80" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="80" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="90" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">risk</text>
+<text x="90" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7708</text>
+<rect x="206" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="206" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="216" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">nuclear</text>
+<text x="216" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7709</text>
+<rect x="332" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="332" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="342" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">metrics</text>
+<text x="342" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7710</text>
+<rect x="458" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="458" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="468" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">cyberdef</text>
+<text x="468" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7711</text>
+<rect x="584" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="584" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="594" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">dgsi</text>
+<text x="594" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7712</text>
+<rect x="710" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="710" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="720" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">aerospace</text>
+<text x="720" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7713</text>
+<rect x="836" y="528" width="116" height="54" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+<rect x="836" y="528" width="116" height="54" rx="8" fill="rgba(6,78,59,0.45)" stroke="none"/>
+<text x="846" y="548" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">territorial</text>
+<text x="846" y="566" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#34d399" text-anchor="start" font-weight="600">:7714</text>
+<rect x="980" y="394" width="250" height="330" rx="14" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5"/>
+<rect x="980" y="394" width="250" height="330" rx="14" fill="rgba(76,29,149,0.45)" stroke="none"/>
+<text x="998" y="424" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" fill="#a78bfa" text-anchor="start" font-weight="700">OLLAMA</text>
+<text x="998" y="442" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">IA locale (host)</text>
+<rect x="998" y="464" width="214" height="58" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.1"/>
+<rect x="998" y="464" width="214" height="58" rx="8" fill="rgba(76,29,149,0.45)" stroke="none"/>
+<text x="1010" y="487" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">pandora-ai</text>
+<text x="1010" y="505" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="start" font-weight="600">briefing analyste AIP</text>
+<rect x="998" y="534" width="214" height="58" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.1"/>
+<rect x="998" y="534" width="214" height="58" rx="8" fill="rgba(76,29,149,0.45)" stroke="none"/>
+<text x="1010" y="557" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">pandora-nuclear-ai</text>
+<text x="1010" y="575" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="start" font-weight="600">dissuasion stratégique</text>
+<rect x="998" y="604" width="214" height="58" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.1"/>
+<rect x="998" y="604" width="214" height="58" rx="8" fill="rgba(76,29,149,0.45)" stroke="none"/>
+<text x="1010" y="627" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">fallback déterministe</text>
+<text x="1010" y="645" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="start" font-weight="600">sans IA — règles locales</text>
+<rect x="1250" y="394" width="250" height="330" rx="14" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+<rect x="1250" y="394" width="250" height="330" rx="14" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1268" y="424" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="13.5" fill="#fbbf24" text-anchor="start" font-weight="700">OBSERVABILITÉ</text>
+<text x="1268" y="442" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">monitoring &amp; alerting</text>
+<rect x="1268" y="464" width="214" height="44" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+<rect x="1268" y="464" width="214" height="44" rx="8" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1280" y="491" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Prometheus</text>
+<text x="1470" y="491" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#fbbf24" text-anchor="end" font-weight="600">:9090</text>
+<rect x="1268" y="518" width="214" height="44" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+<rect x="1268" y="518" width="214" height="44" rx="8" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1280" y="545" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Grafana</text>
+<text x="1470" y="545" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#fbbf24" text-anchor="end" font-weight="600">:3002</text>
+<rect x="1268" y="572" width="214" height="44" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+<rect x="1268" y="572" width="214" height="44" rx="8" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1280" y="599" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">cAdvisor</text>
+<text x="1470" y="599" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#fbbf24" text-anchor="end" font-weight="600">:8080</text>
+<rect x="1268" y="626" width="214" height="44" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+<rect x="1268" y="626" width="214" height="44" rx="8" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1280" y="653" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Blackbox</text>
+<text x="1470" y="653" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#fbbf24" text-anchor="end" font-weight="600">:9115</text>
+<rect x="1268" y="680" width="214" height="44" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+<rect x="1268" y="680" width="214" height="44" rx="8" fill="rgba(120,53,15,0.35)" stroke="none"/>
+<text x="1280" y="707" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" fill="#e2e8f0" text-anchor="start" font-weight="600">pandora-metrics</text>
+<text x="1470" y="707" font-family="'Cascadia Code','JetBrains Mono',ui-monospace,Menlo,monospace" font-size="10" fill="#fbbf24" text-anchor="end" font-weight="600">:7710</text>
+<line x1="1250" y1="559.0" x2="960" y2="559.0" stroke="#fb7185" stroke-width="1.4" stroke-dasharray="5,5" opacity="0.55"/>
+<rect x="60" y="764" width="1440" height="150" rx="14" fill="#0f172a" stroke="#94a3b8" stroke-width="1.5"/>
+<rect x="60" y="764" width="1440" height="150" rx="14" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="80" y="794" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" fill="#cbd5e1" text-anchor="start" font-weight="700">SOURCES PUBLIQUES / OUVERTES</text>
+<text x="80" y="812" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11" fill="#94a3b8" text-anchor="start" font-weight="600">Zéro donnée factice — chaque flux vient d'une API publique réelle</text>
+<rect x="80" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="80" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="91" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Aviation</text>
+<text x="91" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">ADSB.lol · OpenSky</text>
+<rect x="318" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="318" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="329" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Sismique</text>
+<text x="329" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">USGS</text>
+<rect x="556" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="556" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="567" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Feux</text>
+<text x="567" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">NASA FIRMS</text>
+<rect x="794" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="794" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="805" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Catastrophes</text>
+<text x="805" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">EONET · GDACS</text>
+<rect x="1032" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="1032" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="1043" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Espace</text>
+<text x="1043" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">NOAA SWPC</text>
+<rect x="1270" y="826" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="1270" y="826" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="1281" y="843" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">News</text>
+<text x="1281" y="857" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">GDELT · RSS</text>
+<rect x="80" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="80" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="91" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Cyber</text>
+<text x="91" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">NVD · abuse.ch · AbuseIPDB · URLScan</text>
+<rect x="318" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="318" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="329" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Cartographie</text>
+<text x="329" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">OSM · Overpass · Nominatim</text>
+<rect x="556" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="556" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="567" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Satellites</text>
+<text x="567" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">CelesTrak · satellite.js</text>
+<rect x="794" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="794" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="805" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">CCTV</text>
+<text x="805" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">caméras publiques</text>
+<rect x="1032" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="1032" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="1043" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Référence</text>
+<text x="1043" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">Wikipedia · Wikidata</text>
+<rect x="1270" y="876" width="228" height="40" rx="7" fill="#0f172a" stroke="#94a3b8" stroke-width="1.0"/>
+<rect x="1270" y="876" width="228" height="40" rx="7" fill="rgba(30,41,59,0.55)" stroke="none"/>
+<text x="1281" y="893" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#e2e8f0" text-anchor="start" font-weight="600">Humanitaire</text>
+<text x="1281" y="907" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="start" font-weight="600">ReliefWeb</text>
+<line x1="780.0" y1="764" x2="780.0" y2="724" stroke="#475569" stroke-width="1.6" marker-end="url(#arr-475569)"/>
+<text x="60" y="944" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10" fill="#64748b" text-anchor="start" font-weight="700">LÉGENDE</text>
+<rect x="150" y="928" width="14" height="14" rx="3" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="1"/>
+<text x="170" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">Web client</text>
+<rect x="274.0" y="928" width="14" height="14" rx="3" fill="rgba(12,74,110,0.40)" stroke="#67e8f9" stroke-width="1"/>
+<text x="294.0" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">API routes</text>
+<rect x="398.0" y="928" width="14" height="14" rx="3" fill="rgba(6,78,59,0.45)" stroke="#34d399" stroke-width="1"/>
+<text x="418.0" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">Microservices IA</text>
+<rect x="560.4" y="928" width="14" height="14" rx="3" fill="rgba(76,29,149,0.45)" stroke="#a78bfa" stroke-width="1"/>
+<text x="580.4" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">IA locale</text>
+<rect x="678.0" y="928" width="14" height="14" rx="3" fill="rgba(120,53,15,0.35)" stroke="#fbbf24" stroke-width="1"/>
+<text x="698.0" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">Observabilité</text>
+<rect x="821.2" y="928" width="14" height="14" rx="3" fill="rgba(30,41,59,0.55)" stroke="#94a3b8" stroke-width="1"/>
+<text x="841.2" y="940" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="start" font-weight="600">Sources</text>
+</svg>

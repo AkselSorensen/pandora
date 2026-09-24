@@ -335,6 +335,22 @@ function Gauge({ label, value, color }: { label: string; value: number; color: s
   );
 }
 
+/**
+ * Turn a governance refusal into an actionable message.
+ * The deterrence route is classified SECRET (compartment `nuclear`) — a confidentiel profile
+ * is refused with 403 clearance_insufficient, which is the intended behaviour.
+ */
+function describeAccessError(status: number, payload: unknown): string {
+  const body = (payload ?? {}) as { error?: string; reason?: string; detail?: string; hint?: string };
+  if (status === 403 && (body.error === 'abac_denied' || body.reason)) {
+    return `Accès refusé par la politique ABAC (${body.reason || 'abac_denied'}). Ce module est classé SECRET — compartiment « nuclear » requis. Ouvre l'outil GOUVERNANCE pour élever le profil opérateur.`;
+  }
+  if (status === 503) {
+    return `Service de gouvernance indisponible (${body.error || 'governance_unavailable'}) — aucun accès classifié sans journal d'audit.`;
+  }
+  return body.detail || body.error || `Analyse impossible (HTTP ${status})`;
+}
+
 export default function DeterrencePage() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [actor, setActor] = useState('france');
@@ -373,6 +389,11 @@ export default function DeterrencePage() {
 
   async function loadCountries() {
     const r = await fetch('/api/deterrence?resource=countries', { cache: 'no-store' });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      setError(describeAccessError(r.status, d));
+      return;
+    }
     const d = await r.json();
     if (Array.isArray(d.countries)) setCountries(d.countries);
   }
@@ -417,7 +438,7 @@ export default function DeterrencePage() {
       setLoadingStage(loadingStageById.parse);
       setLoadingStats((prev) => ({ ...prev, status: 'Décodage JSON et déduplication UI' }));
       const d = text ? JSON.parse(text) : {};
-      if (!r.ok) throw new Error(d.detail || d.error || 'Analyse impossible');
+      if (!r.ok) throw new Error(describeAccessError(r.status, d));
 
       const liveSignals = d.liveSignals || {};
       const articles = liveSignals.articleCount ?? liveSignals.topArticles?.length ?? 0;

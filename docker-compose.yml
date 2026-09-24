@@ -46,9 +46,23 @@ services:
     environment:
       - PANDORA_DIGEST_URL=${PANDORA_DIGEST_URL:-http://pandora-digest:7702}
       - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
+      - PANDORA_TERRITORIAL_URL=${PANDORA_TERRITORIAL_URL:-http://pandora-territorial:7714}
+      - PANDORA_NUCLEAR_URL=${PANDORA_NUCLEAR_URL:-http://pandora-nuclear:7709}
+      - PANDORA_CYBERDEF_URL=${PANDORA_CYBERDEF_URL:-http://pandora-cyberdef:7711}
+      - PANDORA_DGSI_URL=${PANDORA_DGSI_URL:-http://pandora-dgsi:7712}
+      - PANDORA_GRAPH_TIMEOUT=${PANDORA_GRAPH_TIMEOUT:-14}
+      - PANDORA_GRAPH_CACHE_TTL=${PANDORA_GRAPH_CACHE_TTL:-60}
+      - PANDORA_GRAPH_MAX_AIRCRAFT=${PANDORA_GRAPH_MAX_AIRCRAFT:-120}
+      - PANDORA_GRAPH_NEAR_KM=${PANDORA_GRAPH_NEAR_KM:-100}
     depends_on:
       - pandora-digest
       - pandora-alerts
+      - pandora-aerospace
+      - pandora-territorial
+      - pandora-nuclear
+      - pandora-cyberdef
+      - pandora-dgsi
     restart: unless-stopped
 
   pandora-cases:
@@ -61,9 +75,29 @@ services:
     environment:
       - PANDORA_ONTOLOGY_URL=${PANDORA_ONTOLOGY_URL:-http://pandora-ontology:7704}
       - PANDORA_ALERTS_URL=${PANDORA_ALERTS_URL:-http://pandora-alerts:7703}
+      - PANDORA_GOVERNANCE_URL=${PANDORA_GOVERNANCE_URL:-http://pandora-governance:7715}
+      - PANDORA_CASES_DB=${PANDORA_CASES_DB:-/data/cases.db}
+    volumes:
+      - pandora-data:/data
     depends_on:
       - pandora-ontology
       - pandora-alerts
+      - pandora-governance
+    restart: unless-stopped
+
+  # ── Governance: ABAC decisions + tamper-evident audit journal ──────────────
+  # Enforced by src/proxy.ts. Fail closed: no journal, no classified access.
+  pandora-governance:
+    build:
+      context: ./ai/pandora-governance-service
+      dockerfile: Dockerfile
+    container_name: pandora-governance
+    ports:
+      - "${PANDORA_GOVERNANCE_PORT:-7715}:7715"
+    environment:
+      - PANDORA_GOVERNANCE_DB=${PANDORA_GOVERNANCE_DB:-/data/governance.db}
+    volumes:
+      - pandora-data:/data
     restart: unless-stopped
 
   pandora-hotspots:
@@ -305,6 +339,8 @@ services:
       - PANDORA_AEROSPACE_URL=${PANDORA_AEROSPACE_URL:-http://pandora-aerospace:7713}
       - PANDORA_DGSI_URL=${PANDORA_DGSI_URL:-http://pandora-dgsi:7712}
       - PANDORA_TERRITORIAL_URL=${PANDORA_TERRITORIAL_URL:-http://pandora-territorial:7714}
+      - PANDORA_GOVERNANCE_URL=${PANDORA_GOVERNANCE_URL:-http://pandora-governance:7715}
+      - PANDORA_DEPLOYMENT_PROFILE=${PANDORA_DEPLOYMENT_PROFILE:-on-prem}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-pandora-ai}
       - OLLAMA_NUCLEAR_MODEL=${OLLAMA_NUCLEAR_MODEL:-pandora-nuclear-ai}
     depends_on:
@@ -321,6 +357,7 @@ services:
       - pandora-aerospace
       - pandora-dgsi
       - pandora-territorial
+      - pandora-governance
     restart: unless-stopped
 
 # ── CasaOS app-store metadata (ignored by plain Docker Compose) ──
@@ -380,3 +417,4 @@ x-casaos:
 volumes:
   prometheus-data:
   grafana-data:
+  pandora-data:

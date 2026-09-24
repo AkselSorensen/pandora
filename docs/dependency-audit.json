@@ -1,0 +1,2569 @@
+{
+  "generatedAt": "2026-09-24T10:05:53.775Z",
+  "filesScanned": 162,
+  "scannedTargets": [
+    "src/**/*{.ts,.tsx}",
+    "ai/**/*{.py}"
+  ],
+  "hosts": [
+    {
+      "host": "www.youtube.com",
+      "jurisdiction": "US",
+      "occurrences": 33,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts",
+        "src/app/api/cctv/greece.ts",
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "celestrak.org",
+      "jurisdiction": "US",
+      "occurrences": 18,
+      "files": [
+        "src/app/api/satellites/route.ts",
+        "src/components/PandoraMap.tsx",
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.cisa.gov",
+      "jurisdiction": "US",
+      "occurrences": 12,
+      "files": [
+        "src/app/api/cyber-threats/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/main.py"
+      ]
+    },
+    {
+      "host": "www.viewsurf.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 9,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "feeds.bbci.co.uk",
+      "jurisdiction": "UK",
+      "occurrences": 8,
+      "files": [
+        "src/lib/bulgaria-sources.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "traffic.ottawa.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 8,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "alltrafficcams.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 7,
+      "files": [
+        "src/app/api/cctv/turkey.ts"
+      ]
+    },
+    {
+      "host": "lh3.googleusercontent.com",
+      "jurisdiction": "US",
+      "occurrences": 7,
+      "files": [
+        "src/app/api/cctv/turkey.ts"
+      ]
+    },
+    {
+      "host": "earthquake.usgs.gov",
+      "jurisdiction": "US",
+      "occurrences": 6,
+      "files": [
+        "src/app/api/country-risk/route.ts",
+        "src/app/api/earthquakes/route.ts",
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "otx.alienvault.com",
+      "jurisdiction": "US",
+      "occurrences": 6,
+      "files": [
+        "src/app/api/osint/threats/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "reliefweb.int",
+      "jurisdiction": "INTL",
+      "occurrences": 6,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "src/lib/public-intel-catalog.ts",
+        "ai/pandora-dgsi-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.france24.com",
+      "jurisdiction": "FR",
+      "occurrences": 6,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.webcamtaxi.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 6,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "api.bgpview.io",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/osint/bgp/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "crt.sh",
+      "jurisdiction": "US",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/osint/certs/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/main.py"
+      ]
+    },
+    {
+      "host": "firms.modaps.eosdis.nasa.gov",
+      "jurisdiction": "US",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/fires/route.ts",
+        "src/components/PandoraMap.tsx",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "host.docker.internal",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 5,
+      "files": [
+        "ai/pandora-aerospace-service/main.py",
+        "ai/pandora-ai-service/main.py",
+        "ai/pandora-copilot-service/main.py"
+      ]
+    },
+    {
+      "host": "ip-api.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/cyber-geo/route.ts",
+        "src/app/api/osint/ip/route.ts",
+        "src/app/api/osint/sweep/route.ts"
+      ]
+    },
+    {
+      "host": "nominatim.openstreetmap.org",
+      "jurisdiction": "UK",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/region-dossier/route.ts",
+        "src/app/page.tsx",
+        "src/components/SearchBar.tsx"
+      ]
+    },
+    {
+      "host": "overpass-api.de",
+      "jurisdiction": "EU",
+      "occurrences": 5,
+      "files": [
+        "src/app/api/french-airbases/route.ts",
+        "src/app/api/osm-critical/route.ts",
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "pandora-alerts",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 5,
+      "files": [
+        "ai/pandora-cases-service/main.py",
+        "ai/pandora-copilot-service/main.py",
+        "ai/pandora-ontology-service/graph.py"
+      ]
+    },
+    {
+      "host": "pandora-digest",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 5,
+      "files": [
+        "ai/pandora-alerts-service/main.py",
+        "ai/pandora-copilot-service/main.py",
+        "ai/pandora-ontology-service/graph.py"
+      ]
+    },
+    {
+      "host": "511on.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "api.gdeltproject.org",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/gdelt/route.ts",
+        "src/lib/osint-scraper.ts",
+        "ai/pandora-nuclear-service/main.py"
+      ]
+    },
+    {
+      "host": "archive.org",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "internetdb.shodan.io",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cyber-threats/route.ts",
+        "src/app/api/osint/sweep/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "news.google.com",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/lib/osint-scraper.ts",
+        "ai/pandora-nuclear-service/main.py"
+      ]
+    },
+    {
+      "host": "nvd.nist.gov",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/components/OsintPanel.tsx",
+        "ai/pandora-cyberdef-service/main.py",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "opensky-network.org",
+      "jurisdiction": "INTL",
+      "occurrences": 4,
+      "files": [
+        "src/lib/public-intel-catalog.ts",
+        "ai/pandora-aerospace-service/main.py",
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "query.wikidata.org",
+      "jurisdiction": "US",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/airbases/route.ts",
+        "src/app/api/region-dossier/route.ts",
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "rdap.org",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/osint/whois/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/main.py"
+      ]
+    },
+    {
+      "host": "restcountries.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cctv/route.ts",
+        "src/app/api/country-risk-geo/route.ts",
+        "src/app/api/region-dossier/route.ts"
+      ]
+    },
+    {
+      "host": "threatfox-api.abuse.ch",
+      "jurisdiction": "INTL",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cyber-geo/route.ts",
+        "src/app/api/cyber-threats/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "weather-webcam.eu",
+      "jurisdiction": "EU",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts",
+        "src/app/api/cctv/turkey.ts"
+      ]
+    },
+    {
+      "host": "www.gdacs.org",
+      "jurisdiction": "EU",
+      "occurrences": 4,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "src/lib/public-intel-catalog.ts",
+        "ai/pandora-dgsi-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.gov.uk",
+      "jurisdiction": "UK",
+      "occurrences": 4,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.iaea.org",
+      "jurisdiction": "INTL",
+      "occurrences": 4,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.nato.int",
+      "jurisdiction": "INTL",
+      "occurrences": 4,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.windy.com",
+      "jurisdiction": "EU",
+      "occurrences": 4,
+      "files": [
+        "src/app/api/cctv/route.ts",
+        "src/app/api/cctv/turkey.ts",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "api.adsb.lol",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/flights/route.ts",
+        "ai/pandora-aerospace-service/main.py",
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "apnews.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "aviationweather.gov",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "check.torproject.org",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/osint/threats/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "cve.circl.lu",
+      "jurisdiction": "EU",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/osint/cve/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "en.wikipedia.org",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/region-dossier/route.ts",
+        "ai/pandora-dgsi-service/main.py",
+        "ai/pandora-dgsi-service/sources.py"
+      ]
+    },
+    {
+      "host": "eonet.gsfc.nasa.gov",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/fires/route.ts",
+        "src/app/api/weather/route.ts",
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "feeds.npr.org",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "feeds.washingtonpost.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "pandora-ontology",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 3,
+      "files": [
+        "ai/pandora-cases-service/main.py",
+        "ai/pandora-copilot-service/main.py",
+        "ai/pandora-hotspots-service/main.py"
+      ]
+    },
+    {
+      "host": "press.un.org",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "rss.dw.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "rss.nytimes.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "services.nvd.nist.gov",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/cyber-threats/route.ts",
+        "src/lib/intel-sources.ts",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "services.swpc.noaa.gov",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/space-weather/route.ts"
+      ]
+    },
+    {
+      "host": "www.cert.ssi.gouv.fr",
+      "jurisdiction": "FR",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.earthcam.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/cctv/route.ts",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.energy.gov",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.euronews.com",
+      "jurisdiction": "EU",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.google.com",
+      "jurisdiction": "US",
+      "occurrences": 3,
+      "files": [
+        "src/components/CameraViewer.tsx",
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "www.openstreetmap.org",
+      "jurisdiction": "UK",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/french-airbases/route.ts",
+        "src/components/PandoraMap.tsx",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.skylinewebcams.com",
+      "jurisdiction": "EU",
+      "occurrences": 3,
+      "files": [
+        "src/app/api/cctv/route.ts",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.theguardian.com",
+      "jurisdiction": "UK",
+      "occurrences": 3,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.abuseipdb.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-cyberdef-service/main.py",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.greynoise.io",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-cyberdef-service/main.py",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.tfl.gov.uk",
+      "jurisdiction": "UK",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/route.ts",
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "cveawg.mitre.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/osint/cve/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "data.ransomware.live",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "deepstatemap.live",
+      "jurisdiction": "INTL",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/frontlines/route.ts",
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "dns.google",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/osint/dns/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "duckduckgo.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "earth-search.aws.element84.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/sentinel/route.ts"
+      ]
+    },
+    {
+      "host": "earthobservatory.nasa.gov",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "euobserver.com",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "gsccam.butlersheriff.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "ipcamlive.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/greece.ts"
+      ]
+    },
+    {
+      "host": "ko-fi.com",
+      "jurisdiction": "UK",
+      "occurrences": 2,
+      "files": [
+        "src/app/page.tsx"
+      ]
+    },
+    {
+      "host": "localhost",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/aip/briefing/route.ts",
+        "ai/pandora-nuclear-ai/benchmark.py"
+      ]
+    },
+    {
+      "host": "mb-api.abuse.ch",
+      "jurisdiction": "INTL",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-cyberdef-service/main.py",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "msrc.microsoft.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "ndc.niggg.bas.bg",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/components/PandoraMap.tsx",
+        "src/lib/bulgaria-sources.ts"
+      ]
+    },
+    {
+      "host": "news.un.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "pandora-aerospace",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-ontology-service/graph.py",
+        "ai/pandora-territorial-service/main.py"
+      ]
+    },
+    {
+      "host": "pandora-cyberdef",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-ontology-service/graph.py",
+        "ai/pandora-territorial-service/main.py"
+      ]
+    },
+    {
+      "host": "pandora-dgsi",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-ontology-service/graph.py",
+        "ai/pandora-territorial-service/main.py"
+      ]
+    },
+    {
+      "host": "schema.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/layout.tsx"
+      ]
+    },
+    {
+      "host": "search.censys.io",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/lib/public-intel-catalog.ts",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "server.arcgisonline.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/page.tsx",
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "streaming1.neotel.net.mk",
+      "jurisdiction": "INTL",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/macedonia.ts"
+      ]
+    },
+    {
+      "host": "towercam.butlersheriff.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "twitter.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/components/SharePanel.tsx",
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "urlhaus.abuse.ch",
+      "jurisdiction": "INTL",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cyber-threats/route.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "urlscan.io",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-cyberdef-service/main.py",
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.actualno.com",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/bulgaria-sources.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.aljazeera.com",
+      "jurisdiction": "INTL",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.asfinag.at",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/asfinag.ts"
+      ]
+    },
+    {
+      "host": "www.csis.org",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.dnevnik.bg",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/bulgaria-sources.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.eeas.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.linkedin.com",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "src/components/SharePanel.tsx",
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "www.mediapool.bg",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/bulgaria-sources.ts",
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.nrc.gov",
+      "jurisdiction": "US",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.politico.eu",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/lib/intel-sources.ts",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.sipri.org",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "ai/pandora-nuclear-service/main.py",
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.webcameras.gr",
+      "jurisdiction": "EU",
+      "occurrences": 2,
+      "files": [
+        "src/app/api/cctv/greece.ts"
+      ]
+    },
+    {
+      "host": "511.alberta.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "511.gnb.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "511.idaho.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "511.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "511ia.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "511mn.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "511wi.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "abcnews.go.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "adsbexchange.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "aisstream.io",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "allafrica.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "api.coingecko.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/markets/route.ts"
+      ]
+    },
+    {
+      "host": "api.data.gov.sg",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "api.github.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cyber-threats/route.ts"
+      ]
+    },
+    {
+      "host": "api.n2yo.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.open-aip.org",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.openaq.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/air-quality/route.ts"
+      ]
+    },
+    {
+      "host": "api.reliefweb.int",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "api.securitytrails.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "api.shodan.io",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "balkaninsight.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "basemaps.cartocdn.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "blog.cloudflare.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "blog.talosintelligence.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "breakingdefense.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "browser.dataspace.copernicus.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "carnegieendowment.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "catalogue.dataspace.copernicus.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/sentinel/route.ts"
+      ]
+    },
+    {
+      "host": "cdn.uab.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts"
+      ]
+    },
+    {
+      "host": "cert.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "city-view-of-kavala.click2stream.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/greece.ts"
+      ]
+    },
+    {
+      "host": "cwwp2.dot.ca.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "data.phishtank.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "data.wsdot.wa.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "earthexplorer.usgs.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "ec.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "eda.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "emergency.copernicus.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "example.org",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cases-service/tests/test_cases.py"
+      ]
+    },
+    {
+      "host": "fas.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "feeds.feedburner.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "feeds.marketwatch.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "feeds.nbcnews.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "feodotracker.abuse.ch",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "fl511.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "fonts.googleapis.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/layout.tsx"
+      ]
+    },
+    {
+      "host": "fonts.gstatic.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/layout.tsx"
+      ]
+    },
+    {
+      "host": "free-webcambg.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/types.ts"
+      ]
+    },
+    {
+      "host": "github.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/stream-status/route.ts"
+      ]
+    },
+    {
+      "host": "globe.adsb.lol",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "globe.adsbexchange.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "greekreporter.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "home-solutions.bg",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/romania.ts"
+      ]
+    },
+    {
+      "host": "home.treasury.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "html.duckduckgo.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "images-webcams.windy.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/turkey.ts"
+      ]
+    },
+    {
+      "host": "isc.sans.edu",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "kamere.amss.org.rs",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/serbia.ts"
+      ]
+    },
+    {
+      "host": "krebsonsecurity.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "lists.blocklist.de",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "meteo.chavo.biz",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts"
+      ]
+    },
+    {
+      "host": "mexiconewsdaily.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "nakedsecurity.sophos.com",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "new.511.nebraska.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "newengland511.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "news.onr.org.uk",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "nitter.net",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "notams.aim.faa.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-aerospace-service/sources.py"
+      ]
+    },
+    {
+      "host": "nowcoast.noaa.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "odo.asfinag.at",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/asfinag.ts"
+      ]
+    },
+    {
+      "host": "ofac.treasury.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "opendata.ndw.nu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "openphish.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "ops.fhwa.dot.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "overpass-turbo.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "overpass.kumi.systems",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/french-airbases/route.ts"
+      ]
+    },
+    {
+      "host": "pandora",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-digest-service/main.py"
+      ]
+    },
+    {
+      "host": "pandora-governance",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cases-service/main.py"
+      ]
+    },
+    {
+      "host": "pandora-hotspots",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-risk-service/main.py"
+      ]
+    },
+    {
+      "host": "pandora-nuclear",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-ontology-service/graph.py"
+      ]
+    },
+    {
+      "host": "pandora-territorial",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-ontology-service/graph.py"
+      ]
+    },
+    {
+      "host": "pandora.vercel.app",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/SharePanel.tsx"
+      ]
+    },
+    {
+      "host": "pandoraai.live",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/layout.tsx"
+      ]
+    },
+    {
+      "host": "pics.smartburgas.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts"
+      ]
+    },
+    {
+      "host": "pulsedive.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "query1.finance.yahoo.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/markets/route.ts"
+      ]
+    },
+    {
+      "host": "query2.finance.yahoo.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/markets/route.ts"
+      ]
+    },
+    {
+      "host": "reddit.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/SharePanel.tsx"
+      ]
+    },
+    {
+      "host": "rss.cnn.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "rumble.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "rusi.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "s3-eu-west-1.amazonaws.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "security.googleblog.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "sofiaglobe.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "sslbl.abuse.ch",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "stream.uzivobeograd.rs",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/serbia.ts"
+      ]
+    },
+    {
+      "host": "thebulletin.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "unit42.paloaltonetworks.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "ville.montreal.qc.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "warontherocks.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "world-nuclear.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "worldview.earthdata.nasa.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.africanews.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.aodos.gr",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/greece.ts"
+      ]
+    },
+    {
+      "host": "www.arabnews.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.armscontrol.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.asn.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.atlanticcouncil.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.auswaertiges-amt.de",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.az511.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.bangkokpost.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.batimes.com.ar",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.bis.doc.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.bison-fute.gouv.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.bleepingcomputer.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.brookings.edu",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.bta.bg",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.canada.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.cbc.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.cbsnews.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.chamonix.com",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.channelnewsasia.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.chathamhouse.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.cnsc-ccsn.gc.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.consilium.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.cotrip.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.darkreading.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.defense.gouv.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.defense.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.defensenews.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.defenseone.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.diplomatie.gouv.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.emsc-csem.org",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.enisa.europa.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.ensreg.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.euro-fusion.org",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.facebook.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/osint-scraper.ts"
+      ]
+    },
+    {
+      "host": "www.fema.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.flightaware.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "www.ft.com",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.icrc.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.iiss.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.imf.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.insecam.org",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.investing.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.irsn.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.iter.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.janes.com",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.japantimes.co.jp",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.jpcert.or.jp",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.jpost.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.kandrive.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.koreaherald.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.livetraffic.com",
+      "jurisdiction": "UNDETERMINED",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/australia.ts"
+      ]
+    },
+    {
+      "host": "www.malwarebytes.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.mandiant.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.manitoba511.ca",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.marinetraffic.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.middleeastmonitor.com",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.ncsc.gov.uk",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.novinite.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.nti.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.nvroads.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.oecd-nea.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.osce.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.pppl.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.radarbox.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "www.rand.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.recordedfuture.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.rferl.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.rfi.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.romania-insider.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.sanctionsmap.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.schneier.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.scmp.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.securityweek.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.shodan.io",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/public-intel-catalog.ts"
+      ]
+    },
+    {
+      "host": "www.smh.com.au",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.spamhaus.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.state.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.swpc.noaa.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/components/PandoraMap.tsx"
+      ]
+    },
+    {
+      "host": "www.sytadin.fr",
+      "jurisdiction": "FR",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.taipeitimes.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.thehindu.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.thenationalnews.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.timesofisrael.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.travelmidwest.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.trtworld.com",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.tsunami.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.udottraffic.utah.gov",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/route.ts"
+      ]
+    },
+    {
+      "host": "www.virustotal.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-cyberdef-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.voanews.com",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.weather-webcam.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/cctv/bulgaria.ts"
+      ]
+    },
+    {
+      "host": "www.welivesecurity.com",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www.wenra.eu",
+      "jurisdiction": "EU",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.who.int",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.wikidata.org",
+      "jurisdiction": "US",
+      "occurrences": 1,
+      "files": [
+        "src/app/api/airbases/route.ts"
+      ]
+    },
+    {
+      "host": "www.world-nuclear-news.org",
+      "jurisdiction": "UK",
+      "occurrences": 1,
+      "files": [
+        "ai/pandora-nuclear-service/sources.py"
+      ]
+    },
+    {
+      "host": "www.worldbank.org",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    },
+    {
+      "host": "www3.nhk.or.jp",
+      "jurisdiction": "INTL",
+      "occurrences": 1,
+      "files": [
+        "src/lib/intel-sources.ts"
+      ]
+    }
+  ],
+  "totals": {
+    "FR": 10,
+    "EU": 48,
+    "US": 138,
+    "UK": 19,
+    "INTL": 54,
+    "UNDETERMINED": 35
+  },
+  "totalsOccurrences": {
+    "FR": 17,
+    "EU": 78,
+    "US": 288,
+    "UK": 39,
+    "INTL": 86,
+    "UNDETERMINED": 90
+  },
+  "note": "Scan local (fs, sans reseau) de src/**/*.{ts,tsx} et ai/**/*.py ; juridictions resolues par scripts/jurisdiction-map.json (hosts > suffixes > tld > fallback). 35 host(s) restent non attribuables (hote local, service Docker, operateur inconnu) : a examiner avant tout deploiement souverain. Aucun host n'est declare a la main dans ce fichier."
+}

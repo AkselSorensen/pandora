@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
   ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, Plane, EyeOff, BookOpen, FileText,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Network, FolderOpen, ShieldCheck
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
 import MarketsPanel from '@/components/MarketsPanel';
@@ -33,6 +33,9 @@ import TerritorialPanel from '@/components/TerritorialPanel';
 import DarkWebMonitor from '@/components/DarkWebMonitor';
 import ReconPlaybooks from '@/components/ReconPlaybooks';
 import OSINTHub from '@/components/OSINTHub';
+import KnowledgeGraphPanel from '@/components/KnowledgeGraphPanel';
+import CasesPanel from '@/components/CasesPanel';
+import GovernancePanel from '@/components/GovernancePanel';
 import { LanguageToggle, useI18n } from '@/components/I18nProvider';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
@@ -325,7 +328,7 @@ export default function Dashboard() {
   const [showIntel, setShowIntel] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'layers' | 'markets' | 'intel' | 'search' | 'recon' | 'aip' | 'ops' | 'lab' | 'sources' | null>(null);
-  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'dgsi' | 'territorial' | 'darkweb' | 'playbooks' | 'osint'>('layers');
+  const [desktopTool, setDesktopTool] = useState<'layers' | 'foundry' | 'mission' | 'aip' | 'recon' | 'ops' | 'lab' | 'sources' | 'markets' | 'intel' | 'search' | 'alerts' | 'cyber' | 'aerospace' | 'dgsi' | 'territorial' | 'darkweb' | 'playbooks' | 'osint' | 'graph' | 'cases' | 'governance'>('layers');
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
@@ -1302,6 +1305,9 @@ export default function Dashboard() {
               { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb') },
               { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks') },
               { id: 'osint' as const, icon: Search, label: t('nav.osint') },
+              { id: 'graph' as const, icon: Network, label: t('nav.graph') },
+              { id: 'cases' as const, icon: FolderOpen, label: t('nav.cases') },
+              { id: 'governance' as const, icon: ShieldCheck, label: t('nav.governance') },
                 ].map((tool) => {
                 const Icon = tool.icon;
                 return (
@@ -1371,6 +1377,12 @@ export default function Dashboard() {
                       ? t('workspace.intel')
                       : desktopTool === 'search'
                       ? t('workspace.search')
+                      : desktopTool === 'graph'
+                      ? t('workspace.graph')
+                      : desktopTool === 'cases'
+                      ? t('workspace.cases')
+                      : desktopTool === 'governance'
+                      ? t('workspace.governance')
                       : t('workspace.alerts')}
                   </h2>
                 </div>
@@ -1430,6 +1442,9 @@ export default function Dashboard() {
                 {desktopTool === 'darkweb' && <DarkWebMonitor />}
                 {desktopTool === 'playbooks' && <ReconPlaybooks />}
                 {desktopTool === 'osint' && <OSINTHub />}
+                {desktopTool === 'graph' && <KnowledgeGraphPanel />}
+                {desktopTool === 'cases' && <CasesPanel />}
+                {desktopTool === 'governance' && <GovernancePanel />}
               </div>
               </motion.section>
             )}
