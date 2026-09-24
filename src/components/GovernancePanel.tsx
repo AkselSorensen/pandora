@@ -198,7 +198,7 @@ function GovernancePanel({ initialTab = 'journal' }: GovernancePanelProps) {
     'rounded border border-[var(--border-secondary)] bg-[var(--bg-void)] px-2 py-1 font-mono text-[9px] text-[var(--text-primary)] outline-none focus:border-[var(--border-active)]';
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel ops-panel p-3 pointer-events-auto">
+    <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="glass-panel ops-panel p-3 pointer-events-auto">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <div className="ops-orb"><Gavel className="w-4 h-4" /></div>

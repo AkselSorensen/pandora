@@ -367,6 +367,15 @@ def filter_by_clearance(graph: dict[str, Any], clearance: str, compartments: lis
         kept.append(node)
     ids = {n["id"] for n in kept}
     edges = [e for e in (graph.get("edges") or []) if e["source"] in ids and e["target"] in ids]
+    types: dict[str, int] = {}
+    domains: dict[str, int] = {}
+    for node in kept:
+        if node["id"] == "pandora-operational-picture":
+            continue
+        types[str(node.get("type"))] = types.get(str(node.get("type")), 0) + 1
+        for src in node.get("sources") or []:
+            key = str(src).split(":")[0]
+            domains[key] = domains.get(key, 0) + 1
     return {
         **graph,
         "nodes": kept,
@@ -374,6 +383,7 @@ def filter_by_clearance(graph: dict[str, Any], clearance: str, compartments: lis
         "acl": {"clearance": clearance, "compartments": sorted(held), "droppedNodes": dropped,
                 "policy": "nodes above the caller clearance are removed with their edges"},
         "stats": {**(graph.get("stats") or {}), "nodes": len(kept), "edges": len(edges),
+                  "types": types, "domains": domains,
                   "totalNodesBeforeAcl": (graph.get("stats") or {}).get("nodes", len(kept))},
     }
 

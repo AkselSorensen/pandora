@@ -215,7 +215,7 @@ export default function SovereigntyPage() {
           </div>
         )}
 
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
+        <motion.section initial={false} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" />
             <h2 className="hud-text text-[11px] text-[var(--text-primary)]">1 · PROFIL DE DEPLOIEMENT</h2>
@@ -242,7 +242,7 @@ export default function SovereigntyPage() {
           </div>
         </motion.section>
 
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
+        <motion.section initial={false} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Globe2 className="w-4 h-4" />
@@ -282,7 +282,7 @@ export default function SovereigntyPage() {
           {audit?.note && <div className="hud-label">{audit.note}</div>}
         </motion.section>
 
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
+        <motion.section initial={false} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
@@ -329,7 +329,7 @@ export default function SovereigntyPage() {
           </div>
         </motion.section>
 
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
+        <motion.section initial={false} animate={{ opacity: 1, y: 0 }} className={`${blockClass} space-y-2`}>
           <div className="flex items-center gap-2">
             <ScrollText className="w-4 h-4" />
             <h2 className="hud-text text-[11px] text-[var(--text-primary)]">4 · JOURNAL &amp; INTEGRITE</h2>

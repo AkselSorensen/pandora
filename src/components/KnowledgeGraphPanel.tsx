@@ -761,7 +761,7 @@ function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
+      initial={false}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.35, duration: 0.6 }}
       className={`glass-panel aip-panel p-3 pointer-events-auto ${className || ''}`}

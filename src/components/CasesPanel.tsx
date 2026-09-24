@@ -563,7 +563,7 @@ function CasesPanel() {
   const brokenCount = Array.isArray(integrity?.brokenEvidence) ? integrity!.brokenEvidence!.length : 0;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="glass-panel p-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="glass-panel p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ClipboardList className="h-4 w-4 text-[var(--gold-primary)]" />
