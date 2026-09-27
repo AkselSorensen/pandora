@@ -1,5 +1,7 @@
 ﻿<div align="center">
 
+<img src="public/pandora-social.png" alt="Pandora — emblème de la boîte mythique" width="100%" />
+
 # ⬡ Pandora
 
 ### Plateforme OSINT, cartographie temps réel & centre de reconnaissance défensif

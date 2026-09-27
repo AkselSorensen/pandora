@@ -381,10 +381,10 @@ x-casaos:
     en_us: Real-time global OSINT intelligence dashboard
   title:
     en_us: Pandora
-  icon: https://raw.githubusercontent.com/Aiacos/Pandora/master/public/casaos-icon.png
-  thumbnail: https://raw.githubusercontent.com/Aiacos/Pandora/master/public/og-image.png
+  icon: https://raw.githubusercontent.com/AkselSorensen/pandora/master/public/casaos-icon.png
+  thumbnail: https://raw.githubusercontent.com/AkselSorensen/pandora/master/public/pandora-social.png
   screenshot_link:
-    - https://raw.githubusercontent.com/Aiacos/Pandora/master/public/og-image.png
+    - https://raw.githubusercontent.com/AkselSorensen/pandora/master/public/pandora-social.png
   scheme: http
   hostname: ""
   port_map: "3001"

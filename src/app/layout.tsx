@@ -98,10 +98,10 @@ export const metadata: Metadata = {
     url: SITE_URL,
     images: [
       {
-        url: `${SITE_URL}/og-image.png`,
+        url: `${SITE_URL}/pandora-social.png`,
         width: 1200,
         height: 630,
-        alt: "PANDORA — Open Source Intelligence Platform with Live Tracking & OSINT Tools",
+        alt: "Pandora — boîte mythique noire et or, emblème de la plateforme",
         type: "image/png",
       },
     ],
@@ -112,7 +112,7 @@ export const metadata: Metadata = {
     description: "Track 10K+ flights, satellites & CCTV worldwide. Run Nmap, DNS, WHOIS scans from your browser. 20+ live intel feeds. Free & open source.",
     creator: "@simplifaisoul",
     site: "@simplifaisoul",
-    images: [`${SITE_URL}/og-image.png`],
+    images: [`${SITE_URL}/pandora-social.png`],
   },
   category: "technology",
   classification: "Intelligence & Security",
@@ -165,7 +165,7 @@ const jsonLd = {
     "Interactive 3D globe with day/night cycle",
     "Region intelligence dossier reports",
   ],
-  screenshot: `${SITE_URL}/og-image.png`,
+  screenshot: `${SITE_URL}/pandora-social.png`,
   author: {
     "@type": "Organization",
     name: "Pandora Project",

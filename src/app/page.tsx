@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
@@ -1146,6 +1147,14 @@ export default function Dashboard() {
         <div className="hidden md:block absolute top-1/2 left-[52px] w-[200px] h-[1px] bg-gradient-to-r from-[var(--gold-primary)]/40 via-[var(--gold-primary)]/15 to-transparent" />
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
+            <Image
+              src="/pandora-icon.png"
+              alt=""
+              width={36}
+              height={36}
+              priority
+              className="h-8 w-8 rounded-sm object-cover md:h-9 md:w-9"
+            />
             <h1 className="text-base md:text-xl font-bold tracking-[0.4em] md:tracking-[0.5em] text-[var(--text-heading)] font-mono">
               Pandora Atlas
             </h1>
