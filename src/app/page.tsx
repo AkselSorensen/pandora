@@ -316,6 +316,7 @@ export default function Dashboard() {
   // --- State ---
   const [backendStatus, setBackendStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [mapView, setMapView] = useState({ zoom: 2.5, latitude: 20, longitude: 0 });
+  const [trackedTarget, setTrackedTarget] = useState<any>(null);
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; ts: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLabel, setLocationLabel] = useState('');
@@ -571,6 +572,25 @@ export default function Dashboard() {
       setLiveFeedEmbedAllowed(entity.embed_allowed !== false);
     }
   }, []);
+
+  const handleTrackTarget = useCallback((target: any) => setTrackedTarget(target), []);
+
+  useEffect(() => {
+    if (!trackedTarget) return;
+    const sourceLayer = String(trackedTarget.sourceLayer || '');
+    let match: any;
+    if (sourceLayer.startsWith('fl-')) {
+      const flights = [data.commercial_flights, data.private_flights, data.private_jets, data.military_flights, data.tankers_isr].flat().filter(Boolean);
+      match = flights.find((flight: any) => String(flight.icao24 || '').toLowerCase() === String(trackedTarget.icao24 || trackedTarget.id).toLowerCase());
+    } else if (sourceLayer === 'ship-dots') {
+      match = (data.maritime_ships || []).find((ship: any) => String(ship.mmsi || ship.name || '').toLowerCase() === String(trackedTarget.mmsi || trackedTarget.name || trackedTarget.id).toLowerCase());
+    }
+    if (!match || !Number.isFinite(Number(match.lat)) || !Number.isFinite(Number(match.lng))) return;
+    setTrackedTarget((previous: any) => {
+      if (!previous || (Math.abs(previous.lat - match.lat) < 0.0001 && Math.abs(previous.lng - match.lng) < 0.0001)) return previous;
+      return { ...previous, ...match, id: previous.id, sourceLayer, type: previous.type, name: previous.name, lat: Number(match.lat), lng: Number(match.lng), lastSeen: Date.now() };
+    });
+  }, [trackedTarget?.id, trackedTarget?.sourceLayer, data.commercial_flights, data.private_flights, data.private_jets, data.military_flights, data.tankers_isr, data.maritime_ships]);
 
   // Shared fetch utility
   const fetchEndpoint = useCallback(
@@ -934,6 +954,8 @@ export default function Dashboard() {
           }
           sensorMode={sensorMode}
           onEntityClick={handleEntityClick}
+          onTrackTarget={handleTrackTarget}
+          trackedTarget={trackedTarget}
           onMouseCoords={handleMouseCoords}
           onRightClick={handleRightClick}
           onViewStateChange={setMapView}
@@ -956,6 +978,44 @@ export default function Dashboard() {
           <div className="tactical-hud-reticle absolute inset-0 z-[120] pointer-events-none" aria-hidden="true" />
         </>
       )}
+
+      <AnimatePresence>
+        {trackedTarget && (
+          <motion.aside
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 18 }}
+            className="tracked-target-card absolute top-[76px] md:top-[88px] right-3 md:right-5 z-[190] w-[220px] glass-panel p-3 pointer-events-auto"
+            aria-live="polite"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[8px] font-mono tracking-[0.16em] text-[var(--gold-light)]">
+                <span className="tracking-pulse" /> LIVE TRACK
+              </div>
+              <button type="button" onClick={() => setTrackedTarget(null)} aria-label="Stop tracking target" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="mt-2 truncate text-[11px] font-mono font-bold text-[var(--text-heading)]">{trackedTarget.name}</div>
+            <div className="mt-1 flex items-center justify-between text-[8px] font-mono text-[var(--text-muted)]">
+              <span className="uppercase">{trackedTarget.type}</span>
+              <span>{Number(trackedTarget.lat).toFixed(3)}°, {Number(trackedTarget.lng).toFixed(3)}°</span>
+            </div>
+            {(trackedTarget.alt || trackedTarget.speed_knots || trackedTarget.speed) && (
+              <div className="mt-2 flex gap-3 border-t border-[var(--border-secondary)] pt-2 text-[8px] font-mono text-[var(--text-secondary)]">
+                {trackedTarget.alt && <span>ALT {Math.round(Number(trackedTarget.alt))}m</span>}
+                {(trackedTarget.speed_knots || trackedTarget.speed) && <span>SPD {Math.round(Number(trackedTarget.speed_knots || trackedTarget.speed))}kt</span>}
+                {trackedTarget.heading != null && <span>HDG {Math.round(Number(trackedTarget.heading))}°</span>}
+              </div>
+            )}
+            <button
+              type="button"
+              className="mt-2 w-full border-t border-[var(--border-secondary)] pt-2 text-left text-[7px] font-mono tracking-[0.14em] text-[var(--gold-primary)] hover:text-[var(--gold-light)]"
+              onClick={() => setFlyToLocation({ lat: trackedTarget.lat, lng: trackedTarget.lng, zoom: Math.max(mapView.zoom, 8.5), ts: Date.now() })}
+            >CENTER ON TARGET ↗</button>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* ===================================================================
          MAP VIEW CONTROLS (3D/2D + SATELLITE TOGGLE)

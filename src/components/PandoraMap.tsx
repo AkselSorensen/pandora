@@ -8,6 +8,8 @@ interface PandoraMapProps {
   data: any;
   activeLayers: Record<string, boolean>;
   onEntityClick?: (entity: any) => void;
+  onTrackTarget?: (target: any) => void;
+  trackedTarget?: { id: string; lat: number; lng: number } | null;
   onMouseCoords?: (coords: { lat: number; lng: number }) => void;
   onRightClick?: (coords: { lat: number; lng: number }) => void;
   onViewStateChange?: (vs: { zoom: number; latitude: number; longitude: number }) => void;
@@ -100,7 +102,7 @@ function collectGeoFeatures(input: any): any[] {
   return out;
 }
 
-function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightClick, onViewStateChange, flyToLocation, projection = 'globe', mapStyle = 'dark', sensorMode = 'visible', sweepData, scanTargets = [], fusionHotspots = [] }: PandoraMapProps) {
+function PandoraMap({ data, activeLayers, onEntityClick, onTrackTarget, trackedTarget, onMouseCoords, onRightClick, onViewStateChange, flyToLocation, projection = 'globe', mapStyle = 'dark', sensorMode = 'visible', sweepData, scanTargets = [], fusionHotspots = [] }: PandoraMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -1265,8 +1267,36 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
       });
     });
 
+    const trackableLayers: Record<string, string> = {
+      'fl-commercial': 'flight', 'fl-private': 'flight', 'fl-jets': 'flight', 'fl-military': 'flight', 'fl-tankers-isr': 'flight',
+      'ship-dots': 'vessel', 'cctv-dots': 'camera', 'eq-circles': 'earthquake', 'sat-dots': 'satellite',
+      'fires-heat': 'fire', 'gdelt-dots': 'incident', 'mil-events-dots': 'incident', 'conflict-icons': 'incident',
+      'weather-dots': 'weather', 'cyber-geo-dots': 'cyber signal', 'infra-dots': 'infrastructure',
+      'maritime-dots': 'port', 'choke-dots': 'chokepoint', 'balloon-dots': 'aircraft',
+    };
+    map.on('click', (event) => {
+      const layers = Object.keys(trackableLayers).filter((id) => map.getLayer(id));
+      if (!layers.length) return;
+      const feature = map.queryRenderedFeatures(event.point, { layers }).find((candidate) => candidate.geometry.type === 'Point');
+      if (!feature) return;
+      const coordinates = (feature.geometry as any).coordinates as [number, number];
+      const properties = feature.properties || {};
+      const type = trackableLayers[feature.layer.id] || 'signal';
+      const name = properties.callsign || properties.name || properties.title || properties.place || properties.id || type.toUpperCase();
+      onTrackTarget?.({
+        ...properties,
+        id: String(properties.icao24 || properties.mmsi || properties.id || properties.name || properties.callsign || `${feature.layer.id}:${coordinates[0].toFixed(4)}:${coordinates[1].toFixed(4)}`),
+        sourceLayer: feature.layer.id,
+        type,
+        name: String(name),
+        lng: coordinates[0],
+        lat: coordinates[1],
+        lastSeen: Date.now(),
+      });
+    });
+
     return () => { map.remove(); mapRef.current = null; };
-  }, []);
+  }, [onTrackTarget]);
 
   // Day/Night
   useEffect(() => {
@@ -1677,6 +1707,11 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     if (!mapReady || !mapRef.current || !flyToLocation) return;
     mapRef.current.flyTo({ center: [flyToLocation.lng, flyToLocation.lat], zoom: flyToLocation.zoom ?? 8, duration: 2000 });
   }, [mapReady, flyToLocation]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !trackedTarget) return;
+    mapRef.current.flyTo({ center: [trackedTarget.lng, trackedTarget.lat], zoom: Math.max(mapRef.current.getZoom(), 8.5), duration: 1600 });
+  }, [mapReady, trackedTarget?.id, trackedTarget?.lat, trackedTarget?.lng]);
 
   // Dynamic projection switching (lightweight — no terrain DEM)
   useEffect(() => {
