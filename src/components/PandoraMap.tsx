@@ -68,7 +68,11 @@ function sceneToFeature(scene: any, bucket: 'SCENE' | 'SAR' | 'OPTICAL') {
       mode: scene.mode,
       cloud_cover: scene.cloud_cover,
       area_km2: scene.area_km2,
-      preview: scene.preview || scene.thumbnail,
+      // S3 URIs (notably Sentinel-1 Requester Pays quicklooks) cannot be opened
+      // by a browser. Keep only actual HTTP(S) previews; the popup builds a
+      // Copernicus Browser fallback for other scenes.
+      preview: [scene.preview, scene.thumbnail].find((url: unknown) => typeof url === 'string' && /^https?:\/\//i.test(url)) || null,
+      bbox: scene.bbox,
       bucket,
     },
   };
@@ -860,7 +864,22 @@ function PandoraMap({ data, activeLayers, onEntityClick, onTrackTarget, trackedT
             <div><span style="color:#5C5A54;">CLOUD</span><br/><span style="color:${color};">${p.cloud_cover ?? '—'}%</span></div>
             <div><span style="color:#5C5A54;">AREA</span><br/><span style="color:#E8E6E0;">${p.area_km2 || '—'} km²</span></div>
           </div>
-          ${p.preview ? `<a href="${p.preview}" target="_blank" style="${linkStyle}color:${color};border:1px solid ${color}66;background:${color}1A;">PREVIEW</a>` : ''}
+          ${(() => {
+            const sceneDate = p.datetime ? new Date(p.datetime) : new Date();
+            const fromTime = new Date(sceneDate.getTime() - 30 * 60 * 1000).toISOString();
+            const toTime = new Date(sceneDate.getTime() + 30 * 60 * 1000).toISOString();
+            const browserUrl = new URL('https://browser.dataspace.copernicus.eu/');
+            browserUrl.searchParams.set('zoom', '8');
+            browserUrl.searchParams.set('lat', String(coords[1]));
+            browserUrl.searchParams.set('lng', String(coords[0]));
+            browserUrl.searchParams.set('themeId', 'DEFAULT-THEME');
+            browserUrl.searchParams.set('datasetId', 'S1GRD');
+            browserUrl.searchParams.set('fromTime', fromTime);
+            browserUrl.searchParams.set('toTime', toTime);
+            const href = p.preview || browserUrl.toString();
+            const label = p.preview ? 'PREVIEW' : 'OPEN COPERNICUS VIEWER';
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${linkStyle}color:${color};border:1px solid ${color}66;background:${color}1A;">${label}</a>`;
+          })()}
         </div>`);
       });
     });
