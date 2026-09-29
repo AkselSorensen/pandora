@@ -19,6 +19,7 @@ import ViewPresets from '@/components/ViewPresets';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import GlobalStatusBar from '@/components/GlobalStatusBar';
 import LiveAlerts from '@/components/LiveAlerts';
+import WatchZonesPanel from '@/components/WatchZonesPanel';
 import DataFoundryPanel from '@/components/DataFoundryPanel';
 import MissionControlPanel from '@/components/MissionControlPanel';
 import AipFusionPanel from '@/components/AipFusionPanel';
@@ -1257,6 +1258,7 @@ export default function Dashboard() {
                 {desktopTool === 'search' && (
                   <div className="space-y-3">
                     <SearchBar onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                    <WatchZonesPanel center={{ latitude: mapView.latitude, longitude: mapView.longitude }} label={locationLabel} signals={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
                     <SharePanel mapView={mapView} activeLayers={activeLayers} mouseCoords={mouseCoords} />
                   </div>
                 )}
@@ -1529,6 +1531,15 @@ export default function Dashboard() {
                 {mobilePanel === 'search' && (
                   <div className="space-y-2">
                     <SearchBar
+                      onLocate={(lat, lng) => {
+                        setFlyToLocation({ lat, lng, ts: Date.now() });
+                        setMobilePanel(null);
+                      }}
+                    />
+                    <WatchZonesPanel
+                      center={{ latitude: mapView.latitude, longitude: mapView.longitude }}
+                      label={locationLabel}
+                      signals={data.news || []}
                       onLocate={(lat, lng) => {
                         setFlyToLocation({ lat, lng, ts: Date.now() });
                         setMobilePanel(null);
