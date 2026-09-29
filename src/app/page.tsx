@@ -91,9 +91,10 @@ function deriveMilitaryEvents(events: any[] = []) {
   });
 }
 
-function deriveSentinelBuckets(scenes: any[] = []) {
+function deriveSentinelBuckets(scenes: any[] = [], previewScenes: any[] = []) {
   return {
     sentinel_scenes: scenes,
+    sentinel_preview_scenes: previewScenes,
     sentinel_sar: scenes.filter((scene) => String(scene.platform || scene.mode || '').toLowerCase().includes('sentinel-1') || scene.polarization),
     sentinel_optical: scenes.filter((scene) => String(scene.platform || '').toLowerCase().includes('sentinel-2') || scene.cloud_cover !== null),
   };
@@ -720,7 +721,7 @@ export default function Dashboard() {
       const lat = Number.isFinite(mapView.latitude) ? mapView.latitude : 20;
       const lng = Number.isFinite(mapView.longitude) ? mapView.longitude : 0;
       const bucket = `${Math.floor(lat / 3)}:${Math.floor(lng / 3)}`;
-      requestLayer(`sentinel:${bucket}`, ['satellite_scenes', 'sar_watch', 'optical_watch'], `/api/sentinel?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=3&days=30`, (d) => deriveSentinelBuckets(d.scenes || []));
+      requestLayer(`sentinel:${bucket}`, ['satellite_scenes', 'sar_watch', 'optical_watch'], `/api/sentinel?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=3&days=30`, (d) => deriveSentinelBuckets(d.scenes || [], d.previewScenes || []));
     }
     if (activeLayers.space_weather_layer) {
       requestLayer('space-weather', ['space_weather_layer'], '/api/space-weather', (payload) => {
@@ -1367,7 +1368,7 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
                     <SatelliteImageryPanel
-                      scenes={data.sentinel_scenes}
+                      scenes={data.sentinel_preview_scenes}
                       latitude={mapView.latitude}
                       longitude={mapView.longitude}
                       enabled={activeLayers.satellite_scenes}
@@ -1655,7 +1656,7 @@ export default function Dashboard() {
                     </div>
                     <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
                     <SatelliteImageryPanel
-                      scenes={data.sentinel_scenes}
+                      scenes={data.sentinel_preview_scenes}
                       latitude={mapView.latitude}
                       longitude={mapView.longitude}
                       enabled={activeLayers.satellite_scenes}

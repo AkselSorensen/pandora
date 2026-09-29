@@ -89,9 +89,46 @@ export async function GET(req: Request) {
       } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
     }
 
+    // Element84 exposes Sentinel-1 quicklooks as s3:// URIs. That bucket is
+    // Requester Pays, so browsers cannot load those assets anonymously. Fetch
+    // public rendered RTC previews from Planetary Computer for the gallery.
+    let previewScenes: any[] = [];
+    try {
+      const previewRes = await fetch('https://planetarycomputer.microsoft.com/api/stac/v1/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'PandoraAtlas/1.0 (public satellite imagery gallery)' },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({
+          collections: ['sentinel-1-rtc'],
+          bbox: [Math.max(-180, lng - radius), Math.max(-90, lat - radius), Math.min(180, lng + radius), Math.min(90, lat + radius)],
+          datetime,
+          limit: 20,
+        }),
+      });
+      if (previewRes.ok) {
+        const previewData = await previewRes.json();
+        previewScenes = (previewData.features || [])
+          .map((feature: any) => ({
+            id: feature.id,
+            datetime: feature.properties?.datetime,
+            platform: feature.properties?.platform || 'Sentinel-1 RTC',
+            mode: feature.properties?.['sar:instrument_mode'] || 'RTC',
+            polarization: feature.properties?.['sar:polarizations'] || [],
+            bbox: feature.bbox,
+            preview: feature.assets?.rendered_preview?.href || null,
+            source_name: 'Microsoft Planetary Computer · Sentinel‑1 RTC',
+            source_url: feature.links?.find((link: any) => link.rel === 'self')?.href || null,
+          }))
+          .filter((scene: any) => scene.preview)
+          .sort((a: any, b: any) => Date.parse(b.datetime || '') - Date.parse(a.datetime || ''))
+          .slice(0, 8);
+      }
+    } catch (e) { console.warn('[PANDORA] Satellite preview lookup failed:', e instanceof Error ? e.message : e); }
+
     return NextResponse.json({
       source,
       scenes,
+      previewScenes,
       total,
       bbox,
       datetime,
@@ -100,7 +137,7 @@ export async function GET(req: Request) {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
   } catch (e) {
-    return NextResponse.json({ error: 'Sentinel lookup failed', scenes: [] }, { status: 500 });
+    return NextResponse.json({ error: 'Sentinel lookup failed', scenes: [], previewScenes: [] }, { status: 500 });
   }
 }
 
