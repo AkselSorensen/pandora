@@ -897,19 +897,6 @@ export default function Dashboard() {
       </ErrorBoundary>
 
       {/* ===================================================================
-         SPACE BACKDROP — subtle stars / planets / galaxies over the void
-         =================================================================== */}
-      <div className="pandora-space-backdrop" aria-hidden="true">
-        <div className="pandora-starfield pandora-starfield--near" />
-        <div className="pandora-starfield pandora-starfield--far" />
-        <div className="pandora-nebula pandora-nebula--left" />
-        <div className="pandora-nebula pandora-nebula--right" />
-        <div className="pandora-galaxy pandora-galaxy--upper" />
-        <div className="pandora-planet pandora-planet--mars" />
-        <div className="pandora-planet pandora-planet--ice" />
-      </div>
-
-      {/* ===================================================================
          MAP VIEW CONTROLS (3D/2D + SATELLITE TOGGLE)
          =================================================================== */}
       <motion.div

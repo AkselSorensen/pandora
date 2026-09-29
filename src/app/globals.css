@@ -550,140 +550,6 @@ html, body {
 }
 
 /* ===================================================================
-   SPACE BACKDROP — stars, planets, galaxies behind the operational UI
-   =================================================================== */
-.pandora-space-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
-  opacity: 0.9;
-  mix-blend-mode: screen;
-  mask-image: radial-gradient(circle at 50% 54%, transparent 0 15%, rgba(0,0,0,0.15) 27%, black 52%, black 100%);
-  -webkit-mask-image: radial-gradient(circle at 50% 54%, transparent 0 15%, rgba(0,0,0,0.15) 27%, black 52%, black 100%);
-}
-
-.pandora-starfield {
-  position: absolute;
-  inset: -20%;
-  background-repeat: repeat;
-  transform-origin: center;
-  opacity: 0.62;
-}
-
-.pandora-starfield--far {
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.58) 0 0.7px, transparent 1px),
-    radial-gradient(circle, rgba(143,183,255,0.38) 0 0.9px, transparent 1.2px),
-    radial-gradient(circle, rgba(208,168,92,0.32) 0 0.6px, transparent 1px);
-  background-size: 92px 92px, 137px 137px, 181px 181px;
-  background-position: 12px 18px, 66px 41px, 23px 97px;
-  animation: pandora-star-drift-far 90s linear infinite;
-}
-
-.pandora-starfield--near {
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.86) 0 1px, transparent 1.8px),
-    radial-gradient(circle, rgba(143,183,255,0.72) 0 1.2px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,0.42) 0 0.8px, transparent 1.5px);
-  background-size: 240px 240px, 310px 310px, 390px 390px;
-  background-position: 22px 34px, 140px 70px, 280px 180px;
-  opacity: 0.42;
-  animation: pandora-star-drift-near 54s linear infinite;
-}
-
-.pandora-nebula {
-  position: absolute;
-  width: 46vw;
-  height: 46vw;
-  min-width: 520px;
-  min-height: 520px;
-  border-radius: 999px;
-  filter: blur(36px);
-  opacity: 0.22;
-}
-
-.pandora-nebula--left {
-  left: -18vw;
-  top: 10vh;
-  background:
-    radial-gradient(circle at 42% 44%, rgba(91,112,255,0.38), transparent 34%),
-    radial-gradient(circle at 58% 62%, rgba(208,168,92,0.20), transparent 42%);
-  animation: pandora-nebula-breathe 18s ease-in-out infinite;
-}
-
-.pandora-nebula--right {
-  right: -20vw;
-  top: 2vh;
-  background:
-    radial-gradient(circle at 44% 48%, rgba(143,183,255,0.34), transparent 32%),
-    radial-gradient(circle at 62% 58%, rgba(224,106,106,0.16), transparent 44%);
-  animation: pandora-nebula-breathe 22s ease-in-out infinite reverse;
-}
-
-.pandora-galaxy {
-  position: absolute;
-  width: 340px;
-  height: 128px;
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse at center, rgba(255,255,255,0.56) 0 2%, rgba(143,183,255,0.28) 8%, rgba(143,183,255,0.10) 24%, transparent 62%),
-    conic-gradient(from 30deg, transparent 0 18%, rgba(255,255,255,0.20) 22%, transparent 34%, rgba(208,168,92,0.12) 48%, transparent 62%, rgba(143,183,255,0.16) 72%, transparent 88%);
-  filter: blur(0.4px);
-  opacity: 0.28;
-  transform: rotate(-18deg);
-}
-
-.pandora-galaxy--upper {
-  right: 9vw;
-  top: 13vh;
-}
-
-.pandora-planet {
-  position: absolute;
-  border-radius: 999px;
-  opacity: 0.34;
-  box-shadow: inset -18px -14px 30px rgba(0,0,0,0.42), 0 0 34px rgba(143,183,255,0.12);
-}
-
-.pandora-planet--mars {
-  width: 70px;
-  height: 70px;
-  right: 14vw;
-  bottom: 18vh;
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255,217,163,0.55), transparent 12%),
-    radial-gradient(circle at 62% 58%, rgba(126,57,43,0.42), transparent 22%),
-    linear-gradient(145deg, #C18447, #6C2F2A 72%);
-}
-
-.pandora-planet--ice {
-  width: 46px;
-  height: 46px;
-  left: 11vw;
-  top: 23vh;
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255,255,255,0.7), transparent 14%),
-    linear-gradient(145deg, #8FB7FF, #243B68 74%);
-}
-
-@keyframes pandora-star-drift-far {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-92px, 92px, 0); }
-}
-
-@keyframes pandora-star-drift-near {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(120px, -120px, 0) scale(1.015); }
-}
-
-@keyframes pandora-nebula-breathe {
-  0%, 100% { transform: scale(1); opacity: 0.18; }
-  50% { transform: scale(1.08); opacity: 0.28; }
-}
-
-/* ===================================================================
    CRT & VIGNETTE — Effets visuels
    =================================================================== */
 .crt-scanlines {
@@ -2727,6 +2593,219 @@ body::before {
   .bottom-command-hud {
     transform: translateX(-50%) scale(0.92) !important;
     transform-origin: bottom center;
+  }
+}
+
+/* ===================================================================
+   PANDORA ATLAS — unified graphite and antique gold interface
+   Keep the map and intelligence layers as the only ambient imagery.
+   =================================================================== */
+:root {
+  --bg-void: #070807;
+  --bg-primary: #0A0B09;
+  --bg-secondary: #10120F;
+  --bg-tertiary: #181A15;
+  --bg-panel: rgba(12, 14, 11, 0.97);
+  --bg-panel-solid: #0C0E0B;
+
+  --gold-primary: #C5A768;
+  --gold-light: #E0C786;
+  --gold-dim: #76623B;
+  --gold-glow: rgba(197, 167, 104, 0.10);
+
+  --cyan-primary: #A2AA99;
+  --cyan-dim: #596253;
+  --cyan-glow: rgba(162, 170, 153, 0.08);
+
+  --alert-red: #C85D4E;
+  --alert-orange: #C18B4F;
+  --alert-green: #819675;
+  --alert-blue: #9BA8A0;
+
+  --border-primary: rgba(197, 167, 104, 0.24);
+  --border-secondary: rgba(228, 220, 199, 0.10);
+  --border-active: rgba(197, 167, 104, 0.52);
+  --border-cyan: rgba(162, 170, 153, 0.18);
+
+  --text-primary: #E8E3D6;
+  --text-secondary: #C0BBAE;
+  --text-muted: #8E897C;
+  --text-heading: #F5F0E4;
+
+  --panel-radius: 7px;
+  --panel-radius-sm: 5px;
+}
+
+html,
+body {
+  background: #070807 !important;
+}
+
+body::before,
+.vignette,
+.crt-scanlines {
+  display: none !important;
+}
+
+.maplibregl-canvas {
+  filter: sepia(0.10) saturate(0.78) contrast(0.98) brightness(0.9) !important;
+}
+
+.glass-panel,
+.glass-panel-sm {
+  background: rgba(12, 14, 11, 0.97) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--panel-radius) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.035) inset !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.glass-panel::before,
+.glass-panel-sm::before {
+  display: none !important;
+}
+
+.glass-panel:hover {
+  border-color: rgba(197, 167, 104, 0.38) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.48), 0 1px 0 rgba(255, 255, 255, 0.04) inset !important;
+}
+
+.app-header,
+.app-status {
+  border: 1px solid rgba(197, 167, 104, 0.22);
+  border-radius: 6px;
+  background: rgba(9, 10, 8, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.app-header {
+  padding: 7px 10px;
+}
+
+.app-status {
+  padding: 6px 9px;
+}
+
+.pandora-header-logo {
+  border: 1px solid rgba(197, 167, 104, 0.32);
+  border-radius: 5px !important;
+  overflow: hidden;
+}
+
+.tool-rail {
+  border: 1px solid rgba(197, 167, 104, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 11, 9, 0.97);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tool-rail::before {
+  display: none;
+}
+
+.tool-rail-button {
+  border-radius: 5px;
+  color: #AAA597;
+}
+
+.tool-rail-button:hover {
+  color: var(--text-heading);
+  border-color: rgba(197, 167, 104, 0.22);
+  background: rgba(197, 167, 104, 0.07);
+  transform: none;
+}
+
+.tool-rail-button.active {
+  color: var(--gold-light);
+  border-color: rgba(197, 167, 104, 0.34);
+  background: rgba(197, 167, 104, 0.11);
+  box-shadow: inset 2px 0 0 var(--gold-primary);
+}
+
+.tool-rail-button.active::after {
+  display: none;
+}
+
+.tool-workspace {
+  border-radius: 7px !important;
+  background: rgba(11, 12, 10, 0.98) !important;
+}
+
+.tool-workspace-header {
+  border-bottom-color: rgba(197, 167, 104, 0.18);
+  background: #0C0E0B;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tool-workspace-header h2 {
+  letter-spacing: 0.09em;
+  font-size: clamp(14px, 1vw, 18px);
+}
+
+.tool-sidebar-toggle {
+  border-color: rgba(197, 167, 104, 0.3);
+  color: var(--gold-light);
+  background: #0C0E0B;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tool-sidebar-toggle:hover {
+  border-color: var(--gold-primary);
+  background: #15150F;
+  transform: none;
+}
+
+.gotham-tag,
+.gotham-tag--info,
+.gotham-tag--low,
+.gotham-tag--high,
+.gotham-tag--critical {
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-content,
+.maplibregl-ctrl-group {
+  color: var(--text-primary) !important;
+  background: #0C0E0B !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: 5px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+.maplibregl-ctrl-group button {
+  filter: grayscale(1) sepia(0.55);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
