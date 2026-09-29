@@ -385,6 +385,51 @@ export default function Dashboard() {
     gps_jamming: false,
     day_night: true,
   });
+  const [isGlobalContext, setIsGlobalContext] = useState(false);
+  const globalContextSnapshot = useRef<{
+    view: typeof mapView;
+    layers: typeof activeLayers;
+    projection: typeof mapProjection;
+    style: typeof mapStyle;
+  } | null>(null);
+
+  const toggleGlobalContext = () => {
+    if (isGlobalContext && globalContextSnapshot.current) {
+      const snapshot = globalContextSnapshot.current;
+      setMapView(snapshot.view);
+      setActiveLayers(snapshot.layers);
+      setMapProjection(snapshot.projection);
+      setMapStyle(snapshot.style);
+      setFlyToLocation({ lat: snapshot.view.latitude, lng: snapshot.view.longitude, zoom: snapshot.view.zoom, ts: Date.now() });
+      globalContextSnapshot.current = null;
+      setIsGlobalContext(false);
+      return;
+    }
+
+    globalContextSnapshot.current = {
+      view: { ...mapView },
+      layers: { ...activeLayers },
+      projection: mapProjection,
+      style: mapStyle,
+    };
+    setIsGlobalContext(true);
+    setMapProjection('globe');
+    setMapStyle('dark');
+    setActiveLayers((previous) => ({
+      ...previous,
+      flights: true,
+      maritime: true,
+      satellites: true,
+      live_news: true,
+      news_intel: true,
+      earthquakes: true,
+      global_incidents: true,
+      conflict_zones: true,
+      day_night: true,
+    }));
+    setMapView((previous) => ({ ...previous, latitude: 18, longitude: 0, zoom: 1.8 }));
+    setFlyToLocation({ lat: 18, lng: 0, zoom: 1.8, ts: Date.now() });
+  };
 
   // --- Effects ---
   // Splash screen
@@ -903,8 +948,19 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 3.5 }}
-        className="map-view-controls absolute bottom-[75px] md:bottom-6 left-3 md:left-[315px] z-[200] flex items-center gap-2 pointer-events-none"
+        className="map-view-controls absolute bottom-[75px] md:bottom-6 left-3 md:left-[315px] z-[250] flex items-center gap-2 pointer-events-auto"
       >
+        <button
+          type="button"
+          onClick={toggleGlobalContext}
+          aria-label={isGlobalContext ? 'Return to previous map view' : 'Open global situation view'}
+          aria-pressed={isGlobalContext}
+          title={isGlobalContext ? 'Return to previous view' : 'Global Context'}
+          className={`glass-panel p-2.5 pointer-events-auto transition-colors group relative ${isGlobalContext ? 'global-context-active' : ''}`}
+        >
+          <Globe className={`w-4 h-4 transition-transform ${isGlobalContext ? 'text-[var(--gold-light)]' : 'text-[var(--gold-primary)] group-hover:scale-110'}`} />
+        </button>
+
         <button
           onClick={() => setMapProjection((p) => (p === 'globe' ? 'mercator' : 'globe'))}
           className="glass-panel p-2.5 pointer-events-auto hover:border-[var(--gold-primary)]/40 transition-colors group relative"

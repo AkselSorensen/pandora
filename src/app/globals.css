@@ -2597,219 +2597,6 @@ body::before {
 }
 
 /* ===================================================================
-   PANDORA ATLAS — unified graphite and antique gold interface
-   Keep the map and intelligence layers as the only ambient imagery.
-   =================================================================== */
-:root {
-  --bg-void: #070807;
-  --bg-primary: #0A0B09;
-  --bg-secondary: #10120F;
-  --bg-tertiary: #181A15;
-  --bg-panel: rgba(12, 14, 11, 0.97);
-  --bg-panel-solid: #0C0E0B;
-
-  --gold-primary: #C5A768;
-  --gold-light: #E0C786;
-  --gold-dim: #76623B;
-  --gold-glow: rgba(197, 167, 104, 0.10);
-
-  --cyan-primary: #A2AA99;
-  --cyan-dim: #596253;
-  --cyan-glow: rgba(162, 170, 153, 0.08);
-
-  --alert-red: #C85D4E;
-  --alert-orange: #C18B4F;
-  --alert-green: #819675;
-  --alert-blue: #9BA8A0;
-
-  --border-primary: rgba(197, 167, 104, 0.24);
-  --border-secondary: rgba(228, 220, 199, 0.10);
-  --border-active: rgba(197, 167, 104, 0.52);
-  --border-cyan: rgba(162, 170, 153, 0.18);
-
-  --text-primary: #E8E3D6;
-  --text-secondary: #C0BBAE;
-  --text-muted: #8E897C;
-  --text-heading: #F5F0E4;
-
-  --panel-radius: 7px;
-  --panel-radius-sm: 5px;
-}
-
-html,
-body {
-  background: #070807 !important;
-}
-
-body::before,
-.vignette,
-.crt-scanlines {
-  display: none !important;
-}
-
-.maplibregl-canvas {
-  filter: sepia(0.10) saturate(0.78) contrast(0.98) brightness(0.9) !important;
-}
-
-.glass-panel,
-.glass-panel-sm {
-  background: rgba(12, 14, 11, 0.97) !important;
-  border: 1px solid var(--border-primary) !important;
-  border-radius: var(--panel-radius) !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.035) inset !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
-
-.glass-panel::before,
-.glass-panel-sm::before {
-  display: none !important;
-}
-
-.glass-panel:hover {
-  border-color: rgba(197, 167, 104, 0.38) !important;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.48), 0 1px 0 rgba(255, 255, 255, 0.04) inset !important;
-}
-
-.app-header,
-.app-status {
-  border: 1px solid rgba(197, 167, 104, 0.22);
-  border-radius: 6px;
-  background: rgba(9, 10, 8, 0.94);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.app-header {
-  padding: 7px 10px;
-}
-
-.app-status {
-  padding: 6px 9px;
-}
-
-.pandora-header-logo {
-  border: 1px solid rgba(197, 167, 104, 0.32);
-  border-radius: 5px !important;
-  overflow: hidden;
-}
-
-.tool-rail {
-  border: 1px solid rgba(197, 167, 104, 0.2);
-  border-radius: 8px;
-  background: rgba(10, 11, 9, 0.97);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.tool-rail::before {
-  display: none;
-}
-
-.tool-rail-button {
-  border-radius: 5px;
-  color: #AAA597;
-}
-
-.tool-rail-button:hover {
-  color: var(--text-heading);
-  border-color: rgba(197, 167, 104, 0.22);
-  background: rgba(197, 167, 104, 0.07);
-  transform: none;
-}
-
-.tool-rail-button.active {
-  color: var(--gold-light);
-  border-color: rgba(197, 167, 104, 0.34);
-  background: rgba(197, 167, 104, 0.11);
-  box-shadow: inset 2px 0 0 var(--gold-primary);
-}
-
-.tool-rail-button.active::after {
-  display: none;
-}
-
-.tool-workspace {
-  border-radius: 7px !important;
-  background: rgba(11, 12, 10, 0.98) !important;
-}
-
-.tool-workspace-header {
-  border-bottom-color: rgba(197, 167, 104, 0.18);
-  background: #0C0E0B;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.tool-workspace-header h2 {
-  letter-spacing: 0.09em;
-  font-size: clamp(14px, 1vw, 18px);
-}
-
-.tool-sidebar-toggle {
-  border-color: rgba(197, 167, 104, 0.3);
-  color: var(--gold-light);
-  background: #0C0E0B;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.tool-sidebar-toggle:hover {
-  border-color: var(--gold-primary);
-  background: #15150F;
-  transform: none;
-}
-
-.gotham-tag,
-.gotham-tag--info,
-.gotham-tag--low,
-.gotham-tag--high,
-.gotham-tag--critical {
-  border-radius: 3px !important;
-  box-shadow: none !important;
-}
-
-.maplibregl-popup-content,
-.maplibregl-ctrl-group {
-  color: var(--text-primary) !important;
-  background: #0C0E0B !important;
-  border: 1px solid var(--border-primary) !important;
-  border-radius: 5px !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5) !important;
-}
-
-.maplibregl-ctrl-group button {
-  filter: grayscale(1) sepia(0.55);
-}
-
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--gold-primary);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ===================================================================
    BOTTOM HUD CLEANUP — compact tactical controls
    Reduces the oversized “mystic block” look around map controls/HUD.
    =================================================================== */
@@ -3297,5 +3084,269 @@ select:focus-visible {
   .tool-workspace .aip-entity-list,
   .tool-workspace .innovation-missions {
     max-height: min(34vh, 320px);
+  }
+}
+
+/* ===================================================================
+   PANDORA ATLAS — unified graphite and antique gold interface
+   Keep the map and intelligence layers as the only ambient imagery.
+   =================================================================== */
+:root {
+  --bg-void: #070807;
+  --bg-primary: #0A0B09;
+  --bg-secondary: #10120F;
+  --bg-tertiary: #181A15;
+  --bg-panel: rgba(12, 14, 11, 0.97);
+  --bg-panel-solid: #0C0E0B;
+
+  --gold-primary: #C5A768;
+  --gold-light: #E0C786;
+  --gold-dim: #76623B;
+  --gold-glow: rgba(197, 167, 104, 0.10);
+
+  --cyan-primary: #A2AA99;
+  --cyan-dim: #596253;
+  --cyan-glow: rgba(162, 170, 153, 0.08);
+
+  --alert-red: #C85D4E;
+  --alert-orange: #C18B4F;
+  --alert-green: #819675;
+  --alert-blue: #9BA8A0;
+
+  --border-primary: rgba(197, 167, 104, 0.24);
+  --border-secondary: rgba(228, 220, 199, 0.10);
+  --border-active: rgba(197, 167, 104, 0.52);
+  --border-cyan: rgba(162, 170, 153, 0.18);
+
+  --text-primary: #E8E3D6;
+  --text-secondary: #C0BBAE;
+  --text-muted: #8E897C;
+  --text-heading: #F5F0E4;
+
+  --panel-radius: 7px;
+  --panel-radius-sm: 5px;
+}
+
+html,
+body {
+  background: #070807 !important;
+}
+
+body::before,
+.vignette,
+.crt-scanlines {
+  display: none !important;
+}
+
+.maplibregl-canvas {
+  filter: sepia(0.10) saturate(0.78) contrast(0.98) brightness(0.9) !important;
+}
+
+.glass-panel,
+.glass-panel-sm {
+  background: rgba(12, 14, 11, 0.97) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--panel-radius) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.035) inset !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.glass-panel::before,
+.glass-panel-sm::before {
+  display: none !important;
+}
+
+.glass-panel:hover {
+  border-color: rgba(197, 167, 104, 0.38) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.48), 0 1px 0 rgba(255, 255, 255, 0.04) inset !important;
+}
+
+.app-header,
+.app-status {
+  border: 1px solid rgba(197, 167, 104, 0.22);
+  border-radius: 6px;
+  background: rgba(9, 10, 8, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.app-header {
+  padding: 7px 10px;
+}
+
+.app-status {
+  padding: 6px 9px;
+}
+
+.pandora-header-logo {
+  border: 1px solid rgba(197, 167, 104, 0.32);
+  border-radius: 5px !important;
+  overflow: hidden;
+}
+
+.tool-rail {
+  border: 1px solid rgba(197, 167, 104, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 11, 9, 0.97);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tool-rail::before {
+  display: none;
+}
+
+.tool-rail-button {
+  border-radius: 5px;
+  color: #AAA597;
+}
+
+.tool-rail-button:hover {
+  color: var(--text-heading);
+  border-color: rgba(197, 167, 104, 0.22);
+  background: rgba(197, 167, 104, 0.07);
+  transform: none;
+}
+
+.tool-rail-button.active {
+  color: var(--gold-light);
+  border-color: rgba(197, 167, 104, 0.34);
+  background: rgba(197, 167, 104, 0.11);
+  box-shadow: inset 2px 0 0 var(--gold-primary);
+}
+
+.tool-rail-button.active::after {
+  display: none;
+}
+
+.tool-workspace {
+  border-radius: 7px !important;
+  background: rgba(11, 12, 10, 0.98) !important;
+}
+
+.tool-workspace-header {
+  border-bottom-color: rgba(197, 167, 104, 0.18);
+  background: #0C0E0B;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tool-workspace-header h2 {
+  letter-spacing: 0.09em;
+  font-size: clamp(14px, 1vw, 18px);
+}
+
+.tool-sidebar-toggle {
+  border-color: rgba(197, 167, 104, 0.3);
+  color: var(--gold-light);
+  background: #0C0E0B;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tool-sidebar-toggle:hover {
+  border-color: var(--gold-primary);
+  background: #15150F;
+  transform: none;
+}
+
+.gotham-tag,
+.gotham-tag--info,
+.gotham-tag--low,
+.gotham-tag--high,
+.gotham-tag--critical {
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-content,
+.maplibregl-ctrl-group {
+  color: var(--text-primary) !important;
+  background: #0C0E0B !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: 5px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+.maplibregl-ctrl-group button {
+  filter: grayscale(1) sepia(0.55);
+}
+
+.map-view-controls button[title="Global Context"]::after {
+  content: 'GLOBAL VIEW';
+  color: var(--gold-light);
+}
+
+.map-view-controls {
+  z-index: 250 !important;
+  pointer-events: auto !important;
+}
+
+.map-view-controls button {
+  position: relative;
+  pointer-events: auto !important;
+}
+
+.map-view-controls button[title="Return to previous view"]::after {
+  content: 'RESTORE VIEW';
+  color: var(--gold-light);
+}
+
+.map-view-controls button.global-context-active {
+  border-color: var(--gold-primary) !important;
+  background: rgba(197, 167, 104, 0.12) !important;
+  box-shadow: 0 0 0 1px rgba(197, 167, 104, 0.1) inset, 0 10px 24px rgba(0, 0, 0, 0.42) !important;
+}
+
+@media (max-width: 1280px) and (min-width: 769px) {
+  .map-view-controls {
+    display: flex !important;
+    left: 50% !important;
+    bottom: 34px !important;
+    transform: translateX(-50%) !important;
+    gap: 4px !important;
+  }
+
+  .map-view-controls > button {
+    height: 34px !important;
+    padding: 0 8px !important;
+    border-radius: 5px !important;
+  }
+
+  .map-view-controls button::after {
+    max-width: 90px;
+    font-size: 7px;
+  }
+
+  .scale-bar-wrap {
+    display: none !important;
+  }
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
