@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -442,7 +442,7 @@ export default function Dashboard() {
   // --- Effects ---
   // Splash screen
   useEffect(() => {
-    const splashTimer = setTimeout(() => setShowSplash(false), 2500);
+    const splashTimer = setTimeout(() => setShowSplash(false), 1200);
     return () => clearTimeout(splashTimer);
   }, []);
 
@@ -1258,41 +1258,46 @@ export default function Dashboard() {
                 aria-label="Pandora tools"
               >
                 {[
-              { id: 'layers' as const, icon: Layers, label: t('nav.layers') },
-              { id: 'foundry' as const, icon: Database, label: t('nav.foundry') },
-              { id: 'mission' as const, icon: Activity, label: t('nav.mission') },
-              { id: 'aip' as const, icon: Brain, label: t('nav.analyst') },
-              { id: 'recon' as const, icon: Radar, label: t('nav.recon') },
-              { id: 'ops' as const, icon: MapPinned, label: t('nav.ops') },
-              { id: 'lab' as const, icon: Satellite, label: t('nav.lab') },
-              { id: 'sources' as const, icon: Globe, label: t('nav.sources') },
-              { id: 'markets' as const, icon: BarChart3, label: t('nav.markets') },
-              { id: 'intel' as const, icon: Newspaper, label: t('nav.intel') },
-              { id: 'search' as const, icon: Search, label: t('nav.search') },
-              { id: 'alerts' as const, icon: AlertTriangle, label: t('nav.alerts') },
-              { id: 'cyber' as const, icon: Shield, label: t('nav.cyber') },
-              { id: 'aerospace' as const, icon: Plane, label: 'AEROSPACE' },
-              { id: 'dgsi' as const, icon: Shield, label: 'DGSI' },
-              { id: 'territorial' as const, icon: Globe, label: 'TERRITORIAL' },
-              { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb') },
-              { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks') },
-              { id: 'osint' as const, icon: Search, label: t('nav.osint') },
-              { id: 'graph' as const, icon: Network, label: t('nav.graph') },
-              { id: 'cases' as const, icon: FolderOpen, label: t('nav.cases') },
-              { id: 'governance' as const, icon: ShieldCheck, label: t('nav.governance') },
-                ].map((tool) => {
+                  { id: 'layers' as const, icon: Layers, label: t('nav.layers'), group: 'atlas' },
+                  { id: 'foundry' as const, icon: Database, label: t('nav.foundry'), group: 'atlas' },
+                  { id: 'mission' as const, icon: Activity, label: t('nav.mission'), group: 'atlas' },
+                  { id: 'aip' as const, icon: Brain, label: t('nav.analyst'), group: 'analyse' },
+                  { id: 'recon' as const, icon: Radar, label: t('nav.recon'), group: 'analyse' },
+                  { id: 'ops' as const, icon: MapPinned, label: t('nav.ops'), group: 'analyse' },
+                  { id: 'lab' as const, icon: Satellite, label: t('nav.lab'), group: 'analyse' },
+                  { id: 'sources' as const, icon: Globe, label: t('nav.sources'), group: 'intel' },
+                  { id: 'markets' as const, icon: BarChart3, label: t('nav.markets'), group: 'intel' },
+                  { id: 'intel' as const, icon: Newspaper, label: t('nav.intel'), group: 'intel' },
+                  { id: 'search' as const, icon: Search, label: t('nav.search'), group: 'intel' },
+                  { id: 'alerts' as const, icon: AlertTriangle, label: t('nav.alerts'), group: 'intel' },
+                  { id: 'cyber' as const, icon: Shield, label: t('nav.cyber'), group: 'domaines' },
+                  { id: 'aerospace' as const, icon: Plane, label: 'AEROSPACE', group: 'domaines' },
+                  { id: 'dgsi' as const, icon: Shield, label: 'DGSI', group: 'domaines' },
+                  { id: 'territorial' as const, icon: Globe, label: 'TERRITORIAL', group: 'domaines' },
+                  { id: 'darkweb' as const, icon: EyeOff, label: t('nav.darkweb'), group: 'domaines' },
+                  { id: 'playbooks' as const, icon: BookOpen, label: t('nav.playbooks'), group: 'methodes' },
+                  { id: 'osint' as const, icon: Search, label: t('nav.osint'), group: 'methodes' },
+                  { id: 'graph' as const, icon: Network, label: t('nav.graph'), group: 'methodes' },
+                  { id: 'cases' as const, icon: FolderOpen, label: t('nav.cases'), group: 'methodes' },
+                  { id: 'governance' as const, icon: ShieldCheck, label: t('nav.governance'), group: 'methodes' },
+                ].map((tool, index, tools) => {
                 const Icon = tool.icon;
+                const startsGroup = index > 0 && tools[index - 1].group !== tool.group;
                 return (
-                    <button
-                      key={tool.id}
-                      type="button"
-                      onClick={() => setDesktopTool(tool.id)}
-                      className={`tool-rail-button ${desktopTool === tool.id ? 'active' : ''}`}
-                      title={tool.label}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{tool.label}</span>
-                    </button>
+                    <Fragment key={tool.id}>
+                      {startsGroup && <span className="tool-rail-divider" aria-hidden="true" />}
+                      <button
+                        type="button"
+                        onClick={() => setDesktopTool(tool.id)}
+                        className={`tool-rail-button ${desktopTool === tool.id ? 'active' : ''}`}
+                        title={tool.label}
+                        aria-label={tool.label}
+                        aria-current={desktopTool === tool.id ? 'page' : undefined}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{tool.label}</span>
+                      </button>
+                    </Fragment>
                   );
                 })}
               </motion.nav>

@@ -3422,3 +3422,238 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===================================================================
+   PANDORA ATLAS — correctifs de cohérence
+   1. Rail d'outils : les 22 entrées doivent toutes être atteignables
+      (rangées compactes + sections + barre de défilement visible).
+   2. Catalogue public : chaque ligne est une carte verticale, plus de
+      flex-row qui écrasait la description dans 94px de large.
+   3. Plancher de lisibilité : plus aucun libellé sous 9px.
+   =================================================================== */
+
+/* --- 1. Rail d'outils --------------------------------------------- */
+.tool-rail {
+  width: 60px;
+  gap: 3px;
+  padding: 8px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197, 167, 104, 0.42) transparent;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.tool-rail::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.tool-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tool-rail::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(197, 167, 104, 0.36);
+}
+
+.tool-rail-button {
+  min-height: 29px;
+  height: 29px;
+  flex-direction: row;
+  gap: 0;
+  padding: 0 3px;
+  border-radius: 6px;
+}
+
+.tool-rail-button > span {
+  display: none;
+}
+
+.tool-rail-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.tool-rail-button.active::after {
+  left: -7px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+}
+
+.tool-rail-divider {
+  display: block;
+  flex: 0 0 auto;
+  height: 1px;
+  margin: 4px 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(197, 167, 104, 0.32) 25%,
+    rgba(197, 167, 104, 0.32) 75%,
+    transparent
+  );
+}
+
+/* --- 2. Catalogue public ------------------------------------------ */
+.public-intel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.public-intel-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 9px 10px;
+}
+
+.public-intel-row-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.public-intel-row-head strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-intel-row-head > span {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid rgba(197, 167, 104, 0.3);
+  border-radius: 3px;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--gold-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.public-intel-row p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.public-intel-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.public-intel-row-meta em {
+  font-style: normal;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.055);
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.public-intel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.public-intel-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid rgba(197, 167, 104, 0.26);
+  border-radius: 4px;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--gold-light);
+  text-decoration: none;
+}
+
+.public-intel-actions a:hover {
+  background: rgba(197, 167, 104, 0.1);
+  border-color: rgba(197, 167, 104, 0.42);
+}
+
+/* --- 3. Plancher de lisibilité ------------------------------------ */
+.text-\[6px\],
+.text-\[7px\],
+.text-\[8px\] {
+  font-size: 9px !important;
+  line-height: 1.4;
+}
+
+/* Les tailles en style inline (React : `style="font-size:7px"`) passent
+   devant le CSS : `!important` côté feuille reprend la main. */
+[style*="font-size:6px"],
+[style*="font-size: 6px"],
+[style*="font-size:7px"],
+[style*="font-size: 7px"],
+[style*="font-size:8px"],
+[style*="font-size: 8px"] {
+  font-size: 9px !important;
+}
+
+/* --- 4. Chips de catégories du catalogue -------------------------- */
+.public-intel-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.public-intel-cats button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border: 1px solid rgba(164, 178, 199, 0.18);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-family: var(--font-hud);
+  font-size: 9px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.public-intel-cats button.active {
+  border-color: color-mix(in srgb, var(--cat-color, #D4AF37) 55%, transparent);
+  background: color-mix(in srgb, var(--cat-color, #D4AF37) 14%, transparent);
+  color: var(--cat-color, #D4AF37);
+}
+
+.public-intel-search input {
+  font-size: 10px;
+}
+
+/* --- 5. Badges et micro-libellés : plancher 9px -------------------- */
+.hud-label,
+.gotham-tag,
+.public-intel-stats span {
+  font-size: 9px !important;
+  line-height: 1.4;
+}
+
+/* La barre de coordonnées forçait 6px avec une spécificité supérieure. */
+.bottom-command-hud .hud-label {
+  font-size: 9px !important;
+}

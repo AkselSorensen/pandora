@@ -291,10 +291,10 @@ export default function CyberDefPanel() {
                 )}
 
                 {/* Reasons */}
-                {analyzeResult.reputation?.reasons?.length > 0 && (
+                {(analyzeResult.reputation?.reasons ?? []).length > 0 && (
                   <div className="space-y-1">
                     <div className="hud-label text-[8px]">SIGNALS</div>
-                    {analyzeResult.reputation.reasons.map((r, i) => (
+                    {(analyzeResult.reputation?.reasons ?? []).map((r, i) => (
                       <div key={i} className="text-[9px] text-[var(--text-secondary)] flex items-start gap-1">
                         <AlertTriangle className="w-2.5 h-2.5 mt-0.5 text-[var(--alert-orange)] flex-shrink-0" />
                         {r}

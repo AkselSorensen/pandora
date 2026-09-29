@@ -309,7 +309,9 @@ export default function AircraftPanel({ data, activeAircraft, onSelectAircraft, 
                     {/* Speed / Jam Warning */}
                     <div className="col-span-3 text-right flex items-center justify-end gap-1">
                       {isJammed && (
-                        <AlertTriangle className="w-2.5 h-2.5 text-[var(--alert-red)]" title="GPS Jamming suspected (low NACp)" />
+                        <span title="GPS Jamming suspected (low NACp)">
+                          <AlertTriangle className="w-2.5 h-2.5 text-[var(--alert-red)]" aria-label="GPS Jamming suspected (low NACp)" />
+                        </span>
                       )}
                       <span className="text-[10px] font-mono text-[var(--text-secondary)]">
                         {ac.speed_knots != null ? Math.round(ac.speed_knots) : '---'}

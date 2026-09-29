@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['ws'],
   transpilePackages: ['react-map-gl', 'mapbox-gl', 'maplibre-gl'],
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [
