@@ -17,6 +17,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import SharePanel from '@/components/SharePanel';
 import ViewPresets from '@/components/ViewPresets';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
+import MissionSituationPanel from '@/components/MissionSituationPanel';
 import GlobalStatusBar from '@/components/GlobalStatusBar';
 import LiveAlerts from '@/components/LiveAlerts';
 import DataFoundryPanel from '@/components/DataFoundryPanel';
@@ -317,6 +318,7 @@ export default function Dashboard() {
   const [backendStatus, setBackendStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [mapView, setMapView] = useState({ zoom: 2.5, latitude: 20, longitude: 0 });
   const [trackedTarget, setTrackedTarget] = useState<any>(null);
+  const [showMissionSituation, setShowMissionSituation] = useState(false);
   const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; ts: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLabel, setLocationLabel] = useState('');
@@ -1013,9 +1015,15 @@ export default function Dashboard() {
               className="mt-2 w-full border-t border-[var(--border-secondary)] pt-2 text-left text-[7px] font-mono tracking-[0.14em] text-[var(--gold-primary)] hover:text-[var(--gold-light)]"
               onClick={() => setFlyToLocation({ lat: trackedTarget.lat, lng: trackedTarget.lng, zoom: Math.max(mapView.zoom, 8.5), ts: Date.now() })}
             >CENTER ON TARGET ↗</button>
+            <button
+              type="button"
+              className="mt-2 w-full rounded border border-[var(--border-primary)] py-2 text-center text-[7px] font-mono tracking-[0.14em] text-[var(--text-primary)] hover:border-[var(--border-active)] hover:text-[var(--gold-light)]"
+              onClick={() => setShowMissionSituation(true)}
+            >OPEN MISSION SITUATION</button>
           </motion.aside>
         )}
       </AnimatePresence>
+      <MissionSituationPanel target={trackedTarget} data={data} open={showMissionSituation} onClose={() => setShowMissionSituation(false)} />
 
       {/* ===================================================================
          MAP VIEW CONTROLS (3D/2D + SATELLITE TOGGLE)

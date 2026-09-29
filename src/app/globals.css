@@ -3349,6 +3349,13 @@ body::before,
   box-shadow: 0 0 0 0 rgba(129, 150, 117, 0.65);
   animation: tracking-pulse 1.8s ease-out infinite;
 }
+.mission-situation-panel {
+  border-color: rgba(197, 167, 104, 0.34);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.62), 0 0 26px rgba(197, 167, 104, 0.08);
+}
+.mission-signal-row:hover {
+  background: linear-gradient(90deg, rgba(197, 167, 104, 0.07), transparent);
+}
 @keyframes tracking-pulse {
   70% { box-shadow: 0 0 0 6px rgba(129, 150, 117, 0); }
   100% { box-shadow: 0 0 0 0 rgba(129, 150, 117, 0); }
