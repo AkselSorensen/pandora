@@ -319,7 +319,9 @@ export default function Dashboard() {
   const [mapView, setMapView] = useState({ zoom: 2.5, latitude: 20, longitude: 0 });
   const [trackedTarget, setTrackedTarget] = useState<any>(null);
   const [showMissionSituation, setShowMissionSituation] = useState(false);
-  const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; ts: number } | null>(null);
+  const [layerStatuses, setLayerStatuses] = useState<Record<string, 'loading' | 'ready' | 'error'>>({ conflict_zones: 'ready', day_night: 'ready' });
+  const [layerRetryTick, setLayerRetryTick] = useState(0);
+  const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number; ts: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLabel, setLocationLabel] = useState('');
   const [regionDossier, setRegionDossier] = useState<any>(null);
@@ -386,7 +388,6 @@ export default function Dashboard() {
     risk_heatmap: false,
     space_weather_layer: false,
     osm_critical: false,
-    war_alerts: false,
     gps_jamming: false,
     day_night: true,
   });
@@ -596,38 +597,74 @@ export default function Dashboard() {
 
   // Shared fetch utility
   const fetchEndpoint = useCallback(
-    async (url: string, transform?: (d: any) => any, options?: RequestInit) => {
-      if (typeof document !== 'undefined' && document.hidden) return;
+    async (url: string, transform?: (d: any) => any, options?: RequestInit): Promise<boolean> => {
+      if (typeof document !== 'undefined' && document.hidden) return false;
       try {
         const res = await fetch(url, options);
-        if (res.ok) {
-          const json = await res.json();
-          const d = transform ? transform(json) : json;
-          dataRef.current = { ...dataRef.current, ...d };
-          setDataVersion((v) => v + 1);
-          setBackendStatus('connected');
+        if (!res.ok) {
+          console.warn(`[Pandora] ${url} returned ${res.status}`);
+          setBackendStatus('error');
+          return false;
         }
+        const json = await res.json();
+        const d = transform ? transform(json) : json;
+        dataRef.current = { ...dataRef.current, ...d };
+        setDataVersion((v) => v + 1);
+        setBackendStatus('connected');
+        return true;
       } catch (e) {
         console.warn('[Pandora] Suppressed error:', e instanceof Error ? e.message : e);
         setBackendStatus('error');
+        return false;
       }
     },
     []
   );
 
+  const layerFetchedRef = useRef<Set<string>>(new Set());
+  const layerInFlightRef = useRef<Set<string>>(new Set());
+  const layerRetryTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const requestLayer = useCallback((requestKey: string, layerKeys: string[], url: string, transform?: (d: any) => any) => {
+    if (layerFetchedRef.current.has(requestKey) || layerInFlightRef.current.has(requestKey)) return;
+    layerInFlightRef.current.add(requestKey);
+    setLayerStatuses((previous) => Object.fromEntries([...Object.entries(previous), ...layerKeys.map((key) => [key, 'loading' as const])]));
+    void fetchEndpoint(url, transform).then((loaded) => {
+      layerInFlightRef.current.delete(requestKey);
+      if (loaded) {
+        layerFetchedRef.current.add(requestKey);
+        const timeout = layerRetryTimeoutsRef.current.get(requestKey);
+        if (timeout) clearTimeout(timeout);
+        layerRetryTimeoutsRef.current.delete(requestKey);
+        setLayerStatuses((previous) => Object.fromEntries([...Object.entries(previous), ...layerKeys.map((key) => [key, 'ready' as const])]));
+        return;
+      }
+      setLayerStatuses((previous) => Object.fromEntries([...Object.entries(previous), ...layerKeys.map((key) => [key, 'error' as const])]));
+      if (!layerRetryTimeoutsRef.current.has(requestKey)) {
+        const timeout = setTimeout(() => {
+          layerRetryTimeoutsRef.current.delete(requestKey);
+          setLayerRetryTick((value) => value + 1);
+        }, 30000);
+        layerRetryTimeoutsRef.current.set(requestKey, timeout);
+      }
+    });
+  }, [fetchEndpoint]);
+
+  useEffect(() => () => {
+    layerRetryTimeoutsRef.current.forEach(clearTimeout);
+    layerRetryTimeoutsRef.current.clear();
+  }, []);
+
   // Progressive data loading
   useEffect(() => {
-    fetchEndpoint('/api/earthquakes');
-    fetchEndpoint('/api/news');
+    requestLayer('earthquakes', ['earthquakes'], '/api/earthquakes');
+    requestLayer('news', ['news_intel'], '/api/news');
     const marketTimer = setTimeout(() => fetchEndpoint('/api/markets', (d) => ({ markets: d })), 800);
 
-    const spaceTimer = setTimeout(async () => {
-      try {
-        const r = await fetch('/api/space-weather');
-        if (r.ok) setSpaceWeather(await r.json());
-      } catch (e) {
-        console.warn('[Pandora] Suppressed error:', e instanceof Error ? e.message : e);
-      }
+    const spaceTimer = setTimeout(() => {
+      requestLayer('space-weather', ['space_weather_layer'], '/api/space-weather', (payload) => {
+        setSpaceWeather(payload);
+        return { space_weather: payload };
+      });
     }, 5000);
 
     const intervals = [
@@ -640,31 +677,18 @@ export default function Dashboard() {
       clearTimeout(spaceTimer);
       intervals.forEach(clearInterval);
     };
-  }, [fetchEndpoint]);
+  }, [fetchEndpoint, requestLayer]);
 
   // Layer-aware data loading
-  const layerFetchedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private) {
-      if (!layerFetchedRef.current.has('flights')) {
-        fetchEndpoint('/api/flights', (d) => ({ ...d, tankers_isr: deriveTankersIsr(d.military_flights || []) }));
-        layerFetchedRef.current.add('flights');
-      }
+    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private || activeLayers.gps_jamming) {
+      requestLayer('flights', ['flights', 'private', 'jets', 'military', 'tankers_isr', 'gps_jamming'], '/api/flights', (d) => ({ ...d, tankers_isr: deriveTankersIsr(d.military_flights || []) }));
     }
-    if (activeLayers.satellites && !layerFetchedRef.current.has('satellites')) {
-      fetchEndpoint('/api/satellites');
-      layerFetchedRef.current.add('satellites');
-    }
-    if (activeLayers.fires && !layerFetchedRef.current.has('fires')) {
-      fetchEndpoint('/api/fires');
-      layerFetchedRef.current.add('fires');
-    }
-    if (activeLayers.cctv && !layerFetchedRef.current.has('cctv')) {
-      fetchEndpoint('/api/cctv?region=all');
-      layerFetchedRef.current.add('cctv');
-    }
-    if ((activeLayers.maritime || activeLayers.maritime_dark_activity || activeLayers.naval_bases || activeLayers.port_congestion || activeLayers.risk_heatmap) && !layerFetchedRef.current.has('maritime')) {
-      fetchEndpoint('/api/maritime', (d) => ({
+    if (activeLayers.satellites) requestLayer('satellites', ['satellites'], '/api/satellites');
+    if (activeLayers.fires) requestLayer('fires', ['fires'], '/api/fires');
+    if (activeLayers.cctv) requestLayer('cctv', ['cctv'], '/api/cctv?region=all');
+    if (activeLayers.maritime || activeLayers.maritime_dark_activity || activeLayers.naval_bases || activeLayers.port_congestion || activeLayers.risk_heatmap) {
+      requestLayer('maritime', ['maritime', 'maritime_dark_activity', 'naval_bases', 'port_congestion', 'risk_heatmap'], '/api/maritime', (d) => ({
         maritime_ports: d.ports,
         maritime_chokepoints: d.chokepoints,
         maritime_ships: d.ships,
@@ -672,69 +696,38 @@ export default function Dashboard() {
         dark_vessels: d.dark_vessels || [],
         naval_bases: (d.ports || []).filter((p: any) => p.type === 'naval'),
       }));
-      layerFetchedRef.current.add('maritime');
     }
-    if (activeLayers.balloons && !layerFetchedRef.current.has('balloons')) {
-      fetchEndpoint('/api/balloons', (d) => ({ balloons: d.balloons }));
-      layerFetchedRef.current.add('balloons');
-    }
-    if (activeLayers.radiation && !layerFetchedRef.current.has('radiation')) {
-      fetchEndpoint('/api/radiation', (d) => ({ radiation: d.stations }));
-      layerFetchedRef.current.add('radiation');
-    }
-    if (activeLayers.live_news && !layerFetchedRef.current.has('live_news')) {
-      fetchEndpoint('/api/live-news', (d) => ({ live_feeds: d.feeds }));
-      layerFetchedRef.current.add('live_news');
-    }
-    if (activeLayers.weather && !layerFetchedRef.current.has('weather')) {
-      fetchEndpoint('/api/weather', (d) => ({ weather_events: d.events }));
-      layerFetchedRef.current.add('weather');
-    }
-    if (activeLayers.air_quality && !layerFetchedRef.current.has('air_quality')) {
-      fetchEndpoint('/api/air-quality', (d) => ({ air_quality: d.stations || [] }));
-      layerFetchedRef.current.add('air_quality');
-    }
-    if (activeLayers.country_risk && !layerFetchedRef.current.has('country_risk')) {
-      fetchEndpoint('/api/country-risk-geo', (d) => ({ country_risk: d.countries || [] }));
-      layerFetchedRef.current.add('country_risk');
-    }
-    if (activeLayers.cyber_geo && !layerFetchedRef.current.has('cyber_geo')) {
-      fetchEndpoint('/api/cyber-geo', (d) => ({ cyber_geo_threats: d.threats || [] }));
-      layerFetchedRef.current.add('cyber_geo');
-    }
-    if (activeLayers.osm_critical && !layerFetchedRef.current.has('osm_critical')) {
+    if (activeLayers.balloons) requestLayer('balloons', ['balloons'], '/api/balloons', (d) => ({ balloons: d.balloons }));
+    if (activeLayers.radiation) requestLayer('radiation', ['radiation'], '/api/radiation', (d) => ({ radiation: d.stations }));
+    if (activeLayers.live_news) requestLayer('live_news', ['live_news'], '/api/live-news', (d) => ({ live_feeds: d.feeds }));
+    if (activeLayers.weather) requestLayer('weather', ['weather'], '/api/weather', (d) => ({ weather_events: d.events }));
+    if (activeLayers.air_quality) requestLayer('air_quality', ['air_quality'], '/api/air-quality', (d) => ({ air_quality: d.stations || [] }));
+    if (activeLayers.country_risk) requestLayer('country_risk', ['country_risk'], '/api/country-risk-geo', (d) => ({ country_risk: d.countries || [] }));
+    if (activeLayers.cyber_geo) requestLayer('cyber_geo', ['cyber_geo'], '/api/cyber-geo', (d) => ({ cyber_geo_threats: d.threats || [] }));
+    if (activeLayers.osm_critical) {
       const lat = Number.isFinite(mapView.latitude) ? mapView.latitude : 48.8566;
       const lng = Number.isFinite(mapView.longitude) ? mapView.longitude : 2.3522;
-      fetchEndpoint(`/api/osm-critical?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=50000`, (d) => ({ osm_critical: d.facilities || [] }));
-      layerFetchedRef.current.add('osm_critical');
+      const bucket = `${Math.floor(lat)}:${Math.floor(lng)}`;
+      requestLayer(`osm_critical:${bucket}`, ['osm_critical'], `/api/osm-critical?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=50000`, (d) => ({ osm_critical: d.facilities || [] }));
     }
-    if (activeLayers.infrastructure && !layerFetchedRef.current.has('infrastructure')) {
-      fetchEndpoint('/api/infrastructure', (d) => ({ infrastructure: d.infrastructure }));
-      layerFetchedRef.current.add('infrastructure');
-    }
-    if (activeLayers.french_airbases && !layerFetchedRef.current.has('french_airbases')) {
-      fetchEndpoint('/api/french-airbases', (d) => ({ french_airbases: d.airbases || [] }));
-      layerFetchedRef.current.add('french_airbases');
-    }
-    if (activeLayers.airbases && !layerFetchedRef.current.has('airbases')) {
-      fetchEndpoint('/api/airbases?limit=1200', (d) => ({ airbases: d.airbases || [] }));
-      layerFetchedRef.current.add('airbases');
-    }
-    if ((activeLayers.global_incidents || activeLayers.mil_conflict_events) && !layerFetchedRef.current.has('gdelt')) {
-      fetchEndpoint('/api/gdelt', (d) => ({ gdelt: d.events, military_events: deriveMilitaryEvents(d.events || []) }));
-      layerFetchedRef.current.add('gdelt');
-    }
-    if (activeLayers.frontlines && !layerFetchedRef.current.has('frontlines')) {
-      fetchEndpoint('/api/frontlines', (d) => ({ frontlines: d.frontlines ? [d.frontlines] : [] }));
-      layerFetchedRef.current.add('frontlines');
-    }
-    if ((activeLayers.satellite_scenes || activeLayers.sar_watch || activeLayers.optical_watch) && !layerFetchedRef.current.has('sentinel')) {
+    if (activeLayers.infrastructure) requestLayer('infrastructure', ['infrastructure'], '/api/infrastructure', (d) => ({ infrastructure: d.infrastructure }));
+    if (activeLayers.french_airbases) requestLayer('french_airbases', ['french_airbases'], '/api/french-airbases', (d) => ({ french_airbases: d.airbases || [] }));
+    if (activeLayers.airbases) requestLayer('airbases', ['airbases'], '/api/airbases?limit=1200', (d) => ({ airbases: d.airbases || [] }));
+    if (activeLayers.global_incidents || activeLayers.mil_conflict_events) requestLayer('gdelt', ['global_incidents', 'mil_conflict_events'], '/api/gdelt', (d) => ({ gdelt: d.events, military_events: deriveMilitaryEvents(d.events || []) }));
+    if (activeLayers.frontlines) requestLayer('frontlines', ['frontlines'], '/api/frontlines', (d) => ({ frontlines: d.frontlines ? [d.frontlines] : [] }));
+    if (activeLayers.satellite_scenes || activeLayers.sar_watch || activeLayers.optical_watch) {
       const lat = Number.isFinite(mapView.latitude) ? mapView.latitude : 20;
       const lng = Number.isFinite(mapView.longitude) ? mapView.longitude : 0;
-      fetchEndpoint(`/api/sentinel?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=3&days=30`, (d) => deriveSentinelBuckets(d.scenes || []));
-      layerFetchedRef.current.add('sentinel');
+      const bucket = `${Math.floor(lat / 3)}:${Math.floor(lng / 3)}`;
+      requestLayer(`sentinel:${bucket}`, ['satellite_scenes', 'sar_watch', 'optical_watch'], `/api/sentinel?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&radius=3&days=30`, (d) => deriveSentinelBuckets(d.scenes || []));
     }
-  }, [activeLayers, fetchEndpoint, mapView.latitude, mapView.longitude]);
+    if (activeLayers.space_weather_layer) {
+      requestLayer('space-weather', ['space_weather_layer'], '/api/space-weather', (payload) => {
+        setSpaceWeather(payload);
+        return { space_weather: payload };
+      });
+    }
+  }, [activeLayers, requestLayer, mapView.latitude, mapView.longitude, layerRetryTick]);
 
   useEffect(() => {
     const next: any = {};
@@ -758,7 +751,7 @@ export default function Dashboard() {
   // Layer-aware polling
   useEffect(() => {
     const intervals: ReturnType<typeof setInterval>[] = [];
-    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private) {
+    if (activeLayers.flights || activeLayers.military || activeLayers.tankers_isr || activeLayers.jets || activeLayers.private || activeLayers.gps_jamming) {
       intervals.push(setInterval(() => fetchEndpoint('/api/flights', (d) => ({ ...d, tankers_isr: deriveTankersIsr(d.military_flights || []) })), 300000));
     }
     if (activeLayers.balloons) {
@@ -1371,7 +1364,7 @@ export default function Dashboard() {
               <div className="tool-workspace-body">
                 {desktopTool === 'layers' && (
                   <div className="space-y-3">
-                    <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} />
+                    <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
                     <motion.div className="glass-panel-sm px-3 py-2.5 pointer-events-auto">
                       <div className="grid grid-cols-5 gap-2 text-center">
                         <div><div className="hud-label">AIR</div><div className="hud-value text-[10px]">{totalFlights.toLocaleString()}</div></div>
@@ -1652,7 +1645,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} />
+                    <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
                     <div className="mt-2">
                       <DataFoundryPanel data={data} activeLayers={activeLayers} />
                     </div>

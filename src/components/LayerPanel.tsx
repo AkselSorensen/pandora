@@ -7,13 +7,14 @@ import {
   Shield, Sun, AlertTriangle, Camera, Flame, Target,
   CloudLightning, Radiation, Tv, Anchor, Ship, Newspaper,
   ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Search as SearchIcon, X, Zap, Radar,
-  Wind, Server, Building2, Waves, CloudSun,
+  Wind, Server, Building2, Waves, CloudSun, LoaderCircle, CircleCheck, CircleAlert,
 } from 'lucide-react';
 
 interface LayerPanelProps {
   data: any;
   activeLayers: any;
   setActiveLayers: React.Dispatch<React.SetStateAction<any>>;
+  layerStatuses?: Record<string, 'loading' | 'ready' | 'error'>;
 }
 
 const LAYER_GROUPS = [
@@ -122,7 +123,7 @@ const LAYER_GROUPS = [
 // Flat list for backward compat
 const ALL_LAYERS = LAYER_GROUPS.flatMap(g => g.layers);
 
-function LayerPanel({ data, activeLayers, setActiveLayers }: LayerPanelProps) {
+function LayerPanel({ data, activeLayers, setActiveLayers, layerStatuses = {} }: LayerPanelProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     LAYER_GROUPS.forEach(g => { initial[g.label] = true; });
@@ -309,6 +310,17 @@ function LayerPanel({ data, activeLayers, setActiveLayers }: LayerPanelProps) {
                         const Icon = layer.icon;
                         const isActive = activeLayers[layer.key];
                         const count = getCount(layer.dataKey);
+                        const layerStatus = layerStatuses[layer.key];
+                        const StatusIcon = layerStatus === 'loading' ? LoaderCircle : layerStatus === 'ready' ? CircleCheck : layerStatus === 'error' ? CircleAlert : null;
+                        const countLabel = layerStatus === 'loading'
+                          ? '…'
+                          : layerStatus === 'error'
+                            ? 'OFFLINE'
+                            : count === null
+                              ? null
+                              : count === 0
+                                ? layerStatus === 'ready' ? 'NO SIGNAL' : '—'
+                                : count.toLocaleString();
                         return (
                           <button
                             key={layer.key}
@@ -336,12 +348,20 @@ function LayerPanel({ data, activeLayers, setActiveLayers }: LayerPanelProps) {
                             }`}>
                               {layer.label}
                             </span>
-                            {count !== null && (
+                            {StatusIcon && (
+                              <span className="flex-shrink-0" title={layerStatus === 'error' ? 'Feed unavailable — automatic retry in 30 seconds. Toggle this layer off and on to retry immediately.' : `Feed ${layerStatus}`}>
+                                <StatusIcon
+                                  className={`h-3 w-3 ${layerStatus === 'loading' ? 'animate-spin text-[var(--gold-primary)]' : layerStatus === 'ready' ? 'text-[var(--alert-green)]' : 'text-[var(--alert-red)]'}`}
+                                  aria-label={layerStatus === 'error' ? 'Feed unavailable; automatic retry scheduled' : `Feed ${layerStatus}`}
+                                />
+                              </span>
+                            )}
+                            {countLabel !== null && (
                               <span
-                                className="text-[9px] font-mono tabular-nums font-bold transition-colors duration-200"
-                                style={{ color: isActive ? layer.color : 'var(--text-muted)' }}
+                                className={`text-[8px] font-mono tabular-nums font-bold transition-colors duration-200 ${countLabel === 'OFFLINE' ? 'text-[var(--alert-red)]' : countLabel === 'NO SIGNAL' ? 'text-[var(--text-muted)]' : ''}`}
+                                style={countLabel === 'OFFLINE' || countLabel === 'NO SIGNAL' ? undefined : { color: isActive ? layer.color : 'var(--text-muted)' }}
                               >
-                                {count.toLocaleString()}
+                                {countLabel}
                               </span>
                             )}
                             {/* Toggle switch */}

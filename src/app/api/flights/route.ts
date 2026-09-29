@@ -53,7 +53,7 @@ const MILITARY_INDICATORS = new Set([
 
 const AIRLINE_CODE_RE = /^([A-Z]{3})\d/;
 
-async function fetchRegion(region: typeof REGIONS[0]): Promise<any[]> {
+async function fetchRegion(region: typeof REGIONS[0]): Promise<any[] | null> {
   try {
     const url = `https://api.adsb.lol/v2/lat/${region.lat}/lon/${region.lon}/dist/${region.dist}`;
     const res = await fetch(url, {
@@ -64,10 +64,11 @@ async function fetchRegion(region: typeof REGIONS[0]): Promise<any[]> {
       const data = await res.json();
       return data.ac || [];
     }
+    return null;
   } catch (e) {
     console.warn(`Region fetch failed for lat=${region.lat}:`, e);
+    return null;
   }
-  return [];
 }
 
 function classifyFlight(f: any) {
@@ -241,11 +242,14 @@ export async function GET() {
       REGIONS.map(r => fetchRegion(r))
     );
 
+    const availableRegions = regionResults.filter((result) => result.status === 'fulfilled' && Array.isArray(result.value)).length;
+    if (availableRegions === 0) throw new Error('All ADS-B regions are unavailable');
+
     const allRaw: any[] = [];
     const seenHex = new Set<string>();
 
     for (const result of regionResults) {
-      if (result.status === 'fulfilled') {
+      if (result.status === 'fulfilled' && Array.isArray(result.value)) {
         for (const ac of result.value) {
           const hex = (ac.hex || '').toLowerCase().trim();
           if (hex && !seenHex.has(hex)) {
@@ -297,6 +301,7 @@ export async function GET() {
       total: allRaw.length,
       fresh_total: allRaw.length,
       stale_total: 0,
+      source_status: { regions_available: availableRegions, regions_total: REGIONS.length },
       timestamp: new Date().toISOString(),
       timestamp_ms: Date.now(),
       cache_strategy: 'fresh',
