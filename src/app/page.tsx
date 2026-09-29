@@ -38,6 +38,7 @@ import OSINTHub from '@/components/OSINTHub';
 import KnowledgeGraphPanel from '@/components/KnowledgeGraphPanel';
 import CasesPanel from '@/components/CasesPanel';
 import GovernancePanel from '@/components/GovernancePanel';
+import SatelliteImageryPanel from '@/components/SatelliteImageryPanel';
 import { LanguageToggle, useI18n } from '@/components/I18nProvider';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
@@ -1365,6 +1366,13 @@ export default function Dashboard() {
                 {desktopTool === 'layers' && (
                   <div className="space-y-3">
                     <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
+                    <SatelliteImageryPanel
+                      scenes={data.sentinel_scenes}
+                      latitude={mapView.latitude}
+                      longitude={mapView.longitude}
+                      enabled={activeLayers.satellite_scenes}
+                      onEnable={() => setActiveLayers((current) => ({ ...current, satellite_scenes: true }))}
+                    />
                     <motion.div className="glass-panel-sm px-3 py-2.5 pointer-events-auto">
                       <div className="grid grid-cols-5 gap-2 text-center">
                         <div><div className="hud-label">AIR</div><div className="hud-value text-[10px]">{totalFlights.toLocaleString()}</div></div>
@@ -1646,6 +1654,13 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <LayerPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} layerStatuses={layerStatuses} />
+                    <SatelliteImageryPanel
+                      scenes={data.sentinel_scenes}
+                      latitude={mapView.latitude}
+                      longitude={mapView.longitude}
+                      enabled={activeLayers.satellite_scenes}
+                      onEnable={() => setActiveLayers((current) => ({ ...current, satellite_scenes: true }))}
+                    />
                     <div className="mt-2">
                       <DataFoundryPanel data={data} activeLayers={activeLayers} />
                     </div>
