@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -32,7 +32,7 @@ function normalizeAirbase(el: any) {
   };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const query = `
     [out:json][timeout:25];
     area["ISO3166-1"="FR"][admin_level=2]->.france;
@@ -45,14 +45,45 @@ export async function GET() {
     out center tags 250;
   `;
 
+  // The global Wikidata feed gives us a resilient first-party app fallback without relying on Overpass uptime.
+  try {
+    const fallbackUrl = new URL('/api/airbases?limit=1500', req.url);
+    const fallback = await fetch(fallbackUrl, { signal: AbortSignal.timeout(20000), cache: 'no-store' });
+    if (fallback.ok) {
+      const payload = await fallback.json();
+      const airbases = (payload.airbases || []).filter((base: any) => {
+        const country = String(base.country || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return country === 'france' || country === 'french republic';
+      }).map((base: any) => ({
+        ...base,
+        type: 'french_airbase',
+        source: 'Wikidata SPARQL public data',
+      }));
+      if (airbases.length) {
+        return NextResponse.json({
+          airbases,
+          total: airbases.length,
+          source: 'Wikidata SPARQL',
+          query: 'French air bases and military airfields from public Wikidata items',
+          timestamp: new Date().toISOString(),
+        }, { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' } });
+      }
+    }
+  } catch (error) {
+    console.warn('Wikidata French airbase fallback unavailable:', error instanceof Error ? error.message : error);
+  }
+
   const errors: string[] = [];
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'User-Agent': 'PandoraAtlas/1.0 (public French airbase map)',
+        },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(10000),
         next: { revalidate: 86400 },
       });
       if (!res.ok) throw new Error(`Overpass ${res.status}`);
@@ -80,6 +111,35 @@ export async function GET() {
     } catch (error) {
       errors.push(`${endpoint}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  // Wikidata is the independent global fallback when both Overpass mirrors are rate-limited.
+  try {
+    const fallbackUrl = new URL('/api/airbases?limit=1500', req.url);
+    const fallback = await fetch(fallbackUrl, { signal: AbortSignal.timeout(20000), cache: 'no-store' });
+    if (fallback.ok) {
+      const payload = await fallback.json();
+      const airbases = (payload.airbases || []).filter((base: any) => {
+        const country = String(base.country || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return country === 'france' || country === 'french republic';
+      }).map((base: any) => ({
+        ...base,
+        type: 'french_airbase',
+        source: 'Wikidata SPARQL public data (Overpass fallback)',
+      }));
+      if (airbases.length) {
+        return NextResponse.json({
+          airbases,
+          total: airbases.length,
+          source: 'Wikidata SPARQL',
+          query: 'French air bases and military airfields from public Wikidata items',
+          timestamp: new Date().toISOString(),
+        }, { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800' } });
+      }
+    }
+    errors.push('Wikidata fallback returned no French airbases');
+  } catch (error) {
+    errors.push(`Wikidata fallback: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   return NextResponse.json({

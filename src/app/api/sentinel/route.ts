@@ -26,14 +26,13 @@ export async function GET(req: Request) {
     try {
       const res = await fetch('https://earth-search.aws.element84.com/v1/search', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'PandoraAtlas/1.0 (public satellite scene map)' },
         signal: AbortSignal.timeout(12000),
         body: JSON.stringify({
           collections: ['sentinel-1-grd'],
           bbox,
           datetime,
           limit: 20,
-          sortby: [{ field: 'datetime', direction: 'desc' }],
         }),
       });
       if (res.ok) {
@@ -49,14 +48,13 @@ export async function GET(req: Request) {
       try {
         const res = await fetch('https://earth-search.aws.element84.com/v1/search', { 
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'User-Agent': 'PandoraAtlas/1.0 (public satellite scene map)' },
           signal: AbortSignal.timeout(12000),
           body: JSON.stringify({
             collections: ['sentinel-2-l2a'],
             bbox,
             datetime,
             limit: 20,
-            sortby: [{ field: 'datetime', direction: 'desc' }],
           }),
         });
         if (res.ok) {

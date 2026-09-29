@@ -58,7 +58,10 @@ async function fetchRegion(region: typeof REGIONS[0]): Promise<any[] | null> {
     const url = `https://api.adsb.lol/v2/lat/${region.lat}/lon/${region.lon}/dist/${region.dist}`;
     const res = await fetch(url, {
       signal: AbortSignal.timeout(12000),
-      headers: { 'Accept': 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'PandoraAtlas/1.0 (open source flight map)',
+      },
     });
     if (res.ok) {
       const data = await res.json();

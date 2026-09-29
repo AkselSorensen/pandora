@@ -1,70 +1,67 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * PANDORA — Air Quality Monitoring API
- * Fetches real-time global air quality data from OpenAQ
- * FREE — No API key required
- * Data: PM2.5, PM10, O3, NO2, SO2, CO measurements worldwide
+ * Current modelled air quality for the selected map point.
+ * OpenAQ v2 is retired and its former public endpoint now returns empty results;
+ * Open-Meteo provides a keyless global atmospheric-composition model instead.
  */
+export async function GET(req: NextRequest) {
+  const search = new URL(req.url).searchParams;
+  const lat = Number(search.get('lat') || 48.8566);
+  const lng = Number(search.get('lng') || 2.3522);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return NextResponse.json({ stations: [], error: 'Invalid map coordinates' }, { status: 400 });
+  }
 
-export async function GET() {
   try {
-    // OpenAQ v2 — get latest measurements globally
-    // We request PM2.5 (most health-relevant) with coordinates
-    const urls = [
-      'https://api.openaq.org/v2/latest?limit=500&parameter=pm25&order_by=lastUpdated&sort=desc',
-    ];
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lng),
+      current: 'pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide,european_aqi,us_aqi',
+      timezone: 'UTC',
+    });
+    const res = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${params}`, {
+      signal: AbortSignal.timeout(12000),
+      headers: { Accept: 'application/json', 'User-Agent': 'PandoraAtlas/1.0' },
+      next: { revalidate: 900 },
+    });
+    if (!res.ok) throw new Error(`Open-Meteo air quality returned ${res.status}`);
 
-    const results = await Promise.allSettled(
-      urls.map(url =>
-        fetch(url, {
-          signal: AbortSignal.timeout(10000),
-          headers: { 'Accept': 'application/json' },
-        }).then(r => r.json())
-      )
-    );
+    const data = await res.json();
+    const current = data.current;
+    if (!current || typeof current.european_aqi !== 'number') throw new Error('Open-Meteo returned no current air-quality values');
 
-    const stations: any[] = [];
-    for (const result of results) {
-      if (result.status !== 'fulfilled') continue;
-      const data = result.value;
-      for (const loc of data.results || []) {
-        if (!loc.coordinates?.latitude || !loc.coordinates?.longitude) continue;
-        const pm25 = loc.measurements?.find((m: any) => m.parameter === 'pm25');
-        if (!pm25) continue;
-        
-        // AQI color coding based on PM2.5 (WHO/EPA scale)
-        const val = pm25.value;
-        let level = 'Good';
-        let color = '#00E676';
-        if (val > 150) { level = 'Hazardous'; color = '#8B0000'; }
-        else if (val > 100) { level = 'Unhealthy'; color = '#FF1744'; }
-        else if (val > 55) { level = 'Unhealthy (Sensitive)'; color = '#FF9500'; }
-        else if (val > 35) { level = 'Moderate'; color = '#FFD700'; }
+    const aqi = current.european_aqi;
+    const level = aqi <= 20 ? 'Good' : aqi <= 40 ? 'Fair' : aqi <= 60 ? 'Moderate' : aqi <= 80 ? 'Poor' : aqi <= 100 ? 'Very poor' : 'Extremely poor';
+    const color = aqi <= 20 ? '#00E676' : aqi <= 40 ? '#A3D900' : aqi <= 60 ? '#FFD700' : aqi <= 80 ? '#FF9500' : aqi <= 100 ? '#FF1744' : '#8B0000';
+    const stations = [{
+      id: `open-meteo-${data.latitude}-${data.longitude}`,
+      name: 'Air quality model — selected map area',
+      city: '',
+      country: '',
+      lat: data.latitude,
+      lng: data.longitude,
+      pm25: current.pm2_5,
+      pm10: current.pm10,
+      ozone: current.ozone,
+      nitrogenDioxide: current.nitrogen_dioxide,
+      carbonMonoxide: current.carbon_monoxide,
+      sulphurDioxide: current.sulphur_dioxide,
+      europeanAqi: aqi,
+      usAqi: current.us_aqi,
+      unit: 'μg/m³',
+      level,
+      color,
+      lastUpdated: current.time,
+      source: 'Open-Meteo global atmospheric-composition model',
+      modelled: true,
+    }];
 
-        stations.push({
-          id: `aq-${loc.location}`,
-          name: loc.location,
-          city: loc.city || 'Unknown',
-          country: loc.country,
-          lat: loc.coordinates.latitude,
-          lng: loc.coordinates.longitude,
-          pm25: val,
-          unit: pm25.unit,
-          level,
-          color,
-          lastUpdated: pm25.lastUpdated,
-        });
-      }
-    }
-
-    return NextResponse.json({
-      stations,
-      total: stations.length,
-      timestamp: new Date().toISOString(),
+    return NextResponse.json({ stations, total: stations.length, source: 'Open-Meteo', timestamp: new Date().toISOString() }, {
+      headers: { 'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800' },
     });
   } catch (error) {
-    console.error('Air Quality API error:', error);
-    return NextResponse.json({ stations: [], error: 'Failed to fetch air quality data' }, { status: 500 });
+    console.error('Air quality API error:', error);
+    return NextResponse.json({ stations: [], error: 'Air quality model unavailable' }, { status: 502 });
   }
 }
