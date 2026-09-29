@@ -656,7 +656,7 @@ html, body {
 /* ===================================================================
    RESPONSIVE BREAKPOINTS — Adaptation aux écrans
    =================================================================== */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   :root {
     --edge-pad: 12px;
     --panel-gap: 8px;
