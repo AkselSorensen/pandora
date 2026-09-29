@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
-  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, Plane, EyeOff, BookOpen, FileText,
+  ExternalLink, AlertTriangle, Activity, Database, Wifi, Brain, Shield, Plane, EyeOff, BookOpen, FileText, Crosshair,
   ChevronLeft, ChevronRight, Network, FolderOpen, ShieldCheck
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
@@ -333,6 +333,8 @@ export default function Dashboard() {
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [mapProjection, setMapProjection] = useState<'globe' | 'mercator'>('globe');
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
+  const [sensorMode, setSensorMode] = useState<'visible' | 'nvg' | 'flir' | 'noir'>('visible');
+  const [showTacticalHud, setShowTacticalHud] = useState(false);
   const [sweepData, setSweepData] = useState<any>(null);
   const [scanTargets, setScanTargets] = useState<any[]>([]);
   const [liveFeedUrl, setLiveFeedUrl] = useState<string | null>(null);
@@ -930,6 +932,7 @@ export default function Dashboard() {
               ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
               : 'dark'
           }
+          sensorMode={sensorMode}
           onEntityClick={handleEntityClick}
           onMouseCoords={handleMouseCoords}
           onRightClick={handleRightClick}
@@ -941,6 +944,19 @@ export default function Dashboard() {
         />
       </ErrorBoundary>
 
+      {showTacticalHud && (
+        <>
+          <div className="tactical-hud absolute top-[76px] md:top-[88px] left-1/2 -translate-x-1/2 z-[150] pointer-events-none flex items-center gap-3 md:gap-5 px-3 py-2 rounded border border-[var(--border-primary)] bg-[var(--bg-panel)]/90 backdrop-blur-md text-[8px] md:text-[9px] font-mono tracking-wider text-[var(--text-secondary)]">
+            <span className="flex items-center gap-1.5 text-[var(--gold-light)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--alert-green)] animate-pulse" /> PANDORA / SENSOR</span>
+            <span>LAT {mapView.latitude.toFixed(2)}°</span>
+            <span>LON {mapView.longitude.toFixed(2)}°</span>
+            <span>ZOOM {mapView.zoom.toFixed(1)}×</span>
+            <span className="hidden sm:inline">{sensorMode.toUpperCase()}</span>
+          </div>
+          <div className="tactical-hud-reticle absolute inset-0 z-[120] pointer-events-none" aria-hidden="true" />
+        </>
+      )}
+
       {/* ===================================================================
          MAP VIEW CONTROLS (3D/2D + SATELLITE TOGGLE)
          =================================================================== */}
@@ -950,6 +966,30 @@ export default function Dashboard() {
         transition={{ delay: 3.5 }}
         className="map-view-controls absolute bottom-[75px] md:bottom-6 left-3 md:left-[315px] z-[250] flex items-center gap-2 pointer-events-auto"
       >
+        <div className="sensor-mode-control glass-panel flex items-center gap-0.5 p-1" role="group" aria-label="Sensor display mode">
+          {([
+            ['visible', 'VIS'], ['nvg', 'NVG'], ['flir', 'FLIR'], ['noir', 'NOIR'],
+          ] as const).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setSensorMode(mode)}
+              aria-pressed={sensorMode === mode}
+              title={`${label} sensor mode`}
+              className={`sensor-mode-option px-2 py-1.5 rounded text-[8px] font-mono tracking-wider transition-colors ${sensorMode === mode ? 'sensor-mode-active' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+            >{label}</button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowTacticalHud((visible) => !visible)}
+          aria-label={showTacticalHud ? 'Hide tactical HUD' : 'Show tactical HUD'}
+          aria-pressed={showTacticalHud}
+          title={showTacticalHud ? 'Hide tactical HUD' : 'Show tactical HUD'}
+          className={`glass-panel p-2.5 pointer-events-auto transition-colors ${showTacticalHud ? 'global-context-active' : ''}`}
+        >
+          <Crosshair className="w-4 h-4 text-[var(--gold-primary)]" />
+        </button>
         <button
           type="button"
           onClick={toggleGlobalContext}

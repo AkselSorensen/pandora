@@ -3302,6 +3302,58 @@ body::before,
   box-shadow: 0 0 0 1px rgba(197, 167, 104, 0.1) inset, 0 10px 24px rgba(0, 0, 0, 0.42) !important;
 }
 
+/* God's Eye View inspired sensor palettes and restrained tactical reticle. */
+.sensor-view .maplibregl-canvas {
+  transition: filter 280ms ease;
+}
+.sensor-view[data-sensor-mode='nvg'] .maplibregl-canvas {
+  filter: grayscale(1) sepia(0.9) hue-rotate(58deg) saturate(2.2) contrast(1.12) brightness(0.86);
+}
+.sensor-view[data-sensor-mode='flir'] .maplibregl-canvas {
+  filter: grayscale(1) sepia(1) hue-rotate(315deg) saturate(4.2) contrast(1.18);
+}
+.sensor-view[data-sensor-mode='noir'] .maplibregl-canvas {
+  filter: grayscale(1) contrast(1.24) brightness(0.88);
+}
+.sensor-mode-control {
+  border: 1px solid var(--border-primary);
+}
+.map-view-controls .sensor-mode-control button.sensor-mode-option::after {
+  content: none !important;
+}
+.map-view-controls button[title='Show tactical HUD']::after,
+.map-view-controls button[title='Hide tactical HUD']::after {
+  content: 'HUD';
+  max-width: 30px;
+}
+.sensor-mode-active {
+  color: var(--gold-light);
+  background: rgba(197, 167, 104, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(197, 167, 104, 0.25);
+}
+.tactical-hud-reticle::before,
+.tactical-hud-reticle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(224, 199, 134, 0.48);
+  transform: translate(-50%, -50%);
+}
+.tactical-hud-reticle::before {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(197, 167, 104, 0.18);
+}
+.tactical-hud-reticle::after {
+  width: 52px;
+  height: 1px;
+  border-width: 0;
+  background: linear-gradient(90deg, transparent 0 46%, rgba(224, 199, 134, 0.55) 46% 54%, transparent 54%);
+  box-shadow: 0 -8px 0 -0.4px rgba(224, 199, 134, 0.42), 0 8px 0 -0.4px rgba(224, 199, 134, 0.42);
+}
+
 @media (max-width: 1280px) and (min-width: 769px) {
   .map-view-controls {
     display: flex !important;

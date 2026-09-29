@@ -14,6 +14,7 @@ interface PandoraMapProps {
   flyToLocation?: { lat: number; lng: number; zoom?: number; ts: number } | null;
   projection?: 'mercator' | 'globe';
   mapStyle?: string;
+  sensorMode?: 'visible' | 'nvg' | 'flir' | 'noir';
   sweepData?: any;
   scanTargets?: any[];
   fusionHotspots?: any[];
@@ -99,7 +100,7 @@ function collectGeoFeatures(input: any): any[] {
   return out;
 }
 
-function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightClick, onViewStateChange, flyToLocation, projection = 'globe', mapStyle = 'dark', sweepData, scanTargets = [], fusionHotspots = [] }: PandoraMapProps) {
+function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightClick, onViewStateChange, flyToLocation, projection = 'globe', mapStyle = 'dark', sensorMode = 'visible', sweepData, scanTargets = [], fusionHotspots = [] }: PandoraMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -1734,7 +1735,11 @@ function PandoraMap({ data, activeLayers, onEntityClick, onMouseCoords, onRightC
     }
   }, [mapReady, mapStyle]);
 
-  return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
+  return (
+    <div className="sensor-view absolute inset-0 w-full h-full" data-sensor-mode={sensorMode}>
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+    </div>
+  );
 }
 
 export default memo(PandoraMap);
