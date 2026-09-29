@@ -5,6 +5,7 @@
 ### Plateforme OSINT, cartographie temps réel & centre de reconnaissance défensif
 
 [![Live Demo](https://img.shields.io/badge/Pandora_AI-Live-00E5FF?style=for-the-badge&logo=vercel&logoColor=white)](https://Pandoraai.live)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=111)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
@@ -223,6 +224,14 @@ npm run build    # build production Next.js
 npm run start    # serveur production sur :3001
 npm run lint     # lint ESLint
 ```
+
+### Démo publique depuis GitHub
+
+Le dépôt est prêt à être importé sur Vercel avec le bouton **Deploy with Vercel** en haut du README. Après connexion au compte GitHub et choix du dépôt `AkselSorensen/pandora`, conserver les réglages Next.js détectés automatiquement : répertoire racine `./`, commande de build `npm run build`, et version Node.js 22.
+
+La page et les routes intégrées démarrent sans secrets. Les connecteurs optionnels (services Pandora, AIS, GitHub API, Ollama) nécessitent leurs variables depuis `.env.example` dans **Vercel → Settings → Environment Variables** ; ne jamais copier `.env` dans GitHub. Sans ces intégrations, la démo s'affiche, mais certains panneaux restent indisponibles.
+
+Une fois le dépôt lié à Vercel, les pushes déclenchent des déploiements et les pull requests reçoivent une URL d'aperçu. GitHub Pages ne convient pas à l'application complète, car les Route Handlers et le proxy Next.js ont besoin d'un runtime serveur.
 
 ---
 
@@ -495,6 +504,8 @@ Les modules RECON doivent être utilisés uniquement sur des actifs que tu poss�
 ---
 
 ## 🗺️ Roadmap possible
+
+La feuille de route priorisée et l'audit initial de la direction artistique sont dans [`docs/VISION-PRODUIT.md`](docs/VISION-PRODUIT.md).
 
 - mode timeline / replay d'événements ;
 - export PDF de briefing ;

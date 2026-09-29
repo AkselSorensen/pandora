@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, BarChart3, Newspaper, Search, X, Globe, MapPinned, Radar, Satellite, Moon,
@@ -748,19 +749,9 @@ export default function Dashboard() {
             transition={{ duration: 0.8, ease: 'easeInOut' }}
             className="product-splash absolute inset-0 z-[999] flex flex-col items-center justify-center overflow-hidden"
             style={{
-              background: 'radial-gradient(ellipse at center, rgba(26, 36, 55, 0.92) 0%, var(--bg-void) 72%)',
+              background: 'radial-gradient(ellipse at 50% 44%, rgba(28, 39, 58, 0.72) 0%, rgba(5, 7, 13, 0.98) 64%)',
             }}
           >
-            {/* Scanline CRT overlay */}
-            <div
-              className="absolute inset-0 pointer-events-none z-[1]"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(191,164,106,0.015) 2px, rgba(191,164,106,0.015) 4px)',
-                animation: 'splashScanDrift 8s linear infinite',
-              }}
-            />
-
             {/* Version badge */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -771,127 +762,23 @@ export default function Dashboard() {
               V4.2
             </motion.div>
 
-            {/* Geometric tactical logo */}
-            <div className="product-mark relative w-40 h-40 mb-8 flex items-center justify-center z-[2]">
-              {/* Outer ring */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.6, rotate: 0 }}
-                animate={{ opacity: 1, scale: 1, rotate: 360 }}
-                transition={{
-                  opacity: { duration: 0.6 },
-                  scale: { duration: 0.8, ease: 'easeOut' },
-                  rotate: { duration: 20, repeat: Infinity, ease: 'linear' },
-                }}
-                className="absolute inset-0 rounded-full"
-                style={{ border: '1px solid rgba(191,164,106,0.2)' }}
-              >
-                <div
-                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-                  style={{
-                    background: 'var(--gold-primary)',
-                    boxShadow: '0 0 12px var(--gold-primary), 0 0 24px rgba(191,164,106,0.3)',
-                  }}
+            {/* Loader cartographique — le logotype PANDORA reste inchangé. */}
+            <div className="pandora-loader z-[2] mb-7" role="status" aria-label="Chargement de l’interface Pandora">
+              <div className="pandora-loader-flare" aria-hidden="true" />
+              <div className="pandora-loader-sparks pandora-loader-sparks--one" aria-hidden="true" />
+              <div className="pandora-loader-sparks pandora-loader-sparks--two" aria-hidden="true" />
+              <div className="pandora-loader-aura" aria-hidden="true" />
+              <div className="pandora-loader-art">
+                <Image
+                  src="/pandora-logo.webp"
+                  alt=""
+                  width={1000}
+                  height={1000}
+                  priority
+                  className="pandora-loader-image"
                 />
-                <div
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-1 h-1 rounded-full"
-                  style={{ background: 'rgba(191,164,106,0.5)', boxShadow: '0 0 6px rgba(191,164,106,0.3)' }}
-                />
-              </motion.div>
-
-              {/* Middle ring */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.4, rotate: 0 }}
-                animate={{ opacity: 1, scale: 1, rotate: -360 }}
-                transition={{
-                  opacity: { duration: 0.6, delay: 0.15 },
-                  scale: { duration: 0.8, delay: 0.15, ease: 'easeOut' },
-                  rotate: { duration: 12, repeat: Infinity, ease: 'linear' },
-                }}
-                className="absolute rounded-full"
-                style={{ inset: '18px', border: '1px solid rgba(143,167,160,0.15)' }}
-              >
-                <div
-                  className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-                  style={{
-                    background: 'var(--cyan-primary)',
-                    boxShadow: '0 0 10px var(--cyan-primary), 0 0 20px rgba(143,167,160,0.2)',
-                  }}
-                />
-                <div
-                  className="absolute bottom-0 left-1/4 translate-y-1/2 w-1 h-1 rounded-full"
-                  style={{ background: 'rgba(143,167,160,0.4)' }}
-                />
-              </motion.div>
-
-              {/* Inner ring */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.2, rotate: 0 }}
-                animate={{ opacity: 1, scale: 1, rotate: 360 }}
-                transition={{
-                  opacity: { duration: 0.6, delay: 0.3 },
-                  scale: { duration: 0.8, delay: 0.3, ease: 'easeOut' },
-                  rotate: { duration: 7, repeat: Infinity, ease: 'linear' },
-                }}
-                className="absolute rounded-full"
-                style={{ inset: '40px', border: '1px solid rgba(191,164,106,0.25)' }}
-              >
-                <div
-                  className="absolute top-0 left-1/4 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-                  style={{ background: 'var(--gold-primary)', boxShadow: '0 0 8px var(--gold-primary)' }}
-                />
-              </motion.div>
-
-              {/* Core circle + crosshair */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-                className="relative w-12 h-12 rounded-full flex items-center justify-center"
-                style={{
-                  border: '2px solid var(--gold-primary)',
-                  boxShadow:
-                    '0 0 20px rgba(191,164,106,0.15), inset 0 0 20px rgba(191,164,106,0.05)',
-                }}
-              >
-                <motion.div
-                  animate={{ opacity: [0.3, 0.8, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-5 h-5 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(191,164,106,0.4) 0%, rgba(191,164,106,0.05) 70%)',
-                  }}
-                />
-                <div
-                  className="absolute w-[1px] h-full"
-                  style={{
-                    background:
-                      'linear-gradient(to bottom, transparent, rgba(191,164,106,0.3), transparent)',
-                  }}
-                />
-                <div
-                  className="absolute w-full h-[1px]"
-                  style={{
-                    background:
-                      'linear-gradient(to right, transparent, rgba(191,164,106,0.3), transparent)',
-                  }}
-                />
-              </motion.div>
-
-              {/* Radar sweep */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.15, 0], rotate: [0, 360] }}
-                transition={{
-                  opacity: { duration: 3, repeat: Infinity },
-                  rotate: { duration: 3, repeat: Infinity, ease: 'linear' },
-                  delay: 0.6,
-                }}
-                className="absolute inset-[10px] rounded-full"
-                style={{
-                  background:
-                    'conic-gradient(from 0deg, transparent 0deg, rgba(191,164,106,0.15) 40deg, transparent 80deg)',
-                }}
-              />
+              </div>
+              <span className="pandora-loader-caption">PANDORA <i /> INITIALISATION</span>
             </div>
 
             {/* Title: PANDORA */}
@@ -927,53 +814,17 @@ export default function Dashboard() {
               </motion.div>
             </div>
 
-            {/* Progress bar */}
+            {/* Indeterminate progress: the splash duration is fixed, not tied to data-source sync. */}
             <div className="w-64 md:w-80 z-[2]">
               <div
-                className="relative w-full h-[2px] rounded-full overflow-hidden"
-                style={{ background: 'rgba(191,164,106,0.1)' }}
+                className="pandora-loader-progress-track"
+                aria-hidden="true"
               >
-                <motion.div
-                  initial={{ width: '0%' }}
-                  animate={{ width: ['0%', '25%', '50%', '78%', '100%'] }}
-                  transition={{
-                    duration: 2.2,
-                    delay: 0.5,
-                    times: [0, 0.25, 0.5, 0.75, 1],
-                    ease: 'easeInOut',
-                  }}
-                  className="absolute inset-y-0 left-0 rounded-full"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, var(--gold-primary), var(--cyan-primary), var(--gold-primary))',
-                    boxShadow: '0 0 12px rgba(191,164,106,0.4)',
-                  }}
-                />
+                <div className="pandora-loader-progress-bar" />
               </div>
-              <div className="mt-3 h-4 flex items-center justify-center">
-                {[
-                  { text: 'LOADING ATLAS WORKSPACE...', delay: 0.5 },
-                  { text: 'SYNCING PUBLIC DATA SOURCES...', delay: 1.1 },
-                  { text: 'PREPARING OPERATIONAL VIEW...', delay: 1.7 },
-                  { text: 'WORKSPACE READY', delay: 2.2 },
-                ].map((stage, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: [0, 1, 1, 0] }}
-                    transition={{
-                      delay: stage.delay,
-                      duration: 0.6,
-                      times: [0, 0.1, 0.7, 1],
-                    }}
-                    className="absolute text-[9px] font-mono tracking-[0.25em]"
-                    style={{
-                      color: i === 3 ? 'var(--cyan-primary)' : 'var(--text-muted)',
-                    }}
-                  >
-                    {stage.text}
-                  </motion.span>
-                ))}
+              <div className="mt-3 flex items-center justify-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[var(--text-muted)]">
+                <span className="pandora-loader-status-dot" />
+                CHARGEMENT DE L’INTERFACE
               </div>
             </div>
 
@@ -1017,17 +868,6 @@ export default function Dashboard() {
               />
             ))}
 
-            {/* Inline keyframe for scanline drift */}
-            <style jsx>{`
-              @keyframes splashScanDrift {
-                0% { background-position: 0 0; }
-                100% { background-position: 0 100vh; }
-              }
-              @keyframes hud-scanline {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
-              }
-            `}</style>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1118,29 +958,15 @@ export default function Dashboard() {
         transition={{ duration: 1, delay: 2.5 }}
         className={`app-header absolute top-3 left-3 md:top-5 md:left-5 z-[200] pointer-events-none flex items-center gap-2 md:gap-3`}
       >
-        <div className="pandora-product-logo w-7 h-7 md:w-9 md:h-9 flex items-center justify-center relative">
-          {/* Ambient glow ring */}
-          <div
-            className="absolute inset-[-4px] md:inset-[-5px] rounded-full border border-[var(--gold-primary)]/20"
-            style={{ animation: 'pandora-rotate 12s linear infinite' }}
-          >
-            <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--gold-primary)] shadow-[0_0_6px_var(--gold-primary)]"
-            />
-          </div>
-          <div
-            className="absolute inset-[-8px] md:inset-[-10px] rounded-full border border-[var(--gold-primary)]/10"
-            style={{ animation: 'pandora-rotate 20s linear infinite reverse' }}
-          >
-            <div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-0.5 h-0.5 rounded-full bg-[var(--gold-primary)]/60"
-            />
-          </div>
-          <div className="w-5 h-5 md:w-7 md:h-7 rounded-full border-2 border-[var(--gold-primary)] flex items-center justify-center animate-glow-pulse">
-            <div className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full bg-[var(--gold-primary)]/30 border border-[var(--gold-primary)]/60" />
-          </div>
-          <div className="absolute w-[1px] h-full bg-[var(--gold-primary)]/30" />
-          <div className="absolute w-full h-[1px] bg-[var(--gold-primary)]/30" />
+        <div className="pandora-header-logo relative h-10 w-10 md:h-12 md:w-12">
+          <Image
+            src="/pandora-logo.webp"
+            alt="Logo Pandora"
+            width={128}
+            height={128}
+            priority
+            className="h-full w-full rounded-xl object-cover"
+          />
         </div>
         {/* Horizontal rule */}
         <div className="hidden md:block absolute top-1/2 left-[52px] w-[200px] h-[1px] bg-gradient-to-r from-[var(--gold-primary)]/40 via-[var(--gold-primary)]/15 to-transparent" />
