@@ -12,6 +12,7 @@ import {
 import IntelFeed from '@/components/IntelFeed';
 import MarketsPanel from '@/components/MarketsPanel';
 import SearchBar from '@/components/SearchBar';
+import SavedWorkspacesPanel from '@/components/SavedWorkspacesPanel';
 import ScaleBar from '@/components/ScaleBar';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import SharePanel from '@/components/SharePanel';
@@ -1257,6 +1258,15 @@ export default function Dashboard() {
                 {desktopTool === 'search' && (
                   <div className="space-y-3">
                     <SearchBar onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                    <SavedWorkspacesPanel
+                      view={mapView}
+                      layers={activeLayers}
+                      onRestore={({ view, layers }) => {
+                        setMapView(view);
+                        setActiveLayers(layers as typeof activeLayers);
+                        setFlyToLocation({ lat: view.latitude, lng: view.longitude, ts: Date.now() });
+                      }}
+                    />
                     <SharePanel mapView={mapView} activeLayers={activeLayers} mouseCoords={mouseCoords} />
                   </div>
                 )}
@@ -1531,6 +1541,16 @@ export default function Dashboard() {
                     <SearchBar
                       onLocate={(lat, lng) => {
                         setFlyToLocation({ lat, lng, ts: Date.now() });
+                        setMobilePanel(null);
+                      }}
+                    />
+                    <SavedWorkspacesPanel
+                      view={mapView}
+                      layers={activeLayers}
+                      onRestore={({ view, layers }) => {
+                        setMapView(view);
+                        setActiveLayers(layers as typeof activeLayers);
+                        setFlyToLocation({ lat: view.latitude, lng: view.longitude, ts: Date.now() });
                         setMobilePanel(null);
                       }}
                     />
