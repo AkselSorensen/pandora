@@ -6,7 +6,7 @@ No external calls, no state — pure function of (subject, action, resource).
 from typing import Any, Literal
 
 Classification = Literal["public", "diffusion_restreinte", "confidentiel", "secret"]
-Action = Literal["read", "search", "export", "share", "write", "close", "delete"]
+Action = Literal["read", "search", "export", "share", "write", "close", "delete", "annotate"]
 
 CLASSIFICATIONS: list[str] = ["public", "diffusion_restreinte", "confidentiel", "secret"]
 LEVEL_RANK = {level: i for i, level in enumerate(CLASSIFICATIONS)}
@@ -30,7 +30,16 @@ ACTION_POLICY: dict[str, tuple[int, bool]] = {
     "write": (2, True),
     "close": (3, True),
     "delete": (3, True),
+    # `annotate` produit un objet NOUVEAU qui référence la cible ; ce n'est pas une
+    # modification de la cible, donc `write` ne décrirait pas l'acte. Marqué mutant à
+    # dessein : annoter hérite ainsi de `no_write_on_secret` (on n'annote pas un objet
+    # secret) et un auditeur, en lecture seule, ne peut pas annoter.
+    "annotate": (2, True),
 }
+
+# Nature de l'annotation — une DONNÉE, pas une action. Trois actions de politique
+# pour « noter / confirmer / écarter » dupliqueraient les mêmes règles.
+ANNOTATION_KINDS: tuple[str, ...] = ("note", "confirm", "dismiss")
 
 COMPARTMENT_REQUIRED_LEVELS = {"secret"}
 NEVER_DELEGABLE = {"export", "share", "delete"}

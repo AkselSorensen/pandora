@@ -10,7 +10,8 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 import audit
-from policy import ACTION_POLICY, CLASSIFICATIONS, CLASSIFICATION_LABELS, LEVEL_RANK, evaluate, policy_catalogue
+from policy import (ACTION_POLICY, ANNOTATION_KINDS, CLASSIFICATIONS, CLASSIFICATION_LABELS,
+                    LEVEL_RANK, evaluate, policy_catalogue)
 from sources import API_RESOURCES, RETENTION_DAYS, resolve, summary as resource_summary
 
 APP_NAME = "Pandora Governance Service"
@@ -51,6 +52,19 @@ class OperatorProfile(BaseModel):
     clearance: str = Field("confidentiel")
     compartments: list[str] = Field(default_factory=list)
     no_export: bool = False
+
+
+class AnalystActionRequest(BaseModel):
+    """Une action d'analyste : qui agit, sur quoi, et le contenu produit.
+
+    `action` est le VERBE de politique (`annotate`) ; `kind` est la NATURE de
+    l'annotation (`note` | `confirm` | `dismiss`) — une donnée, pas une action.
+    """
+    subject: Subject
+    resource: Resource
+    action: str = Field("annotate")
+    kind: str = Field("note")
+    text: str = Field(..., min_length=1, max_length=2000)
 
 
 @app.get("/health")
@@ -208,4 +222,71 @@ async def policy_catalogue_endpoint() -> dict[str, Any]:
         **policy_catalogue(),
         "resources": resource_summary(),
         "routeTableSize": len(API_RESOURCES),
+    }
+
+
+@app.post("/actions/annotate")
+async def annotate(req: AnalystActionRequest) -> dict[str, Any]:
+    """Action gouvernée d'analyste : décision -> journal -> annotation.
+
+    L'ordre n'est pas négociable. Si le journal ne peut pas être écrit, la décision
+    devient un refus (fail closed) et AUCUNE annotation n'est enregistrée : on ne
+    produit pas de contenu dont l'autorisation n'est pas traçable.
+    """
+    if req.action != "annotate":
+        raise HTTPException(status_code=422, detail="unsupported_action")
+    if req.kind not in ANNOTATION_KINDS:
+        raise HTTPException(status_code=422, detail=f"unknown_kind:{req.kind}")
+
+    subject = req.subject.model_dump()
+    resource = req.resource.model_dump()
+    decision = evaluate(subject, "annotate", resource)
+
+    conn = audit.connect()
+    try:
+        try:
+            entry = audit.append(conn, subject, "annotate", resource, decision)
+        except Exception as exc:  # journal indisponible -> refus, et rien n'est écrit
+            return {
+                "decision": "deny",
+                "reason": "audit_unavailable",
+                "obligations": [],
+                "at": now(),
+                "journalError": str(exc)[:200],
+                "annotation": None,
+            }
+
+        annotation = None
+        if decision["decision"] == "allow":
+            annotation = audit.add_annotation(conn, int(entry["seq"]), subject,
+                                              str(resource.get("id") or ""), req.kind, req.text)
+    finally:
+        conn.close()
+
+    return {
+        **decision,
+        "action": "annotate",
+        "kind": req.kind,
+        "seq": entry["seq"],
+        "hash": entry["hash"],
+        "at": entry["at"],
+        "annotation": annotation,
+    }
+
+
+@app.get("/annotations")
+async def annotations_list(
+    target: str | None = None,
+    limit: int = Query(100, ge=1, le=500),
+) -> dict[str, Any]:
+    conn = audit.connect()
+    try:
+        rows = audit.list_annotations(conn, target=target, limit=limit)
+    finally:
+        conn.close()
+    return {
+        "mode": "pandora-governance-service",
+        "generatedAt": now(),
+        "count": len(rows),
+        "annotations": rows,
     }

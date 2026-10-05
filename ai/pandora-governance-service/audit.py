@@ -33,6 +33,21 @@ CREATE TABLE IF NOT EXISTS audit (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_at ON audit(at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit(actor);
+-- Annotations d'analyste : un OBJET à part, qui RÉFÉRENCE l'entrée du journal ayant
+-- autorisé l'acte (`seq`). Volontairement HORS de la chaîne : le digest ne porte que les
+-- 10 champs de ENTRY_FIELDS, donc ajouter cette table ne peut pas invalider les entrées
+-- déjà scellées, et `verify()` reste vrai sur tout l'historique.
+CREATE TABLE IF NOT EXISTS annotations (
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  seq    INTEGER NOT NULL,
+  at     TEXT NOT NULL,
+  actor  TEXT NOT NULL,
+  role   TEXT NOT NULL,
+  target TEXT NOT NULL,
+  kind   TEXT NOT NULL,
+  text   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_annotations_target ON annotations(target, id DESC);
 CREATE TABLE IF NOT EXISTS operators (
   operator     TEXT PRIMARY KEY,
   role         TEXT NOT NULL,
@@ -188,3 +203,38 @@ def get_operator(conn: sqlite3.Connection, operator: str) -> dict[str, Any] | No
 def list_operators(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [get_operator(conn, r["operator"]) or {} for r in
             conn.execute("SELECT operator FROM operators ORDER BY operator").fetchall()]
+
+
+def _annotation_row(row: sqlite3.Row) -> dict[str, Any]:
+    return {"id": row["id"], "seq": row["seq"], "at": row["at"], "actor": row["actor"],
+            "role": row["role"], "target": row["target"], "kind": row["kind"], "text": row["text"]}
+
+
+def add_annotation(conn: sqlite3.Connection, seq: int, subject: dict[str, Any],
+                   target: str, kind: str, text: str) -> dict[str, Any]:
+    """Enregistre l'annotation d'un analyste, rattachée à l'entrée de journal `seq`.
+
+    N'est appelée qu'après une décision `allow` DÉJÀ journalisée : sans entrée dans la
+    chaîne, il n'y a pas d'annotation. Une action non journalisée n'est pas une action.
+    """
+    cur = conn.execute(
+        """INSERT INTO annotations (seq, at, actor, role, target, kind, text)
+           VALUES (?,?,?,?,?,?,?)""",
+        (seq, now(), str(subject.get("operator") or "unknown"),
+         str(subject.get("role") or "unknown"), target, kind, text),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM annotations WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return _annotation_row(row) if row else {}
+
+
+def list_annotations(conn: sqlite3.Connection, target: str | None = None,
+                     limit: int = 100) -> list[dict[str, Any]]:
+    bounded = max(1, min(limit, 500))
+    if target:
+        rows = conn.execute("SELECT * FROM annotations WHERE target = ? ORDER BY id DESC LIMIT ?",
+                            (target, bounded)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM annotations ORDER BY id DESC LIMIT ?",
+                            (bounded,)).fetchall()
+    return [_annotation_row(r) for r in rows]
