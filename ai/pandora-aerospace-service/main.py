@@ -58,72 +58,123 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-# ── ADSB.lol fetcher (urllib — httpx ne passe pas sur Docker Windows) ──
+# ── ADS-B fetchers (urllib — httpx ne passe pas sur Docker Windows) ──
+# OpenSky est la colonne vertébrale : UNE requête renvoie ~7 800 aéronefs
+# géolocalisés dans le monde entier, sans limite de débit gênante (mesuré :
+# HTTP 200, 1 Mo, ~0,6 s). ADSB.lol apporte ce qu'OpenSky n'a pas — code type
+# `t`, immatriculation `r`, drapeau militaire `dbFlags` — mais son /v2
+# rate-limite les rafales : six appels lancés d'un coup renvoient HTTP 420/429
+# et seules ~2 régions sur 6 répondent. On l'interroge donc par vagues, et on
+# FUSIONNE les deux sources au lieu de choisir l'une OU l'autre.
+OPENSKY_STATES_URL = "https://opensky-network.org/api/states/all"
+ADSB_CONCURRENCY = 2        # au-delà, ADSB.lol répond 420/429
+ADSB_WAVE_GAP_S = 0.4       # espacement entre deux vagues de requêtes
+MPS_TO_KNOTS = 1.943844
+OPEN_SKY_ROTORCRAFT_CATEGORY = 8
+
+UA_HEADERS = {"User-Agent": "Pandora-Aerospace/1.0", "Accept": "application/json"}
+
+
+def _clean_callsign(raw: Any) -> str:
+    """Indicatif exploitable, sinon chaîne vide.
+
+    ADSB.lol renvoie « @@@@@@@@ » quand l'appareil n'émet pas d'indicatif :
+    ce n'est pas un nom, ça ne doit pas s'afficher comme tel.
+    """
+    cs = (raw or "").strip()
+    return cs if any(c.isalnum() for c in cs) else ""
+
+
+def _get_json(url: str, timeout: float) -> Any:
+    req = Request(url, headers=UA_HEADERS)
+    with urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def _fetch_adsb_region(region: dict) -> list[dict]:
+    url = f"https://api.adsb.lol/v2/lat/{region['lat']}/lon/{region['lon']}/dist/{region['dist']}"
+    try:
+        return _get_json(url, timeout=8).get("ac") or []
+    except Exception:
+        return []
+
+
+def _fetch_opensky() -> list[list]:
+    try:
+        return _get_json(OPENSKY_STATES_URL, timeout=10).get("states") or []
+    except Exception:
+        return []
+
+
+def _opensky_to_adsb_shape(states: list[list]) -> list[dict]:
+    """Ramène un state-vector OpenSky au format ADSB.lol attendu en aval.
+
+    Indices du state-vector : 0 icao24, 1 callsign, 5 lon, 6 lat,
+    7 baro_altitude (m), 9 velocity (m/s), 10 true_track, 13 geo_altitude (m),
+    14 squawk, 17 category.
+    """
+    out: list[dict] = []
+    for s in states:
+        if len(s) < 11:
+            continue
+        lat, lon = s[6], s[5]
+        if lat is None or lon is None:
+            continue
+        baro_m = s[7] if s[7] is not None else s[13]
+        velocity_ms = s[9]
+        rotorcraft = len(s) > 17 and s[17] == OPEN_SKY_ROTORCRAFT_CATEGORY
+        out.append({
+            "hex": s[0] or "",
+            "flight": (s[1] or "").strip(),
+            "lat": lat,
+            "lon": lon,
+            # m → ft : `classify_and_enrich` attend des pieds (format ADSB.lol)
+            "alt_baro": round(baro_m / 0.3048, 1) if baro_m is not None else None,
+            "gs": round(velocity_ms * MPS_TO_KNOTS, 1) if velocity_ms is not None else None,
+            "track": s[10],
+            "t": "",                    # OpenSky ne publie pas le code type
+            "r": "",
+            "squawk": s[14] or "",
+            "dbFlags": 0,
+            "rotorcraft": rotorcraft,
+        })
+    return out
+
+
 async def fetch_all_aircraft() -> list[dict]:
-    """Fetch from ADSB.lol (6 regions) and OpenSky in parallel for speed."""
+    """OpenSky (volume mondial) + ADSB.lol (typage/immat), fusionnés par ICAO24."""
     loop = asyncio.get_event_loop()
-    seen = set()
-    all_ac = []
 
-    # Launch ADSB.lol + OpenSky in parallel
-    async def fetch_opensky():
-        try:
-            req = Request("https://opensky-network.org/api/states/all",
-                          headers={"User-Agent": "Pandora-Aerospace/1.0", "Accept": "application/json"})
-            with urlopen(req, timeout=8) as r:
-                data = json.loads(r.read())
-                return data.get("states") or []
-        except: return []
+    # ADSB.lol par vagues espacées : une rafale de 6 réveille le rate-limit.
+    async def fetch_adsb_all() -> list[dict]:
+        collected: list[dict] = []
+        for i in range(0, len(REGIONS), ADSB_CONCURRENCY):
+            wave = REGIONS[i:i + ADSB_CONCURRENCY]
+            results = await asyncio.gather(
+                *(loop.run_in_executor(None, _fetch_adsb_region, r) for r in wave)
+            )
+            for batch in results:
+                if isinstance(batch, list):
+                    collected.extend(batch)
+            if i + ADSB_CONCURRENCY < len(REGIONS):
+                await asyncio.sleep(ADSB_WAVE_GAP_S)
+        return collected
 
-    def _fetch_adsb(region):
-        url = f"https://api.adsb.lol/v2/lat/{region['lat']}/lon/{region['lon']}/dist/{region['dist']}"
-        try:
-            req = Request(url, headers={"User-Agent": "Pandora-Aerospace/1.0", "Accept": "application/json"})
-            with urlopen(req, timeout=6) as r:
-                return json.loads(r.read()).get("ac") or []
-        except: return []
+    adsb, opensky_states = await asyncio.gather(fetch_adsb_all(), loop.run_in_executor(None, _fetch_opensky))
 
-    adsb_tasks = [loop.run_in_executor(None, _fetch_adsb, r) for r in REGIONS]
-    seen_opensky = asyncio.ensure_future(fetch_opensky())
+    merged: dict[str, dict] = {}
+    for ac in _opensky_to_adsb_shape(opensky_states):
+        merged[ac["hex"] or f"{ac['lat']}-{ac['lon']}"] = ac
+    # ADSB.lol écrase l'entrée OpenSky : type, immat, dbFlags, squawk en plus.
+    for ac in adsb:
+        merged[ac.get("hex") or f"{ac.get('lat')}-{ac.get('lon')}"] = ac
 
-    # Wait for ADSB results with a short timeout
-    adsb_results = await asyncio.gather(*adsb_tasks, return_exceptions=True)
-    opensky_states = await seen_opensky
-
-    # Process ADSB.lol results
-    for batch in adsb_results:
-        if isinstance(batch, list):
-            for ac in batch:
-                key = ac.get("hex", "") or f"{ac.get('lat')}-{ac.get('lon')}"
-                if key not in seen:
-                    seen.add(key)
-                    all_ac.append(ac)
-
-    # Only use OpenSky if ADSB.lol returned too few
-    if len(all_ac) < 100:
-        all_ac = []
-        seen.clear()
-        for s in opensky_states[:500]:
-            icao24 = s[0] if len(s) > 0 else ""
-            cs = (s[1] or "").strip() if len(s) > 1 else ""
-            lat = s[6] if len(s) > 6 and s[6] else None
-            lon = s[5] if len(s) > 5 and s[5] else None
-            if lat is not None and lon is not None:
-                all_ac.append({
-                    "hex": icao24, "flight": cs, "lat": lat, "lon": lon,
-                    "alt_baro": (s[7] * 3.28084) if len(s) > 7 and s[7] else None,
-                    "gs": s[9] if len(s) > 9 and s[9] else None,
-                    "track": s[10] if len(s) > 10 and s[10] else None,
-                    "t": (s[13] or "") if len(s) > 13 else "",
-                    "r": "", "squawk": "", "dbFlags": 0,
-                })
-
-    return all_ac
+    return list(merged.values())
 
 def classify_and_enrich(ac: dict) -> dict | None:
     """Classify a single aircraft and return enriched record."""
     model = ac.get("t") or ""
-    flight = (ac.get("flight") or "").strip()
+    flight = _clean_callsign(ac.get("flight"))
     lat = ac.get("lat")
     lon = ac.get("lon")
     if lat is None or lon is None:
@@ -134,7 +185,7 @@ def classify_and_enrich(ac: dict) -> dict | None:
     speed = round(ac.get("gs") or 0) if ac.get("gs") else None
     heading = round(ac.get("track") or 0) if ac.get("track") else None
     vert_rate = round(ac.get("nac_p") or 0) if ac.get("nac_p") else None
-    cls = classify_aircraft(model, flight, ac.get("dbFlags", 0))
+    cls = classify_aircraft(model, flight, ac.get("dbFlags", 0), bool(ac.get("rotorcraft")))
 
     # Distance to nearest strategic airbase
     near_base = None
@@ -258,6 +309,14 @@ async def airspace(lat: float = 0, lng: float = 0, radius_km: int = 200):
                 if d > radius_km:
                     continue
             classified.append(c)
+
+    # Le monde entier tient dans `classified` (~7 800 aéronefs) mais l'API n'en
+    # renvoie que 200 : classer par intérêt pour que l'échantillon exposé montre
+    # d'abord ce qui compte (militaire, puis hélicos, puis privés).
+    def _rank(c: dict) -> int:
+        return 0 if c["is_military"] else 1 if c["is_heli"] else 2 if c["is_private"] else 3
+
+    classified.sort(key=lambda c: (_rank(c), c["callsign"]))
     return {
         "mode": "pandora-aerospace-live",
         "generatedAt": now(),

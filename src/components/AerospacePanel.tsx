@@ -1,5 +1,5 @@
 'use client';
-import { Plane, Radar, ShieldAlert, Globe, Search, AlertTriangle, Activity, Satellite, MapPin, ChevronDown, ExternalLink } from 'lucide-react';
+import { Plane, Radar, ShieldAlert, Globe, Search, AlertTriangle, Activity, Satellite, MapPin, ChevronDown, ExternalLink, Gem, RotateCw, ServerOff, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
 /* ── Types ── */
@@ -21,8 +21,10 @@ interface Anomaly {
 function catColor(cat: string) {
   return cat === 'military' ? '#FF3D3D' : cat === 'heli' ? '#FF9500' : cat === 'private' || cat === 'jet' ? '#FFD700' : '#00E676';
 }
-function catIcon(cat: string) {
-  return cat === 'military' ? '⚔️' : cat === 'heli' ? '🚁' : cat === 'private' || cat === 'jet' ? '💎' : '✈️';
+/** Pas d'emojis dans l'interface Pandora : icônes Lucide uniquement. */
+function CatIcon({ cat, size = 13, color }: { cat: string; size?: number; color?: string }) {
+  const Icon = cat === 'military' ? ShieldAlert : cat === 'heli' ? RotateCw : cat === 'private' || cat === 'jet' ? Gem : Plane;
+  return <Icon style={{ width: size, height: size, color }} aria-hidden="true" />;
 }
 function severityColor(s: string) {
   return s === 'critical' ? '#FF1744' : s === 'high' ? '#FF6B00' : s === 'medium' ? '#FFD700' : '#00E676';
@@ -34,6 +36,8 @@ export default function AerospacePanel() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [source, setSource] = useState('');
+  const [total, setTotal] = useState(0);
 
   // Analyze
   const [searchIcao, setSearchIcao] = useState('');
@@ -49,10 +53,13 @@ export default function AerospacePanel() {
     setLoading(true); setError('');
     try {
       const r = await fetch('/api/aerospace?resource=airspace');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json();
-      setAircraft(d.aircraft || []);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Aerospace API unavailable'); }
+      const d = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(d?.error || `Erreur ${r.status} sur /api/aerospace`);
+      setAircraft(d?.aircraft || []);
+      setTotal(typeof d?.total === 'number' ? d.total : (d?.aircraft?.length || 0));
+      // `source` est renvoyé par le backend : il nomme les sources réelles qui ont répondu.
+      setSource(d?.source ? `${d.source}${d.mode === 'direct' ? ' · DIRECT' : ''}` : '');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Service aerospace indisponible'); }
     setLoading(false);
   }, []);
 
@@ -105,13 +112,12 @@ export default function AerospacePanel() {
 
   return (
     <div className="glass-panel">
-      <div className="tool-workspace-header">
-        <div>
-          <span className="hud-label">PANDORA AEROSPACE</span>
-          <h2>Airspace Surveillance</h2>
-        </div>
-        <span className="gotham-tag gotham-tag--critical">
-          {aircraft.length || '---'} A/C
+      <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1">
+        <span className="hud-label truncate" title={source || undefined}>
+          {source ? `SOURCE · ${source}` : 'SOURCE · EN ATTENTE'}
+        </span>
+        <span className="gotham-tag gotham-tag--info flex-shrink-0">
+          {total > aircraft.length ? `${aircraft.length} / ${total} A/C` : `${aircraft.length} A/C`}
         </span>
       </div>
 
@@ -137,23 +143,38 @@ export default function AerospacePanel() {
         {tab === 'airspace' && (
           <>
             <div className="grid grid-cols-4 gap-2 mb-3">
-              <div className="glass-panel-sm p-2 text-center"><Plane className="w-4 h-4 mx-auto mb-1 text-white" /><div className="hud-label text-[8px]">TOTAL</div><div className="text-lg font-bold font-mono">{aircraft.length}</div></div>
-              <div className="glass-panel-sm p-2 text-center"><span className="text-lg block mb-1">⚔️</span><div className="hud-label text-[8px]">MILITARY</div><div className="text-lg font-bold font-mono" style={{ color: '#FF3D3D' }}>{mil.length}</div></div>
-              <div className="glass-panel-sm p-2 text-center"><span className="text-lg block mb-1">🚁</span><div className="hud-label text-[8px]">HELI</div><div className="text-lg font-bold font-mono" style={{ color: '#FF9500' }}>{heli.length}</div></div>
-              <div className="glass-panel-sm p-2 text-center"><span className="text-lg block mb-1">💎</span><div className="hud-label text-[8px]">PRIVATE</div><div className="text-lg font-bold font-mono" style={{ color: '#FFD700' }}>{priv.length}</div></div>
+              <div className="glass-panel-sm p-2 text-center"><Plane className="w-4 h-4 mx-auto mb-1 text-white" /><div className="hud-label text-[9px]">TOTAL</div><div className="text-lg font-bold font-mono">{aircraft.length}</div></div>
+              <div className="glass-panel-sm p-2 text-center"><ShieldAlert className="w-4 h-4 mx-auto mb-1 text-[#FF3D3D]" /><div className="hud-label text-[9px]">MILITARY</div><div className="text-lg font-bold font-mono" style={{ color: '#FF3D3D' }}>{mil.length}</div></div>
+              <div className="glass-panel-sm p-2 text-center"><RotateCw className="w-4 h-4 mx-auto mb-1 text-[#FF9500]" /><div className="hud-label text-[9px]">HELI</div><div className="text-lg font-bold font-mono" style={{ color: '#FF9500' }}>{heli.length}</div></div>
+              <div className="glass-panel-sm p-2 text-center"><Gem className="w-4 h-4 mx-auto mb-1 text-[#FFD700]" /><div className="hud-label text-[9px]">PRIVATE</div><div className="text-lg font-bold font-mono" style={{ color: '#FFD700' }}>{priv.length}</div></div>
             </div>
 
             <div className="glass-panel-sm flex-1 overflow-y-auto max-h-[380px] styled-scrollbar">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="hud-label text-[9px]">LIVE AIRCRAFT ({aircraft.length})</span>
-                <button onClick={fetchAirspace} className="text-[var(--gold-primary)] hover:underline text-[8px]">REFRESH</button>
+                <span className="hud-label text-[9px]">LIVE AIRCRAFT ({aircraft.length}{total > aircraft.length ? ` / ${total}` : ''})</span>
+                <button onClick={fetchAirspace} className="text-[var(--gold-primary)] hover:underline text-[9px] flex items-center gap-1"><RefreshCw className="w-2.5 h-2.5" /> REFRESH</button>
               </div>
               {loading ? (
                 <div className="flex justify-center py-8"><div className="w-5 h-5 border-2 border-[var(--gold-primary)] border-t-transparent rounded-full animate-spin" /></div>
               ) : error ? (
-                <div className="text-[var(--alert-orange)] text-[10px] p-2">{error}</div>
+                <div className="glass-panel-sm p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-[var(--alert-orange)]">
+                    <ServerOff className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="hud-label">AIRSPACE INDISPONIBLE</span>
+                  </div>
+                  <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">{error}</p>
+                  <p className="text-[9px] text-[var(--text-muted)] leading-relaxed">
+                    Réponse réelle du service. Aucune donnée synthétique n’est affichée quand la source est muette.
+                  </p>
+                  <button onClick={fetchAirspace} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--gold-primary)] text-black text-[9px] font-bold font-mono hover:brightness-110">
+                    <RefreshCw className="w-3 h-3" /> RÉESSAYER
+                  </button>
+                </div>
               ) : aircraft.length === 0 ? (
-                <div className="text-[var(--text-muted)] text-[10px] py-4 text-center">No aircraft in range</div>
+                <div className="glass-panel-sm p-3 text-[10px] text-[var(--text-muted)] text-center leading-relaxed">
+                  Aucun aéronef dans les zones interrogées.<br />
+                  <span className="text-[9px]">Les six cercles ADSB.lol couvrent l’Amérique du Nord, l’Europe, l’Asie, l’Australie, l’Afrique et l’Amérique du Sud.</span>
+                </div>
               ) : (
                 <div className="space-y-1">
                   {aircraft.map((a, i) => (
@@ -161,9 +182,9 @@ export default function AerospacePanel() {
                       <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: catColor(a.category) }} />
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] text-[var(--text-primary)] flex items-center gap-1">
-                          <span>{catIcon(a.category)}</span>
+                          <CatIcon cat={a.category} color={catColor(a.category)} />
                           <span className="truncate">{a.callsign}</span>
-                          {a.near_base && <span className="text-[var(--alert-orange)] text-[8px]">⚠</span>}
+                          {a.near_base && <AlertTriangle className="w-2.5 h-2.5 text-[var(--alert-orange)] flex-shrink-0" aria-label={`Proche de ${a.near_base.name}`} />}
                         </div>
                         <div className="text-[8px] text-[var(--text-muted)]">
                           {a.model} · {a.alt_m ? `${a.alt_m}m` : 'sol'} · {a.speed_knots ? `${a.speed_knots}kt` : 'N/A'}
@@ -234,7 +255,7 @@ export default function AerospacePanel() {
               <div className="glass-panel-sm p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold font-mono flex items-center gap-1">
-                    {catIcon(analyzeResult.aircraft.category)}
+                    <CatIcon cat={analyzeResult.aircraft.category} color={catColor(analyzeResult.aircraft.category)} />
                     {analyzeResult.aircraft.callsign}
                   </span>
                   <span className="text-[9px] font-mono px-2 py-0.5 rounded" style={{ backgroundColor: catColor(analyzeResult.aircraft.category) + '22', color: catColor(analyzeResult.aircraft.category), border: `1px solid ${catColor(analyzeResult.aircraft.category)}` }}>

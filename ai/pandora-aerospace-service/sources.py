@@ -131,6 +131,15 @@ STRATEGIC_AIRBASES: list[dict] = [
 ]
 
 # ── Global coverage regions (from Pandora frontend) ──
+# Mesuré le 2026-10-05 sur ADSB.lol /v2 (Europe, 50.0/15.0) :
+#   dist=250 NM  → HTTP 200, 647 aéronefs
+#   dist=2000 NM → HTTP 200, 4078 aéronefs
+#   dist=3000 NM → HTTP 200, 4221 aéronefs
+# Le rayon n'est donc PAS la contrainte : une note antérieure affirmait à tort
+# qu'un `dist` > 250 NM renvoyait un corps vide. La contrainte réelle est le
+# DÉBIT — six requêtes parties en parallèle déclenchent HTTP 420/429 et seules
+# ~2 régions sur 6 répondent. Garder un `dist` large (une région qui passe
+# rapporte un maximum) et espacer les appels côté client (ADSB_CONCURRENCY).
 REGIONS: list[dict] = [
     {"label": "North America", "lat": 39.8, "lon": -98.5, "dist": 2000},
     {"label": "Europe", "lat": 50.0, "lon": 15.0, "dist": 2000},
@@ -141,12 +150,17 @@ REGIONS: list[dict] = [
 ]
 
 
-def classify_aircraft(model: str, callsign: str, db_flags: int = 0) -> dict:
-    """Classify an aircraft into military/heli/jet/commercial/private."""
+def classify_aircraft(model: str, callsign: str, db_flags: int = 0, rotorcraft: bool = False) -> dict:
+    """Classify an aircraft into military/heli/jet/commercial/private/unknown.
+
+    `rotorcraft` vient d'OpenSky (state-vector index 17 == 8) : OpenSky ne
+    publie aucun code type, ce drapeau est la seule façon d'y repérer un
+    hélicoptère.
+    """
     model_upper = (model or "").upper()
     callsign_upper = (callsign or "").upper().strip()
 
-    is_heli = model_upper in HELI_TYPES
+    is_heli = rotorcraft or model_upper in HELI_TYPES
     is_military_model = model_upper in MILITARY_TYPES
     is_military_callsign = any(callsign_upper.startswith(p) for p in MILITARY_CALLSIGN_PREFIXES)
     is_jet = model_upper in PRIVATE_JET_TYPES
@@ -158,10 +172,16 @@ def classify_aircraft(model: str, callsign: str, db_flags: int = 0) -> dict:
         category = "heli"
     elif is_jet:
         category = "jet"
-    elif not is_commercial and model_upper and not callsign_upper.startswith(tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")):
-        category = "private"
-    else:
+    elif is_commercial:
         category = "commercial"
+    elif model_upper and not callsign_upper[:1].isalpha():
+        category = "private"
+    elif model_upper:
+        category = "commercial"
+    else:
+        # Ni code type ni indicatif exploitables (cas fréquent sur OpenSky) :
+        # ne pas inventer « commercial ».
+        category = "unknown"
 
     return {
         "category": category,
