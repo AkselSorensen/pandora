@@ -65,7 +65,15 @@ NUCLEAR_ACTOR_CENTROIDS = {
     "israel": (31.05, 34.85),
 }
 
-_CACHE: dict[str, Any] = {"ts": 0.0, "payloads": None, "degraded": []}
+# `ts`/`payloads` : cache des collectes amont. `graph_ts`/`graph` : cache du graphe
+# CONSTRUIT, horodaté séparément — sinon une collecte rafraîchie directement ferait
+# passer un graphe périmé pour frais.
+_CACHE: dict[str, Any] = {"ts": 0.0, "payloads": None, "degraded": [], "graph_ts": 0.0, "graph": None}
+
+# Single-flight : plusieurs requêtes simultanées sur un cache froid partagent UNE
+# construction. Sans ce verrou, chacune relançait ses 7 collectes amont et le service
+# se saturait lui-même (mesuré : une lecture d'entité passait de 15 ms à 14 s).
+_BUILD_LOCK = asyncio.Lock()
 
 
 def rank(classification: str | None) -> int:
@@ -428,6 +436,25 @@ def search(graph: dict[str, Any], query: str, entity_type: str | None = None, li
 
 
 async def get_graph(force: bool = False) -> tuple[dict[str, Any], list[str]]:
-    payloads, degraded = await collect(force=force)
-    graph = build(payloads, payloads.get("digest") or {}, payloads.get("alerts") or {}, degraded)
-    return graph, degraded
+    """Graphe construit, mis en cache sous la même durée de vie que les collectes.
+
+    `build()` parcourt plusieurs milliers d'entités et était refait à CHAQUE requête —
+    graphe, recherche, entité — alors que seules les collectes étaient cachées.
+    `/entity/<id>` reconstruisait donc tout le graphe pour rendre une seule entité.
+
+    Le graphe rendu est en LECTURE SEULE pour les appelants : `filter_by_clearance`,
+    `ego` et `search` construisent de nouvelles listes sans modifier les nœuds. Le
+    filtrage par clearance reste appliqué PAR REQUÊTE et n'est jamais mis en cache.
+    """
+    if not force and _CACHE["graph"] is not None and (time() - _CACHE["graph_ts"]) < CACHE_TTL:
+        return _CACHE["graph"], list(_CACHE["degraded"])
+
+    async with _BUILD_LOCK:
+        # Re-vérifier sous le verrou : pendant l'attente, une autre requête a pu construire.
+        if not force and _CACHE["graph"] is not None and (time() - _CACHE["graph_ts"]) < CACHE_TTL:
+            return _CACHE["graph"], list(_CACHE["degraded"])
+
+        payloads, degraded = await collect(force=force)
+        built = build(payloads, payloads.get("digest") or {}, payloads.get("alerts") or {}, degraded)
+        _CACHE.update({"graph": built, "graph_ts": time(), "degraded": degraded})
+        return built, degraded
