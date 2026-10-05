@@ -10,6 +10,7 @@ import {
   ChevronLeft, ChevronRight, Network, FolderOpen, ShieldCheck
 } from 'lucide-react';
 import IntelFeed from '@/components/IntelFeed';
+import EventTimelinePanel from '@/components/EventTimelinePanel';
 import MarketsPanel from '@/components/MarketsPanel';
 import SearchBar from '@/components/SearchBar';
 import ScaleBar from '@/components/ScaleBar';
@@ -1411,7 +1412,12 @@ export default function Dashboard() {
                 {desktopTool === 'lab' && <InnovationLabPanel model={fusionModel} onOpenAip={() => setDesktopTool('aip')} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />}
                 {desktopTool === 'sources' && <PublicIntelCatalogPanel />}
                 {desktopTool === 'markets' && <MarketsPanel data={data} spaceWeather={spaceWeather} />}
-                {desktopTool === 'intel' && <IntelFeed data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />}
+                {desktopTool === 'intel' && (
+                  <div className="space-y-3">
+                    <IntelFeed data={data} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                    <EventTimelinePanel events={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                  </div>
+                )}
                 {desktopTool === 'search' && (
                   <div className="space-y-3">
                     <SearchBar onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
@@ -1683,13 +1689,16 @@ export default function Dashboard() {
                 )}
                 {mobilePanel === 'markets' && <MarketsPanel data={data} spaceWeather={spaceWeather} />}
                 {mobilePanel === 'intel' && (
-                  <IntelFeed
-                    data={data}
-                    onLocate={(lat, lng) => {
-                      setFlyToLocation({ lat, lng, ts: Date.now() });
-                      setMobilePanel(null);
-                    }}
-                  />
+                  <div className="space-y-2">
+                    <IntelFeed
+                      data={data}
+                      onLocate={(lat, lng) => {
+                        setFlyToLocation({ lat, lng, ts: Date.now() });
+                        setMobilePanel(null);
+                      }}
+                    />
+                    <EventTimelinePanel events={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                  </div>
                 )}
                 {mobilePanel === 'search' && (
                   <div className="space-y-2">
