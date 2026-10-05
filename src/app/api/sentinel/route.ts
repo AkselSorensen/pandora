@@ -21,6 +21,9 @@ export async function GET(req: Request) {
     let scenes: any[] = [];
     let source = '';
     let total = 0;
+    // Une source INJOIGNABLE n'est pas « aucune scène ». Sans cette liste, un opérateur
+    // lit « pas d'imagerie sur cette zone » là où il devrait lire « trois sources muettes ».
+    const degraded: string[] = [];
 
     // Source 1: Element84 Earth Search v1
     try {
@@ -41,7 +44,10 @@ export async function GET(req: Request) {
         total = data.numberMatched || scenes.length;
         source = 'element84';
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('element84:sentinel-1');
+      console.warn('[PANDORA] Earth Search S1 injoignable:', e instanceof Error ? e.message : e);
+    }
 
     // Source 2: Try sentinel-2 if sentinel-1 is empty
     if (scenes.length === 0) {
@@ -63,7 +69,10 @@ export async function GET(req: Request) {
           total = data.numberMatched || scenes.length;
           source = 'element84-s2';
         }
-      } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+      } catch (e) {
+        degraded.push('element84:sentinel-2');
+        console.warn('[PANDORA] Earth Search S2 injoignable:', e instanceof Error ? e.message : e);
+      }
     }
 
     // Source 3: Copernicus STAC fallback
@@ -86,7 +95,10 @@ export async function GET(req: Request) {
           total = data.numberMatched || scenes.length;
           source = 'copernicus';
         }
-      } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+      } catch (e) {
+        degraded.push('copernicus:stac');
+        console.warn('[PANDORA] Copernicus STAC injoignable:', e instanceof Error ? e.message : e);
+      }
     }
 
     // Element84 exposes Sentinel-1 quicklooks as s3:// URIs. That bucket is
@@ -123,7 +135,15 @@ export async function GET(req: Request) {
           .sort((a: any, b: any) => Date.parse(b.datetime || '') - Date.parse(a.datetime || ''))
           .slice(0, 8);
       }
-    } catch (e) { console.warn('[PANDORA] Satellite preview lookup failed:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('planetary-computer:rtc-preview');
+      console.warn('[PANDORA] Planetary Computer injoignable:', e instanceof Error ? e.message : e);
+    }
+
+    // Aucune source n'a répondu : on le DIT. Un 200 avec des listes vides et sans
+    // `degraded` se lirait « rien à voir ici », ce qui serait faux.
+    const allSourcesFailed = degraded.filter(entry => !entry.startsWith('planetary-computer')).length >= 3
+      && scenes.length === 0 && previewScenes.length === 0;
 
     return NextResponse.json({
       source,
@@ -132,6 +152,8 @@ export async function GET(req: Request) {
       total,
       bbox,
       datetime,
+      degraded,
+      allSourcesFailed,
       timestamp: new Date().toISOString(),
     }, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
