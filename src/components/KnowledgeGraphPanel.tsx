@@ -45,7 +45,12 @@ interface GraphNode {
   sources?: string[];
   classification?: string;
   compartments?: string[];
-  attrs?: Record<string, unknown>;
+  /**
+   * Propriétés typées de l'objet, telles que le service les publie. Le champ
+   * s'appelait `attrs` avant l'unification du vocabulaire de l'ontologie ; le
+   * type déclarait donc un champ que la réponse ne contient plus.
+   */
+  properties?: Record<string, unknown>;
 }
 
 interface GraphEdge {
@@ -397,6 +402,119 @@ const TABS: Array<[Tab, string]> = [
   ['posture', 'Posture'],
 ];
 
+/* ------------------------------------------- fiche d'objet : propriétés typées */
+
+/** Propriété telle que DÉCLARÉE par l'ontologie — jamais devinée depuis la valeur. */
+interface SchemaProperty {
+  name: string;
+  type: string;
+  unit?: string;
+  description?: string;
+}
+
+interface ObjectTypeSchema {
+  name: string;
+  label?: string;
+  domain?: string;
+  classification?: string;
+  description?: string;
+  properties?: SchemaProperty[];
+}
+
+/** Rend une valeur selon le type DÉCLARÉ. `null` veut dire « non renseigné ». */
+function formatPropertyValue(raw: unknown, type: string, unit?: string): string | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  if (type === 'boolean') return raw === true ? 'OUI' : raw === false ? 'NON' : String(raw);
+  if (type === 'number' && typeof raw === 'number') {
+    const shown = Number.isInteger(raw) ? String(raw) : raw.toFixed(2);
+    return unit ? `${shown} ${unit}` : shown;
+  }
+  if (Array.isArray(raw)) return raw.length > 0 ? raw.join(', ') : null;
+  if (typeof raw === 'object') return JSON.stringify(raw);
+  return String(raw);
+}
+
+/**
+ * Fiche d'objet : les propriétés, étiquetées par le type DÉCLARÉ dans l'ontologie.
+ * Deux honnêtetés tenues ici — une propriété déclarée sans valeur dit « non
+ * renseigné » (elle existe dans le modèle, cette instance ne la porte pas), et une
+ * valeur non déclarée est signalée au lieu d'être tue ou fondue dans le lot.
+ */
+function EntityProperties({
+  type, properties, schema,
+}: {
+  type: string;
+  properties?: Record<string, unknown>;
+  schema: ObjectTypeSchema | null;
+}) {
+  const raw = properties || {};
+  const declared = schema?.properties;
+  const declaredNames = new Set((declared || []).map(property => property.name));
+  const undeclared = Object.keys(raw).filter(key => !declaredNames.has(key));
+
+  if ((!declared || declared.length === 0) && undeclared.length === 0) {
+    return (
+      <div>
+        <div className="hud-label mb-1"><Layers className="mr-1 inline h-3 w-3" />PROPRIÉTÉS</div>
+        <div className="text-[9px] font-mono text-[var(--text-muted)]">
+          AUCUNE PROPRIÉTÉ PORTÉE PAR CETTE INSTANCE
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="hud-label mb-1">
+        <Layers className="mr-1 inline h-3 w-3" />PROPRIÉTÉS
+        {schema?.label && <span className="ml-1 font-normal text-[var(--text-muted)]">· {schema.label}</span>}
+      </div>
+
+      {!declared && (
+        <div className="mb-1 text-[9px] font-mono text-[var(--alert-orange)]">
+          TYPE « {type} » NON DÉCLARÉ DANS L’ONTOLOGIE — valeurs brutes, types inconnus
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {(declared || []).map(property => {
+          const shown = formatPropertyValue(raw[property.name], property.type, property.unit);
+          return (
+            <div key={property.name} className="aip-list-row" title={property.description || property.name}>
+              <span className="min-w-0 flex-1 truncate text-[9px] font-mono text-[var(--text-muted)]">
+                {property.name}
+              </span>
+              {shown === null ? (
+                <span className="shrink-0 text-[9px] font-mono text-[var(--text-muted)] opacity-60">
+                  NON RENSEIGNÉ
+                </span>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-right text-[10px] font-mono text-[var(--text-primary)]">
+                  {shown}
+                </span>
+              )}
+              <span className="gotham-tag gotham-tag--low shrink-0">{property.type}</span>
+            </div>
+          );
+        })}
+
+        {undeclared.map(name => {
+          const shown = formatPropertyValue(raw[name], typeof raw[name]);
+          return (
+            <div key={name} className="aip-list-row">
+              <span className="min-w-0 flex-1 truncate text-[9px] font-mono text-[var(--text-muted)]">{name}</span>
+              <span className="min-w-0 flex-1 truncate text-right text-[10px] font-mono text-[var(--text-primary)]">
+                {shown ?? '—'}
+              </span>
+              <span className="gotham-tag gotham-tag--high shrink-0">NON DÉCLARÉE</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
   const [tab, setTab] = useState<Tab>('graph');
   const [limit, setLimit] = useState(120);
@@ -427,6 +545,27 @@ function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
   const [dossierResult, setDossierResult] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  // Le modèle DÉCLARÉ de l'ontologie, chargé une fois : il sert à étiqueter les
+  // propriétés de la fiche d'objet. Son absence dégrade l'affichage, elle ne le casse pas.
+  const [schema, setSchema] = useState<Record<string, ObjectTypeSchema> | null>(null);
+  const [schemaError, setSchemaError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/ontology?resource=schema', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = (await response.json()) as { objectTypes?: ObjectTypeSchema[] };
+        if (cancelled) return;
+        setSchema(Object.fromEntries((data.objectTypes || []).map(entry => [entry.name, entry])));
+      } catch (error) {
+        if (!cancelled) setSchemaError(error instanceof Error ? error.message : 'schéma indisponible');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -984,6 +1123,21 @@ function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
                 <div className="foundry-metric"><span>RELATIONS</span><strong>{count(entity.relations.length)}</strong></div>
                 <div className="foundry-metric"><span>SOURCES</span><strong>{count(entity.contributingSources.length)}</strong></div>
               </div>
+
+              {schemaError && (
+                <div className="flex items-center gap-2 text-[var(--alert-orange)]">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <span className="text-[9px] font-mono">
+                    ONTOLOGIE NON JOIGNABLE ({schemaError}) — les propriétés s’affichent sans leurs types déclarés.
+                  </span>
+                </div>
+              )}
+
+              <EntityProperties
+                type={entity.entity.type}
+                properties={entity.entity.properties}
+                schema={schema?.[entity.entity.type] || null}
+              />
 
               {relatedEdges.length > 0 && (
                 <div>
