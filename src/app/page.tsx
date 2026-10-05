@@ -13,6 +13,7 @@ import IntelFeed from '@/components/IntelFeed';
 import EventTimelinePanel from '@/components/EventTimelinePanel';
 import MarketsPanel from '@/components/MarketsPanel';
 import SearchBar from '@/components/SearchBar';
+import SavedWorkspacesPanel from '@/components/SavedWorkspacesPanel';
 import ScaleBar from '@/components/ScaleBar';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import SharePanel from '@/components/SharePanel';
@@ -1423,6 +1424,15 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     <SearchBar signals={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
                     <WatchZonesPanel center={{ latitude: mapView.latitude, longitude: mapView.longitude }} label={locationLabel} signals={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                    <SavedWorkspacesPanel
+                      view={mapView}
+                      layers={activeLayers}
+                      onRestore={({ view, layers }) => {
+                        setMapView(view);
+                        setActiveLayers(layers as typeof activeLayers);
+                        setFlyToLocation({ lat: view.latitude, lng: view.longitude, ts: Date.now() });
+                      }}
+                    />
                     <SharePanel mapView={mapView} activeLayers={activeLayers} mouseCoords={mouseCoords} />
                   </div>
                 )}
@@ -1717,6 +1727,16 @@ export default function Dashboard() {
                       signals={data.news || []}
                       onLocate={(lat, lng) => {
                         setFlyToLocation({ lat, lng, ts: Date.now() });
+                        setMobilePanel(null);
+                      }}
+                    />
+                    <SavedWorkspacesPanel
+                      view={mapView}
+                      layers={activeLayers}
+                      onRestore={({ view, layers }) => {
+                        setMapView(view);
+                        setActiveLayers(layers as typeof activeLayers);
+                        setFlyToLocation({ lat: view.latitude, lng: view.longitude, ts: Date.now() });
                         setMobilePanel(null);
                       }}
                     />
