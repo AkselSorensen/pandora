@@ -5,9 +5,10 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Knowledge graph proxy.
- *  resource=graph  (default) → /graph
- *  resource=entity&id=…      → /entity/{id}
- *  resource=search&q=…       → /entities?q=
+ *  resource=graph   (default) → /graph
+ *  resource=entity&id=…       → /entity/{id}
+ *  resource=search&q=…        → /entities?q=
+ *  resource=schema            → /schema   (l'ontologie déclarée : types, propriétés, liens)
  */
 export async function GET(req: NextRequest) {
   const base = serviceBase('PANDORA_ONTOLOGY_URL');
@@ -15,6 +16,10 @@ export async function GET(req: NextRequest) {
 
   const params = req.nextUrl.searchParams;
   const resource = params.get('resource') || 'graph';
+
+  if (resource === 'schema') {
+    return relay(req, base, '/schema');
+  }
 
   if (resource === 'entity') {
     const id = params.get('id');

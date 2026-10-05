@@ -49,6 +49,7 @@ API_RESOURCES: dict[str, dict[str, Any]] = {
     "/api/alerts": {"type": "alert", "classification": "diffusion_restreinte"},
     "/api/playbooks": {"type": "playbook", "classification": "diffusion_restreinte"},
     "/api/graph": {"type": "graph", "classification": "diffusion_restreinte"},
+    "/api/graph/*": {"type": "graph", "classification": "diffusion_restreinte"},
     "/api/ontology": {"type": "graph", "classification": "diffusion_restreinte"},
     "/api/aip": {"type": "ai", "classification": "diffusion_restreinte"},
     # ── Confidentiel : renseignement consolidé, dossiers, outils actifs ────────

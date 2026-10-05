@@ -137,7 +137,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
         "tags": ["root", str(digest.get("posture") or "routine").lower()],
         "sources": ["digest", "aerospace", "territorial", "nuclear", "cyberdef", "dgsi", "alerts"],
         "classification": "public",
-        "attrs": {"posture": digest.get("posture"), "riskScore": digest.get("riskScore"),
+        "properties": {"posture": digest.get("posture"), "riskScore": digest.get("riskScore"),
                   "generatedAt": digest.get("generatedAt"), "degraded": degraded},
     })
 
@@ -154,7 +154,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "risk": score, "weight": max(2, score / 20), "lat": lat, "lon": lng,
             "tags": ["zone", str(zone.get("level") or "watch").lower()],
             "sources": ["pandora-territorial"], "classification": "diffusion_restreinte",
-            "attrs": {"level": zone.get("level"), "color": zone.get("color"), "drivers": zone.get("drivers")},
+            "properties": {"level": zone.get("level"), "color": zone.get("color"), "drivers": zone.get("drivers")},
         })
         add_edge(edges, root_id, zid, "HAS_ZONE", max(1, score / 25), {"score": score})
         zone_geo.append((zid, lat, lng, float(zone.get("radius_km") or 250)))
@@ -174,7 +174,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "tags": ["infra", str(site.get("priority") or "low").lower(),
                      *(site.get("types") if isinstance(site.get("types"), list) else [])],
             "sources": ["pandora-dgsi"], "classification": "diffusion_restreinte",
-            "attrs": {"priority": site.get("priority"), "radiusKm": site.get("radius_km"),
+            "properties": {"priority": site.get("priority"), "radiusKm": site.get("radius_km"),
                       "type": site.get("type")},
         })
         add_edge(edges, root_id, sid_, "HAS_INFRA", max(1, risk / 30), {"priority": site.get("priority")})
@@ -201,7 +201,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "id": aid, "type": "Aircraft", "label": callsign, "risk": risk,
             "weight": max(1, risk / 30), "lat": lat, "lon": lng, "tags": tags,
             "sources": ["pandora-aerospace"], "classification": "public",
-            "attrs": {"model": ac.get("model"), "altitudeM": _num(ac.get("alt_m")),
+            "properties": {"model": ac.get("model"), "altitudeM": _num(ac.get("alt_m")),
                       "speedKt": _num(ac.get("speed_knots") or ac.get("speed_kt")),
                       "registration": ac.get("registration"), "category": ac.get("category"),
                       "military": bool(ac.get("is_military"))},
@@ -226,7 +226,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "weight": max(1, risk / 30), "tags": ["cyber", str(threat.get("category") or "general").lower()],
             "sources": [f"pandora-cyberdef:{threat.get('source') or 'aggregate'}"],
             "classification": "diffusion_restreinte",
-            "attrs": {"type": threat.get("type"), "source": threat.get("source"),
+            "properties": {"type": threat.get("type"), "source": threat.get("source"),
                       "severity": threat.get("severity")},
         })
         add_edge(edges, root_id, tid, "HAS_CYBER_INDICATOR", max(1, risk / 40))
@@ -252,7 +252,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "tags": ["nuclear", band],
             "sources": ["pandora-nuclear"],
             "classification": "secret", "compartments": ["nuclear"],
-            "attrs": {"arsenalBand": band, "warheadsBand": actor.get("estimated_warheads_band"),
+            "properties": {"arsenalBand": band, "warheadsBand": actor.get("estimated_warheads_band"),
                       "region": actor.get("region")},
         })
         add_edge(edges, root_id, nid, "HAS_NUCLEAR_ACTOR", max(1, risk / 30))
@@ -278,7 +278,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "risk": risk, "weight": max(2, risk / 20),
             "tags": ["signal", str(item.get("category") or "general").lower()],
             "sources": [str(item.get("source") or "digest")], "classification": "confidentiel",
-            "attrs": {"severity": item.get("severity"), "category": item.get("category"),
+            "properties": {"severity": item.get("severity"), "category": item.get("category"),
                       "location": item.get("location")},
         })
         add_edge(edges, root_id, iid, "HAS_SIGNAL", max(1, risk / 30))
@@ -297,7 +297,7 @@ def build(payloads: dict[str, Any], digest: dict[str, Any], alerts_payload: dict
             "tags": ["alert", str(alert.get("level") or "medium").lower()],
             "sources": [str(alert.get("source") or "pandora-alerts")],
             "classification": "diffusion_restreinte",
-            "attrs": {"level": alert.get("level"), "category": alert.get("category"),
+            "properties": {"level": alert.get("level"), "category": alert.get("category"),
                       "location": alert.get("location"), "timestamp": alert.get("timestamp")},
         })
         add_edge(edges, root_id, aid, "HAS_ALERT", max(1, risk / 25))

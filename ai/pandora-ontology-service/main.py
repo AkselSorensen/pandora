@@ -7,6 +7,7 @@ import httpx
 from fastapi import FastAPI, Header, Query
 
 import graph as graph_builder
+import ontology as ontology_model
 from nodes import add_edge, add_node, extract_location_node, severity_risk, stable_id
 
 APP_NAME = "Pandora Ontology Service"
@@ -192,6 +193,16 @@ async def health() -> dict[str, Any]:
     }
 
 
+@app.get("/schema")
+async def schema() -> dict[str, Any]:
+    """Le modèle déclaré : types d'objets, propriétés typées, liens autorisés.
+
+    C'est le contrat que le graphe doit respecter. Exposé pour que le front et
+    les consommateurs n'aient pas à déduire le vocabulaire de la sortie.
+    """
+    return {**ontology_model.schema(), "generatedAt": now_iso()}
+
+
 @app.get("/ontology")
 async def ontology() -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=40) as client:
@@ -200,7 +211,8 @@ async def ontology() -> dict[str, Any]:
             alerts = await fetch_json(client, f"{PANDORA_ALERTS_URL}/alerts")
         except Exception:
             alerts = {"alerts": []}
-    return build_ontology(digest, alerts)
+    payload = build_ontology(digest, alerts)
+    return {**payload, "conformance": ontology_model.validate(payload)}
 
 
 @app.get("/graph")
@@ -231,6 +243,10 @@ async def graph(
         "degraded": degraded,
         "filters": {"domain": domain, "type": type, "minRisk": min_risk, "limit": limit},
         "returned": {"nodes": len(nodes), "edges": len(edges)},
+        # Validé sur le graphe complet post-ACL, jamais sur la tranche affichée :
+        # tronquer à `limit` nœuds coupe des arêtes et fabriquerait de fausses
+        # violations « extrémité manquante ».
+        "conformance": ontology_model.validate(filtered),
         "nodes": nodes,
         "edges": edges,
     }

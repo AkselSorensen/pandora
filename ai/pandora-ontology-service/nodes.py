@@ -31,7 +31,7 @@ def add_node(nodes: dict[str, dict[str, Any]], node: dict[str, Any]) -> dict[str
         tags.update(node.get("tags") or [])
         existing["tags"] = sorted(tags)
         existing["sources"] = sorted(set(existing.get("sources") or []) | set(node.get("sources") or []))
-        existing.setdefault("attrs", {}).update({k: v for k, v in (node.get("attrs") or {}).items() if v is not None})
+        existing.setdefault("properties", {}).update({k: v for k, v in (node.get("properties") or {}).items() if v is not None})
         return existing
     nodes[node_id] = node
     return node
