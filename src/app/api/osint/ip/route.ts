@@ -48,7 +48,11 @@ export async function GET(req: Request) {
             is_proxy: geo.proxy,
             is_hosting: geo.hosting,
           };
+        } else {
+          degraded.push(`ip-api:statut-${geo.status}`);
         }
+      } else {
+        degraded.push(`ip-api:http-${res.status}`);
       }
     } catch (e) {
       degraded.push('ip-api:geolocalisation');

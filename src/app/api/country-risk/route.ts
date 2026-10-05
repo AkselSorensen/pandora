@@ -83,6 +83,10 @@ export async function GET() {
             }
           }
         }
+      } else {
+        // USGS répond mais pas 200 : sans ce cas, `seismicEnriched` restait à `true` — le
+        // champ affirmait un enrichissement qui n'avait pas eu lieu.
+        degraded.push(`usgs:http-${res.status}`);
       }
     } catch (e) {
       degraded.push('usgs:seismes-4.5');

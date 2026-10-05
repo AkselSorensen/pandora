@@ -43,6 +43,10 @@ export async function GET(req: Request) {
         scenes = (data.features || []).map(formatScene);
         total = data.numberMatched || scenes.length;
         source = 'element84';
+      } else {
+        // Non-200 : sans ce cas, la route passait à la source suivante sans rien dire,
+        // et `allSourcesFailed` pouvait valoir `false` sans qu'aucune source n'ait répondu.
+        degraded.push(`element84:sentinel-1:http-${res.status}`);
       }
     } catch (e) {
       degraded.push('element84:sentinel-1');
@@ -68,6 +72,8 @@ export async function GET(req: Request) {
           scenes = (data.features || []).map(formatScene);
           total = data.numberMatched || scenes.length;
           source = 'element84-s2';
+        } else {
+          degraded.push(`element84:sentinel-2:http-${res.status}`);
         }
       } catch (e) {
         degraded.push('element84:sentinel-2');
@@ -94,6 +100,8 @@ export async function GET(req: Request) {
           scenes = (data.features || []).map(formatScene);
           total = data.numberMatched || scenes.length;
           source = 'copernicus';
+        } else {
+          degraded.push(`copernicus:stac:http-${fallbackRes.status}`);
         }
       } catch (e) {
         degraded.push('copernicus:stac');
