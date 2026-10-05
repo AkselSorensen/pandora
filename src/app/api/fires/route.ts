@@ -12,6 +12,9 @@ export async function GET() {
   try {
     let fires: any[] = [];
     let source = '';
+    // Une source muette n'est pas « aucun incendie ». Sans cette liste, un opérateur lit
+    // « rien ne brûle » là où le satellite n'a simplement pas répondu.
+    const degraded: string[] = [];
 
     // Source 1: NASA FIRMS Open Data (Global 24h CSV) - no API key needed
     const firmsSources = [
@@ -20,6 +23,7 @@ export async function GET() {
     ];
 
     for (const url of firmsSources) {
+      const label = url.includes('SUOMI') ? 'nasa-firms:viirs' : 'nasa-firms:modis';
       try {
         const res = await fetch(url, {
           signal: AbortSignal.timeout(15000),
@@ -35,8 +39,15 @@ export async function GET() {
               break;
             }
           }
+          // HTTP 200 mais rien d'exploitable : c'est un échec de source, pas une absence de feu.
+          degraded.push(`${label}:reponse-vide`);
+        } else {
+          degraded.push(`${label}:http-${res.status}`);
         }
-      } catch { continue; }
+      } catch (e) {
+        degraded.push(label);
+        console.warn('[PANDORA] FIRMS injoignable:', e instanceof Error ? e.message : e);
+      }
     }
 
     // Source 2: Pull volcanoes from EONET for richer data
@@ -64,12 +75,19 @@ export async function GET() {
         fires = [...fires, ...volcanoes];
         if (!source) source = 'NASA-EONET';
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed EONET error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('nasa-eonet:volcans');
+      console.warn('[PANDORA] EONET injoignable:', e instanceof Error ? e.message : e);
+    }
 
     return NextResponse.json({
       fires,
       total: fires.length,
       source: source || 'Unknown',
+      degraded,
+      // Aucune source n'a répondu : on le dit, plutôt que de laisser un tableau vide
+      // se lire comme « aucun incendie actif ».
+      allSourcesFailed: degraded.length >= 2 && fires.length === 0,
       timestamp: new Date().toISOString(),
     }, {
       headers: {

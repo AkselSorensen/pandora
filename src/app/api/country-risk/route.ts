@@ -65,6 +65,9 @@ export async function GET() {
 
     // Enrich risk with live earthquake proximity
     let quakeRisks: Record<string, number> = {};
+    // Un enrichissement qui échoue ne doit pas se lire « aucun séisme ». Sans ce drapeau,
+    // le score retombait sur `base + 0` : un chiffre dégradé présenté comme mesuré.
+    const degraded: string[] = [];
     try {
       const res = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson', {  });
       if (res.ok) {
@@ -81,7 +84,10 @@ export async function GET() {
           }
         }
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('usgs:seismes-4.5');
+      console.warn('[PANDORA] USGS injoignable:', e instanceof Error ? e.message : e);
+    }
 
     const countries = Object.entries(RISK_FACTORS).map(([code, data]) => ({
       code,
@@ -95,6 +101,11 @@ export async function GET() {
       exchanges: exchangeStatus,
       open_exchanges: exchangeStatus.filter(e => e.open).length,
       total_exchanges: exchangeStatus.length,
+      degraded,
+      // Les scores ci-dessus valent `base + contribution sismique`. Si l'USGS n'a pas
+      // répondu, cette contribution vaut zéro par défaut : on le dit, sinon le chiffre
+      // se lit comme une mesure complète alors qu'il lui manque un terme.
+      seismicEnriched: !degraded.includes('usgs:seismes-4.5'),
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
