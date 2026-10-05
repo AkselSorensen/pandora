@@ -26,7 +26,10 @@ export async function GET(req: Request) {
     try {
       const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
         signal: AbortSignal.timeout(8000),
-        headers: { 'Accept': 'application/json' },
+        // rdap.org est un AIGUILLEUR : il redirige vers le registre faisant autorité.
+        // Sans User-Agent explicite, la requête est refusée en 403 — alors que le même
+        // appel par curl renvoie 200. C'était la seule requête du dépôt sans UA.
+        headers: { 'Accept': 'application/json', 'User-Agent': 'PandoraAtlas/1.0 (RDAP lookup)' },
       });
       if (res.ok) {
         const data = await res.json();
