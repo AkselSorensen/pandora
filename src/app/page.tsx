@@ -46,6 +46,7 @@ import { LanguageToggle, useI18n } from '@/components/I18nProvider';
 
 const PandoraMap = dynamic(() => import('@/components/PandoraMap'), { ssr: false });
 const LayerPanel = dynamic(() => import('@/components/LayerPanel'));
+const OFFLINE_CACHE_ENDPOINTS = ['/api/news', '/api/earthquakes'];
 const CameraViewer = dynamic(() => import('@/components/CameraViewer'));
 const OsintPanel = dynamic(() => import('@/components/OsintPanel'));
 
@@ -317,6 +318,7 @@ export default function Dashboard() {
   const { t } = useI18n();
   const dataRef = useRef<any>({});
   const [, setDataVersion] = useState(0);
+  const [cachedFallbacks, setCachedFallbacks] = useState<Record<string, number>>({});
   const data = dataRef.current;
 
   // --- State ---
@@ -615,10 +617,32 @@ export default function Dashboard() {
         const d = transform ? transform(json) : json;
         dataRef.current = { ...dataRef.current, ...d };
         setDataVersion((v) => v + 1);
+        if (OFFLINE_CACHE_ENDPOINTS.includes(url)) {
+          try { localStorage.setItem(`pandora.offline-cache:${url}`, JSON.stringify({ savedAt: Date.now(), data: d })); } catch { /* Cache is best-effort; live data still works. */ }
+          setCachedFallbacks((previous) => {
+            if (!(url in previous)) return previous;
+            const next = { ...previous };
+            delete next[url];
+            return next;
+          });
+        }
         setBackendStatus('connected');
         return true;
       } catch (e) {
         console.warn('[Pandora] Suppressed error:', e instanceof Error ? e.message : e);
+        if (OFFLINE_CACHE_ENDPOINTS.includes(url)) {
+          try {
+            const saved = localStorage.getItem(`pandora.offline-cache:${url}`);
+            if (saved) {
+              const cached = JSON.parse(saved);
+              if (cached?.data && typeof cached.savedAt === 'number') {
+                dataRef.current = { ...dataRef.current, ...cached.data };
+                setDataVersion((v) => v + 1);
+                setCachedFallbacks((previous) => ({ ...previous, [url]: cached.savedAt }));
+              }
+            }
+          } catch { /* Ignore corrupt or unavailable local cache. */ }
+        }
         setBackendStatus('error');
         return false;
       }
@@ -661,6 +685,18 @@ export default function Dashboard() {
 
   // Progressive data loading
   useEffect(() => {
+    for (const url of OFFLINE_CACHE_ENDPOINTS) {
+      try {
+        const saved = localStorage.getItem(`pandora.offline-cache:${url}`);
+        if (!saved) continue;
+        const cached = JSON.parse(saved);
+        if (cached?.data && typeof cached.savedAt === 'number') {
+          dataRef.current = { ...dataRef.current, ...cached.data };
+          setCachedFallbacks((previous) => ({ ...previous, [url]: cached.savedAt }));
+        }
+      } catch { /* A damaged cache must not block dashboard startup. */ }
+    }
+    setDataVersion((v) => v + 1);
     requestLayer('earthquakes', ['earthquakes'], '/api/earthquakes');
     requestLayer('news', ['news_intel'], '/api/news');
     const marketTimer = setTimeout(() => fetchEndpoint('/api/markets', (d) => ({ markets: d })), 800);
@@ -2065,6 +2101,11 @@ export default function Dashboard() {
       {/* ===================================================================
          GLOBAL STATUS TICKER (bottom)
          =================================================================== */}
+      {Object.keys(cachedFallbacks).length > 0 && (
+        <div role="status" className="absolute bottom-[24px] left-1/2 z-[199] -translate-x-1/2 rounded border border-amber-500/30 bg-black/85 px-2 py-1 text-[8px] font-mono text-amber-200/90">
+          CACHED DATA · LAST SAVED {new Date(Math.max(...Object.values(cachedFallbacks))).toLocaleString()}
+        </div>
+      )}
       <GlobalStatusBar />
 
       {/* Shortcut hint */}
