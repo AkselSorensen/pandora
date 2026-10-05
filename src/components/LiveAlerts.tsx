@@ -24,6 +24,7 @@ const RISK_COLORS: Record<string, string> = {
 export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsProps) {
   const [expanded, setExpanded] = useState(true);
   const [filter, setFilter] = useState<'all' | 'news' | 'quakes' | 'feeds'>('all');
+  const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
 
   const liveFeeds = Array.isArray(data?.live_feeds) ? data.live_feeds : [];
   const alerts: any[] = [];
@@ -35,6 +36,7 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
           type: 'news',
           title: a.title,
           source: a.source,
+          timeLabel: 'Published',
           lat: a.coords[0],
           lng: a.coords[1],
           time: a.published,
@@ -51,6 +53,7 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
         type: 'quake',
         title: `M${eq.magnitude} - ${eq.place}`,
         source: 'USGS',
+        timeLabel: 'Reported',
         lat: eq.lat,
         lng: eq.lng,
         time: eq.time,
@@ -140,6 +143,7 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
                   <button
                     key={i}
                     onClick={() => {
+                      setSelectedAlert(alert);
                       onLocate(alert.lat, alert.lng);
                       if (alert.feedUrl && onWatchFeed) {
                         onWatchFeed(alert.feedUrl, alert.title, alert.embedAllowed);
@@ -179,6 +183,47 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
                 </div>
               )}
             </div>
+
+            {selectedAlert && (
+              <section className="mt-2 rounded-lg border border-[var(--border-primary)] bg-black/20 p-2.5" aria-label="Signal provenance">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-mono tracking-wider text-[var(--gold-primary)]">SIGNAL PROVENANCE</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAlert(null)}
+                    className="text-[9px] font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    aria-label="Close signal details"
+                  >
+                    CLOSE
+                  </button>
+                </div>
+                <h3 className="text-[10px] font-mono leading-relaxed text-[var(--text-primary)]">{selectedAlert.title}</h3>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[8px] font-mono">
+                  <dt className="text-[var(--text-muted)]">SOURCE</dt>
+                  <dd className="text-[var(--text-secondary)]">{selectedAlert.source || 'Unknown'}</dd>
+                  {selectedAlert.time && (
+                    <>
+                      <dt className="text-[var(--text-muted)]">{selectedAlert.timeLabel || 'TIME'}</dt>
+                      <dd className="text-[var(--text-secondary)]">{new Date(selectedAlert.time).toLocaleString()}</dd>
+                    </>
+                  )}
+                  <dt className="text-[var(--text-muted)]">LOCATION</dt>
+                  <dd className="text-[var(--text-secondary)]">{Number(selectedAlert.lat).toFixed(3)}, {Number(selectedAlert.lng).toFixed(3)}</dd>
+                  <dt className="text-[var(--text-muted)]">CONFIDENCE</dt>
+                  <dd className="text-[var(--text-muted)]">Not provided by source</dd>
+                </dl>
+                {selectedAlert.url && (
+                  <a
+                    href={selectedAlert.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex text-[8px] font-mono text-[var(--cyan-primary)] underline underline-offset-2 hover:text-[var(--text-primary)]"
+                  >
+                    OPEN ORIGINAL SOURCE ↗
+                  </a>
+                )}
+              </section>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
