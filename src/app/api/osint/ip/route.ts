@@ -21,6 +21,8 @@ export async function GET(req: Request) {
 
   try {
     const results: any = { ip, timestamp: new Date().toISOString() };
+    // Une source injoignable ne doit pas produire la valeur la plus rassurante.
+    const degraded: string[] = [];
 
     // 1. ip-api.com — geolocation (free, no key)
     try {
@@ -48,16 +50,31 @@ export async function GET(req: Request) {
           };
         }
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('ip-api:geolocalisation');
+      console.warn('[PANDORA] ip-api injoignable:', e instanceof Error ? e.message : e);
+    }
 
     // 2. AbuseIPDB-style check via ip-api proxy flag
-    results.reputation = {
-      is_proxy: results.geo?.is_proxy || false,
-      is_hosting: results.geo?.is_hosting || false,
-      is_mobile: results.geo?.is_mobile || false,
-      risk_level: results.geo?.is_proxy ? 'HIGH' : results.geo?.is_hosting ? 'MEDIUM' : 'LOW',
-    };
+    // Sans géolocalisation, il n'y a AUCUNE réputation à donner. Le `|| false` précédent
+    // produisait `is_proxy: false` + `risk_level: 'LOW'` : un faux négatif portant un label
+    // qui fait autorité. On n'évalue pas ce qu'on n'a pas mesuré.
+    results.reputation = results.geo
+      ? {
+          is_proxy: results.geo.is_proxy || false,
+          is_hosting: results.geo.is_hosting || false,
+          is_mobile: results.geo.is_mobile || false,
+          risk_level: results.geo.is_proxy ? 'HIGH' : results.geo.is_hosting ? 'MEDIUM' : 'LOW',
+        }
+      : {
+          is_proxy: null,
+          is_hosting: null,
+          is_mobile: null,
+          risk_level: 'UNKNOWN',
+          reason: 'source de géolocalisation injoignable',
+        };
 
+    results.degraded = degraded;
     return NextResponse.json(results);
   } catch {
     return NextResponse.json({ error: 'IP lookup failed' }, { status: 500 });

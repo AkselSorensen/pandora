@@ -95,8 +95,11 @@ export async function GET(req: Request) {
       }
     }
 
-    results.threat_level = (results.otx?.pulse_count || 0) > 5 ? 'HIGH' :
-                           (results.otx?.pulse_count || 0) > 0 ? 'MEDIUM' : 'LOW';
+    // `!results.otx` veut dire que la recherche a ÉCHOUÉ : ce n'est pas « aucune menace ».
+    // Le `|| 0` renvoyait 'LOW' — la valeur la plus rassurante, calculée sur zéro mesure.
+    results.threat_level = !results.otx ? 'UNKNOWN' :
+                           (results.otx.pulse_count || 0) > 5 ? 'HIGH' :
+                           (results.otx.pulse_count || 0) > 0 ? 'MEDIUM' : 'LOW';
 
     return NextResponse.json(results);
   } catch {
