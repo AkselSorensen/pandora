@@ -64,6 +64,12 @@ export const API_RESOURCES: Record<string, ResourceDescriptor> = {
   '/api/aerospace': { type: 'feed', classification: 'public' },
   '/api/public-intel': { type: 'catalogue', classification: 'public' },
   '/api/sovereignty': { type: 'governance', classification: 'public' },
+  // Authentification. Doit rester joignable AVANT toute session : un niveau
+  // classifié ici rendrait la connexion impossible. Ces routes ne renvoient
+  // aucune donnée classifiée — seulement une identité vérifiée.
+  '/api/auth/login': { type: 'auth', classification: 'public' },
+  '/api/auth/logout': { type: 'auth', classification: 'public' },
+  '/api/auth/session': { type: 'auth', classification: 'public' },
   // Diffusion restreinte
   '/api/airbases': { type: 'infra', classification: 'diffusion_restreinte' },
   '/api/french-airbases': { type: 'infra', classification: 'diffusion_restreinte' },

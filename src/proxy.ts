@@ -36,7 +36,7 @@ export async function proxy(request: NextRequest) {
 
   // ── 2. ABAC (skipped for public resources: most feeds stay friction-free) ────
   if (resource.classification !== 'public') {
-    const subject = buildSubject(request);
+    const subject = await buildSubject(request);
     const decision = await authorize(subject, 'read', resource);
     subjectHeader = JSON.stringify({
       ...subject,

@@ -12,6 +12,11 @@ from typing import Any
 API_RESOURCES: dict[str, dict[str, Any]] = {
     # ── Sources ouvertes ────────────────────────────────────────────────────────
     "/api/health": {"type": "service", "classification": "public"},
+    # Authentification : joignable avant toute session, sinon on ne peut pas se
+    # connecter. Ne renvoie aucune donnee classifiee, seulement une identite.
+    "/api/auth/login": {"type": "auth", "classification": "public"},
+    "/api/auth/logout": {"type": "auth", "classification": "public"},
+    "/api/auth/session": {"type": "auth", "classification": "public"},
     "/api/flights": {"type": "feed", "classification": "public"},
     "/api/earthquakes": {"type": "feed", "classification": "public"},
     "/api/fires": {"type": "feed", "classification": "public"},

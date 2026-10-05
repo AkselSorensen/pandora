@@ -12,6 +12,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { CLASSIFICATION_RANK, type Classification, type ResolvedResource } from './classification';
+import { verifySession, SESSION_COOKIE } from './auth';
 
 export const ROLES = ['observer', 'auditor', 'analyst', 'lead'] as const;
 export type Role = (typeof ROLES)[number];
@@ -55,29 +56,49 @@ function isClearance(value: string | undefined): value is Classification {
   return !!value && value in CLASSIFICATION_RANK;
 }
 
-export function buildSubject(req: NextRequest): Subject {
-  const cookies = req.cookies;
-  const compartmentsRaw = cookies.get('pandora_compartments')?.value;
-  let compartments = DEFAULT_SUBJECT.compartments;
-  if (compartmentsRaw) {
-    try {
-      const parsed = JSON.parse(compartmentsRaw);
-      if (Array.isArray(parsed)) compartments = parsed.filter((c): c is string => typeof c === 'string');
-    } catch {
-      /* malformed cookie -> default compartments */
-    }
+/**
+ * Profil d'une requête SANS session valide.
+ *
+ * C'est le cœur du correctif : auparavant, un visiteur non connecté recevait le
+ * même profil qu'un analyste (`confidentiel` + compartiments) parce qu'il était
+ * lu dans des cookies que le client contrôle. Désormais l'absence de session
+ * signifie « aucune habilitation » : rôle observateur, niveau public, aucun
+ * compartiment, export interdit.
+ */
+export const ANONYMOUS_SUBJECT: Subject = {
+  operator: 'anonymous',
+  role: 'observer',
+  clearance: 'public',
+  compartments: [],
+  attestation: null,
+  no_export: true,
+};
+
+/**
+ * Sujet ABAC — dérivé EXCLUSIVEMENT de la session signée.
+ *
+ * Les cookies `pandora_clearance` / `pandora_role` / `pandora_compartments` ne
+ * sont plus lus ici. Les accepter revenait à laisser n'importe quel client se
+ * déclarer `secret` avec le compartiment `nuclear` depuis la console du
+ * navigateur, ce qui rendait l'ABAC et le journal chaîné purement décoratifs.
+ * Le niveau de diffusion est un attribut que le serveur signe, pas une valeur
+ * que le client annonce.
+ */
+export async function buildSubject(req: NextRequest): Promise<Subject> {
+  const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);
+  const attestation = req.headers.get('x-pandora-attestation') || null;
+
+  if (!session) {
+    return { ...ANONYMOUS_SUBJECT, attestation };
   }
 
-  const role = cookies.get('pandora_role')?.value;
-  const clearance = cookies.get('pandora_clearance')?.value;
-
   return {
-    operator: cookies.get('pandora_operator')?.value || DEFAULT_SUBJECT.operator,
-    role: isRole(role) ? role : DEFAULT_SUBJECT.role,
-    clearance: isClearance(clearance) ? clearance : DEFAULT_SUBJECT.clearance,
-    compartments,
-    attestation: req.headers.get('x-pandora-attestation') || null,
-    no_export: cookies.get('pandora_no_export')?.value === '1',
+    operator: session.sub,
+    role: session.role,
+    clearance: session.clr,
+    compartments: session.cmp,
+    attestation,
+    no_export: false,
   };
 }
 
