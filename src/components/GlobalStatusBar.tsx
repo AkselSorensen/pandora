@@ -19,6 +19,11 @@ export default function GlobalStatusBar() {
   const [cyber, setCyber] = useState<any>(null);
   const [openCount, setOpenCount] = useState(0);
   const [hoveredRisk, setHoveredRisk] = useState<CountryRisk | null>(null);
+  // Un flux injoignable est un ÉTAT, pas un vide. Sans ce drapeau, l'échec se rendait en
+  // `null` : la barre disparaissait et l'opérateur lisait « aucune donnée » là où deux
+  // flux étaient muets. `allSettled` ne lève jamais — c'est `!ok` / `rejected` qui porte
+  // l'échec, et personne ne le lisait.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,6 +32,8 @@ export default function GlobalStatusBar() {
           fetch('/api/country-risk'),
           fetch('/api/cyber-threats'),
         ]);
+        const riskOk = riskRes.status === 'fulfilled' && riskRes.value.ok;
+        const cyberOk = cyberRes.status === 'fulfilled' && cyberRes.value.ok;
         if (riskRes.status === 'fulfilled' && riskRes.value.ok) {
           const d = await riskRes.value.json();
           setExchanges(d.exchanges || []);
@@ -36,7 +43,11 @@ export default function GlobalStatusBar() {
         if (cyberRes.status === 'fulfilled' && cyberRes.value.ok) {
           setCyber(await cyberRes.value.json());
         }
-      } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+        setFailed(!riskOk && !cyberOk);
+      } catch (e) {
+        setFailed(true);
+        console.warn('[PANDORA] Flux marchés/risques injoignables:', e instanceof Error ? e.message : e);
+      }
     };
     fetchData();
     const iv = setInterval(fetchData, 1800000); // 30 min (was 5 min)
@@ -55,7 +66,29 @@ export default function GlobalStatusBar() {
     } catch { return code; }
   };
 
-  if (exchanges.length === 0 && risks.length === 0) return null;
+  // Chargement initial : rien à dire, on ne montre rien (c'est bref). Échec avéré : on le dit.
+  if (exchanges.length === 0 && risks.length === 0 && !failed) return null;
+
+  if (exchanges.length === 0 && risks.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 4, duration: 0.8 }}
+        className="hidden md:block absolute bottom-0 left-0 right-0 z-[198] pointer-events-none"
+      >
+        <div className="h-[22px] bg-[var(--bg-panel)]/80 border-t border-[var(--alert-orange)]/40 flex items-center font-mono tracking-wider backdrop-blur-sm">
+          <div className="flex-shrink-0 px-2 h-full flex items-center gap-1 border-r border-[var(--border-secondary)]/50 bg-[var(--bg-panel)]">
+            <span className="text-[9px] text-[var(--text-muted)]">MKT</span>
+            <span className="text-[9px] text-[var(--alert-orange)] font-bold">INDISPONIBLE</span>
+          </div>
+          <span className="px-3 text-[9px] text-[var(--alert-orange)]">
+            FLUX MARCHÉS ET RISQUES INJOIGNABLES — AUCUNE DONNÉE N&apos;EST AFFICHÉE
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
 
   const tickerContent = (
     <>
