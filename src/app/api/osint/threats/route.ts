@@ -13,6 +13,9 @@ export async function GET(req: Request) {
   
   try {
     const results: any = { timestamp: new Date().toISOString() };
+    // Trois sources OTX peuvent tomber ici : sans cette liste, un résultat vide se lit
+    // « aucune menace connue » alors que c'est « je n'ai pas pu demander ».
+    const degraded: string[] = [];
 
     // 1. AlienVault OTX — public pulse feed (no key needed for public data)
     try {
@@ -39,7 +42,10 @@ export async function GET(req: Request) {
           }));
         }
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('otx:pulses');
+      console.warn('[PANDORA] OTX pulses injoignables:', e instanceof Error ? e.message : e);
+    }
 
     // 2. Check specific IP/domain if provided
     if (query) {
@@ -73,7 +79,10 @@ export async function GET(req: Request) {
               asn: data.asn,
             };
           }
-        } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+        } catch (e) {
+          degraded.push('otx:indicateur-ip');
+          console.warn('[PANDORA] OTX indicateur IP injoignable:', e instanceof Error ? e.message : e);
+        }
       } else {
         // Domain check
         try {
@@ -91,7 +100,10 @@ export async function GET(req: Request) {
               } : null,
             };
           }
-        } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+        } catch (e) {
+          degraded.push('otx:indicateur-domaine');
+          console.warn('[PANDORA] OTX indicateur domaine injoignable:', e instanceof Error ? e.message : e);
+        }
       }
     }
 
@@ -101,6 +113,7 @@ export async function GET(req: Request) {
                            (results.otx.pulse_count || 0) > 5 ? 'HIGH' :
                            (results.otx.pulse_count || 0) > 0 ? 'MEDIUM' : 'LOW';
 
+    results.degraded = degraded;
     return NextResponse.json(results);
   } catch {
     return NextResponse.json({ error: 'Threat lookup failed' }, { status: 500 });

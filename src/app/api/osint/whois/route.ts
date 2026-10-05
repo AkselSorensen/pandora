@@ -18,6 +18,9 @@ export async function GET(req: Request) {
 
   try {
     const results: any = { domain, timestamp: new Date().toISOString() };
+    // Une source muette doit se voir : sans cette liste, un `security_score` absent se lit
+    // « pas d'information », et un RDAP vide se lit « domaine non enregistré ».
+    const degraded: string[] = [];
 
     // RDAP (Registration Data Access Protocol) — successor to WHOIS
     try {
@@ -50,7 +53,10 @@ export async function GET(req: Request) {
         results.expiration = events.find((e: any) => e.action === 'expiration')?.date;
         results.last_changed = events.find((e: any) => e.action === 'last changed')?.date;
       }
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+    } catch (e) {
+      degraded.push('rdap:enregistrement');
+      console.warn('[PANDORA] RDAP injoignable:', e instanceof Error ? e.message : e);
+    }
 
     // HTTP headers for tech fingerprinting — go through safeFetch so the
     // attacker can't aim a HEAD request at internal infrastructure with a
@@ -76,16 +82,26 @@ export async function GET(req: Request) {
         final_url: res.url,
       };
 
-      // Security score
-      let score = 0;
-      if (headers['strict-transport-security']) score += 2;
-      if (headers['content-security-policy']) score += 2;
-      if (headers['x-frame-options']) score += 1;
-      if (headers['x-content-type-options']) score += 1;
-      if (headers['referrer-policy']) score += 1;
-      results.security_score = { score, max: 7, grade: score >= 5 ? 'A' : score >= 3 ? 'B' : score >= 1 ? 'C' : 'F' };
-    } catch (e) { console.warn('[PANDORA] Suppressed error:', e instanceof Error ? e.message : e); }
+      // Un score de sécurité se calcule sur une réponse RÉELLE. Les serveurs refusent
+      // souvent HEAD (403/405) : noter les en-têtes d'une page d'erreur produirait un « F »
+      // qui ne dit rien de la sécurité du site.
+      if (res.ok) {
+        let score = 0;
+        if (headers['strict-transport-security']) score += 2;
+        if (headers['content-security-policy']) score += 2;
+        if (headers['x-frame-options']) score += 1;
+        if (headers['x-content-type-options']) score += 1;
+        if (headers['referrer-policy']) score += 1;
+        results.security_score = { score, max: 7, grade: score >= 5 ? 'A' : score >= 3 ? 'B' : score >= 1 ? 'C' : 'F' };
+      } else {
+        degraded.push(`http:head-${res.status}`);
+      }
+    } catch (e) {
+      degraded.push('http:entetes');
+      console.warn('[PANDORA] Entêtes HTTP injoignables:', e instanceof Error ? e.message : e);
+    }
 
+    results.degraded = degraded;
     return NextResponse.json(results);
   } catch {
     return NextResponse.json({ error: 'WHOIS lookup failed' }, { status: 500 });
