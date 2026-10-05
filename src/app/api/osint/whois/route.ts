@@ -52,6 +52,11 @@ export async function GET(req: Request) {
         results.registration = events.find((e: any) => e.action === 'registration')?.date;
         results.expiration = events.find((e: any) => e.action === 'expiration')?.date;
         results.last_changed = events.find((e: any) => e.action === 'last changed')?.date;
+      } else {
+        // Un 404 RDAP est fréquent pour un domaine non enregistré — mais c'est aussi une
+        // façon de refuser. Dans les deux cas, l'absence de données doit être NOMMÉE :
+        // c'est ce qui distingue « domaine sans enregistrement » de « registre muet ».
+        degraded.push(`rdap:http-${res.status}`);
       }
     } catch (e) {
       degraded.push('rdap:enregistrement');
