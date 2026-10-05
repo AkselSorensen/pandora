@@ -125,7 +125,7 @@ export default function SearchBar({ onLocate, signals = [] }: SearchBarProps) {
             >
               <MapPin className={`w-3 h-3 flex-shrink-0 ${r.kind === 'signal' ? 'text-[#FF4081]' : 'text-[var(--gold-primary)]'}`} />
               <span className="min-w-0 flex-1 truncate text-[9px] font-mono text-[var(--text-secondary)]">{r.label}</span>
-              <span className="flex-shrink-0 text-[7px] font-mono tracking-wider text-[var(--text-muted)]">{r.kind === 'signal' ? `SIGNAL · ${r.source}` : 'PLACE'}</span>
+              <span className="flex-shrink-0 text-[9px] font-mono tracking-wider text-[var(--text-muted)]">{r.kind === 'signal' ? `SIGNAL · ${r.source}` : 'PLACE'}</span>
             </button>
           ))}
         </div>

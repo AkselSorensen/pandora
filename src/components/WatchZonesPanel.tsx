@@ -78,9 +78,9 @@ export default function WatchZonesPanel({ center, label, signals, onLocate }: Wa
         <div className="flex items-center gap-2">
           <Bell className="h-3.5 w-3.5 text-[var(--gold-primary)]" />
           <h2 className="hud-text text-[10px] text-[var(--text-primary)]">WATCHED AREAS</h2>
-          <span className="text-[8px] font-mono text-[var(--text-muted)]">{zones.length}</span>
+          <span className="text-[9px] font-mono text-[var(--text-muted)]">{zones.length}</span>
         </div>
-        <span className="text-[7px] font-mono tracking-wider text-[var(--text-muted)]">THIS DEVICE</span>
+        <span className="text-[9px] font-mono tracking-wider text-[var(--text-muted)]">THIS DEVICE</span>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -95,16 +95,16 @@ export default function WatchZonesPanel({ center, label, signals, onLocate }: Wa
           value={radiusKm}
           onChange={(event) => setRadiusKm(Number(event.target.value))}
           aria-label="Watched area radius"
-          className="rounded border border-[var(--border-secondary)] bg-[var(--bg-panel)] px-1.5 text-[8px] font-mono text-[var(--text-secondary)]"
+          className="rounded border border-[var(--border-secondary)] bg-[var(--bg-panel)] px-1.5 text-[9px] font-mono text-[var(--text-secondary)]"
         >
           {[100, 250, 500, 1000].map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
         </select>
-        <button type="button" onClick={saveCurrentArea} className="inline-flex items-center gap-1 rounded border border-[var(--border-primary)] px-2 text-[8px] font-mono text-[var(--gold-primary)] hover:bg-[var(--hover-accent)]">
+        <button type="button" onClick={saveCurrentArea} className="inline-flex items-center gap-1 rounded border border-[var(--border-primary)] px-2 text-[9px] font-mono text-[var(--gold-primary)] hover:bg-[var(--hover-accent)]">
           <Plus className="h-3 w-3" /> SAVE VIEW
         </button>
       </div>
 
-      <p className="mt-2 text-[8px] font-mono text-[var(--text-muted)]">Matches currently loaded, geolocated news signals. This panel does not send push notifications.</p>
+      <p className="mt-2 text-[9px] font-mono text-[var(--text-muted)]">Matches currently loaded, geolocated news signals. This panel does not send push notifications.</p>
 
       <div className="mt-3 space-y-2">
         {nearbyByZone.map(({ zone, signals: nearby }) => (
@@ -112,24 +112,24 @@ export default function WatchZonesPanel({ center, label, signals, onLocate }: Wa
             <div className="flex items-start justify-between gap-2">
               <button type="button" onClick={() => onLocate(zone.lat, zone.lng)} className="min-w-0 text-left">
                 <span className="block truncate text-[9px] font-mono text-[var(--text-primary)]">{zone.name}</span>
-                <span className="text-[7px] font-mono text-[var(--text-muted)]">{zone.lat.toFixed(2)}, {zone.lng.toFixed(2)} · {zone.radiusKm} km</span>
+                <span className="text-[9px] font-mono text-[var(--text-muted)]">{zone.lat.toFixed(2)}, {zone.lng.toFixed(2)} · {zone.radiusKm} km</span>
               </button>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-mono text-[var(--gold-primary)]">{nearby.length} MATCH{nearby.length === 1 ? '' : 'ES'}</span>
+                <span className="text-[9px] font-mono text-[var(--gold-primary)]">{nearby.length} MATCH{nearby.length === 1 ? '' : 'ES'}</span>
                 <button type="button" onClick={() => persist(zones.filter((item) => item.id !== zone.id))} aria-label={`Remove ${zone.name}`} className="text-[var(--text-muted)] hover:text-red-400">
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
             </div>
             {nearby.slice(0, 3).map((signal, index) => (
-              <button key={`${signal.link || signal.title}-${index}`} type="button" onClick={() => onLocate(Number(signal.coords[0]), Number(signal.coords[1]))} className="mt-1 flex w-full items-center gap-1.5 truncate border-t border-[var(--border-secondary)] pt-1 text-left text-[8px] font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              <button key={`${signal.link || signal.title}-${index}`} type="button" onClick={() => onLocate(Number(signal.coords[0]), Number(signal.coords[1]))} className="mt-1 flex w-full items-center gap-1.5 truncate border-t border-[var(--border-secondary)] pt-1 text-left text-[9px] font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                 <MapPin className="h-2.5 w-2.5 flex-shrink-0 text-[#FF4081]" />
                 <span className="truncate">{signal.title}</span>
               </button>
             ))}
           </article>
         ))}
-        {zones.length === 0 && <p className="py-2 text-center text-[8px] font-mono text-[var(--text-muted)]">Save the current map view to start monitoring an area.</p>}
+        {zones.length === 0 && <p className="py-2 text-center text-[9px] font-mono text-[var(--text-muted)]">Save the current map view to start monitoring an area.</p>}
       </div>
     </section>
   );

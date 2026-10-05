@@ -105,8 +105,8 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
         <div className="flex items-center gap-2">
           <Radio className="w-3.5 h-3.5 text-[#FF4081]" />
           <span className="hud-text text-[10px] text-[var(--text-primary)]">LIVE ALERTS</span>
-          <span className="gotham-tag gotham-tag--high" style={{ fontSize: '7px', padding: '1px 5px' }}>{alerts.filter(a => a.type === 'news' || a.type === 'quake').length}</span>
-          <span className="gotham-tag gotham-tag--info" style={{ fontSize: '7px', padding: '1px 4px' }}>{liveFeeds.length} FEEDS</span>
+          <span className="gotham-tag gotham-tag--high" style={{ fontSize: '9px', padding: '1px 5px' }}>{alerts.filter(a => a.type === 'news' || a.type === 'quake').length}</span>
+          <span className="gotham-tag gotham-tag--info" style={{ fontSize: '9px', padding: '1px 4px' }}>{liveFeeds.length} FEEDS</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-[#FF4081] animate-pandora-pulse" />
@@ -162,9 +162,9 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
                           <span className="text-[10px] font-mono text-[var(--text-primary)] truncate leading-tight">{alert.title}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[8px] font-mono text-[var(--text-muted)]">{alert.source}</span>
+                          <span className="text-[9px] font-mono text-[var(--text-muted)]">{alert.source}</span>
                           {alert.time && (
-                            <span className="text-[8px] font-mono text-[var(--text-muted)] flex items-center gap-0.5">
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] flex items-center gap-0.5">
                               <Clock className="w-2 h-2" />
                               {new Date(alert.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
@@ -198,7 +198,7 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
                   </button>
                 </div>
                 <h3 className="text-[10px] font-mono leading-relaxed text-[var(--text-primary)]">{selectedAlert.title}</h3>
-                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[8px] font-mono">
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[9px] font-mono">
                   <dt className="text-[var(--text-muted)]">SOURCE</dt>
                   <dd className="text-[var(--text-secondary)]">{selectedAlert.source || 'Unknown'}</dd>
                   {selectedAlert.time && (
@@ -217,7 +217,7 @@ export default function LiveAlerts({ data, onLocate, onWatchFeed }: LiveAlertsPr
                     href={selectedAlert.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex text-[8px] font-mono text-[var(--cyan-primary)] underline underline-offset-2 hover:text-[var(--text-primary)]"
+                    className="mt-2 inline-flex text-[9px] font-mono text-[var(--cyan-primary)] underline underline-offset-2 hover:text-[var(--text-primary)]"
                   >
                     OPEN ORIGINAL SOURCE ↗
                   </a>
