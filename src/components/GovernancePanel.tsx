@@ -6,7 +6,17 @@ import {
   Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Gavel, Link2,
   RefreshCw, ScrollText, ShieldAlert, UserCog,
 } from 'lucide-react';
-import ClearanceSwitcher, { type OperatorProfile } from '@/components/ClearanceSwitcher';
+import IdentityPanel from '@/components/IdentityPanel';
+
+/** Profil opérateur enregistré côté gouvernance (donnée réelle : /api/governance/posture). */
+interface OperatorProfile {
+  operator: string;
+  role: string;
+  clearance: string;
+  compartments: string[];
+  no_export: boolean;
+  updatedAt?: string;
+}
 
 interface GovernancePanelProps {
   /** Onglet affiche au montage. */
@@ -321,7 +331,7 @@ function GovernancePanel({ initialTab = 'journal' }: GovernancePanelProps) {
               </div>
             )}
           </div>
-          <ClearanceSwitcher operators={posture?.operators || []} onSaved={() => void loadGovernance()} />
+          <IdentityPanel />
         </div>
       )}
 
