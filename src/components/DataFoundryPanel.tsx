@@ -53,7 +53,10 @@ function DataFoundryPanel({ data, activeLayers }: DataFoundryPanelProps) {
             <div className="text-[8px] font-mono text-[var(--text-muted)] tracking-[0.18em]">PIPELINE · NORMALIZE · INDEX</div>
           </div>
         </div>
-        <span className="gotham-tag gotham-tag--info">LIVE OPS</span>
+        {/* « LIVE OPS » ne se justifie que si au moins une source est RÉELLEMENT indexée. */}
+        <span className={`gotham-tag ${indexed > 0 ? 'gotham-tag--info' : 'gotham-tag--high'}`}>
+          {indexed > 0 ? 'LIVE OPS' : 'AUCUNE SOURCE INDEXÉE'}
+        </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">

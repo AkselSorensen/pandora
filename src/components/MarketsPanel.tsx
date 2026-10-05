@@ -39,6 +39,9 @@ export default function MarketsPanel({ data, spaceWeather }: MarketsPanelProps) 
   const [expanded, setExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState('stocks');
   const markets = data.markets || {};
+  // « LIVE » est une AFFIRMATION : elle ne se pose que si des cotations sont réellement là.
+  // Sinon l'écran annoncerait un flux en direct sur zéro donnée.
+  const hasMarkets = Object.values(markets).some(rows => Array.isArray(rows) && rows.length > 0);
 
   return (
     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6, duration: 0.6 }} className="glass-panel p-3 pointer-events-auto">
@@ -46,7 +49,12 @@ export default function MarketsPanel({ data, spaceWeather }: MarketsPanelProps) 
         <div className="flex items-center gap-2">
           <BarChart3 className="w-3.5 h-3.5 text-[var(--gold-primary)]" />
           <span className="hud-text text-[12px] text-[var(--text-primary)]">MARKETS & INTEL</span>
-          <span className="gotham-tag gotham-tag--low" style={{ fontSize: '7px', padding: '1px 4px' }}>LIVE</span>
+          <span
+            className={`gotham-tag ${hasMarkets ? 'gotham-tag--low' : 'gotham-tag--high'}`}
+            style={{ fontSize: '9px', padding: '1px 4px' }}
+          >
+            {hasMarkets ? 'LIVE' : 'AUCUNE COTATION'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-[var(--alert-green)] animate-pandora-pulse" />

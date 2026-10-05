@@ -44,7 +44,10 @@ export default function CyberThreatRadar() {
           <span className="hud-label">PANDORA RECON</span>
           <h2>Cyber Threat Radar</h2>
         </div>
-        <span className="gotham-tag gotham-tag--critical">LIVE</span>
+        {/* « LIVE » ne se pose que si des menaces sont réellement chargées. */}
+        <span className={`gotham-tag ${threats.length > 0 ? 'gotham-tag--critical' : 'gotham-tag--high'}`}>
+          {threats.length > 0 ? 'LIVE' : 'AUCUNE MENACE CHARGÉE'}
+        </span>
       </div>
       <div className="tool-workspace-body">
         <div className="grid grid-cols-3 gap-3 mb-4">
