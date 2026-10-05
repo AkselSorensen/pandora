@@ -515,6 +515,200 @@ function EntityProperties({
   );
 }
 
+/* ------------------------------------------------- actions d'analyste gouvernées */
+
+interface AnnotationRow {
+  id: number;
+  seq: number;
+  at: string;
+  actor: string;
+  role: string;
+  target: string;
+  kind: string;
+  text: string;
+}
+
+const ANNOTATION_KINDS: { id: string; label: string }[] = [
+  { id: 'note', label: 'NOTER' },
+  { id: 'confirm', label: 'CONFIRMER' },
+  { id: 'dismiss', label: 'ÉCARTER' },
+];
+
+const ANNOTATION_TAG: Record<string, string> = {
+  note: 'gotham-tag--info',
+  confirm: 'gotham-tag--low',
+  dismiss: 'gotham-tag--high',
+};
+
+/**
+ * Actions d'analyste sur l'objet — annoter, confirmer, écarter.
+ *
+ * Chaque geste est une action GOUVERNÉE : le serveur décide selon la politique, écrit
+ * l'entrée dans le journal chaîné, puis — seulement si la décision est « allow » —
+ * enregistre l'annotation. L'accusé de réception affiche donc le numéro de séquence et
+ * l'empreinte du journal : c'est ce qui rend l'acte vérifiable, pas le bouton.
+ */
+function EntityAnnotations({ entityId }: { entityId: string }) {
+  const [rows, setRows] = useState<AnnotationRow[]>([]);
+  const [text, setText] = useState('');
+  const [kind, setKind] = useState('note');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [receipt, setReceipt] = useState<{ tone: 'ok' | 'deny'; label: string } | null>(null);
+
+  // Le chargement RENVOIE son résultat au lieu de poser l'état : appelé depuis un
+  // effet, il ne doit pas déclencher de rendu en cascade.
+  const fetchRows = useCallback(async (): Promise<{ rows: AnnotationRow[]; error: string }> => {
+    try {
+      const response = await fetch(
+        `/api/graph/entity/${encodeURIComponent(entityId)}/annotation`, { cache: 'no-store' });
+      if (!response.ok) {
+        return {
+          rows: [],
+          error: response.status === 503 ? 'GOUVERNANCE NON CONFIGURÉE' : `LECTURE ${response.status}`,
+        };
+      }
+      const payload = (await response.json()) as { annotations?: AnnotationRow[] };
+      return { rows: payload.annotations || [], error: '' };
+    } catch {
+      return { rows: [], error: 'LECTURE IMPOSSIBLE' };
+    }
+  }, [entityId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await fetchRows();
+      if (cancelled) return;
+      setRows(result.rows);
+      setError(result.error);
+    })();
+    return () => { cancelled = true; };
+  }, [fetchRows]);
+
+  const submit = useCallback(async () => {
+    const value = text.trim();
+    if (!value || busy) return;
+    setBusy(true);
+    setError('');
+    setReceipt(null);
+    try {
+      const response = await fetch(
+        `/api/graph/entity/${encodeURIComponent(entityId)}/annotation`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind, text: value }),
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as
+        | { decision?: string; reason?: string; seq?: number; hash?: string; error?: string }
+        | null;
+      if (!response.ok) {
+        setError(payload?.error ? String(payload.error).toUpperCase() : `ÉCHEC ${response.status}`);
+        return;
+      }
+      if (payload?.decision !== 'allow') {
+        setReceipt({ tone: 'deny', label: `REFUSÉ · ${payload?.reason || 'politique'}` });
+        return;
+      }
+      setReceipt({
+        tone: 'ok',
+        label: `CONSIGNÉE · JOURNAL #${payload.seq} · ${(payload.hash || '').slice(0, 12)}…`,
+      });
+      setText('');
+      const refreshed = await fetchRows();
+      setRows(refreshed.rows);
+      setError(refreshed.error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'REQUÊTE IMPOSSIBLE');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, kind, text, entityId, fetchRows]);
+
+  return (
+    <div>
+      <div className="hud-label mb-1">
+        <ShieldCheck className="mr-1 inline h-3 w-3" />ACTIONS ANALYSTE
+        <span className="ml-1 font-normal text-[var(--text-muted)]">· gouvernées, journalisées</span>
+      </div>
+
+      <div className="glass-panel-sm space-y-2 px-3 py-2">
+        <div className="flex flex-wrap gap-1">
+          {ANNOTATION_KINDS.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={`gotham-tag ${kind === option.id ? 'gotham-tag--info' : 'gotham-tag--low'} cursor-pointer`}
+              onClick={() => setKind(option.id)}
+              disabled={busy}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={text}
+          onChange={event => setText(event.target.value)}
+          rows={2}
+          maxLength={2000}
+          disabled={busy}
+          placeholder="Motif consigné au journal…"
+          className="w-full resize-none rounded border border-[var(--border-secondary)] bg-[var(--bg-void)] px-2 py-1 font-mono text-[10px] text-[var(--text-primary)] outline-none focus:border-[var(--border-active)]"
+        />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="ops-action"
+            onClick={() => void submit()}
+            disabled={busy || !text.trim()}
+          >
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CircleCheck className="h-3 w-3" />}
+            {busy ? 'CONSIGNATION' : 'CONSIGNER'}
+          </button>
+          {receipt && (
+            <span className={`text-[9px] font-mono ${receipt.tone === 'ok' ? 'text-[var(--alert-green)]' : 'text-[var(--alert-orange)]'}`}>
+              {receipt.label}
+            </span>
+          )}
+          {error && (
+            <span className="flex items-center gap-1 text-[9px] font-mono text-[var(--alert-red)]">
+              <AlertTriangle className="h-3 w-3" />{error}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {rows.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {rows.map(row => (
+            <div key={row.id} className="glass-panel-sm px-2 py-1.5">
+              <div className="flex flex-wrap items-center gap-1">
+                <span className={`gotham-tag ${ANNOTATION_TAG[row.kind] || 'gotham-tag--low'}`}>{row.kind}</span>
+                <span className="text-[9px] font-mono text-[var(--text-primary)]">{row.actor}</span>
+                <span className="gotham-tag gotham-tag--low">{row.role}</span>
+                <span className="ml-auto text-[9px] font-mono text-[var(--text-muted)]">
+                  JOURNAL #{row.seq} · {new Date(row.at).toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-1 text-[10px] text-[var(--text-secondary)]">{row.text}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {rows.length === 0 && !error && (
+        <div className="mt-1 text-[9px] font-mono text-[var(--text-muted)]">
+          AUCUNE ANNOTATION SUR CET OBJET
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
   const [tab, setTab] = useState<Tab>('graph');
   const [limit, setLimit] = useState(120);
@@ -1138,6 +1332,8 @@ function KnowledgeGraphPanel({ className }: KnowledgeGraphPanelProps) {
                 properties={entity.entity.properties}
                 schema={schema?.[entity.entity.type] || null}
               />
+
+              <EntityAnnotations entityId={entity.entity.id} />
 
               {relatedEdges.length > 0 && (
                 <div>
