@@ -141,8 +141,12 @@ def _opensky_to_adsb_shape(states: list[list]) -> list[dict]:
     return out
 
 
-async def fetch_all_aircraft() -> list[dict]:
-    """OpenSky (volume mondial) + ADSB.lol (typage/immat), fusionnés par ICAO24."""
+async def fetch_all_aircraft() -> tuple[list[dict], list[str]]:
+    """OpenSky (volume mondial) + ADSB.lol (typage/immat), fusionnés par ICAO24.
+
+    Renvoie aussi les sources qui ont réellement répondu : une source muette ne
+    doit jamais être annoncée comme contributrice.
+    """
     loop = asyncio.get_event_loop()
 
     # ADSB.lol par vagues espacées : une rafale de 6 réveille le rate-limit.
@@ -169,7 +173,13 @@ async def fetch_all_aircraft() -> list[dict]:
     for ac in adsb:
         merged[ac.get("hex") or f"{ac.get('lat')}-{ac.get('lon')}"] = ac
 
-    return list(merged.values())
+    sources: list[str] = []
+    if opensky_states:
+        sources.append("OpenSky Network")
+    if adsb:
+        sources.append("ADSB.lol v2")
+
+    return list(merged.values()), sources
 
 def classify_and_enrich(ac: dict) -> dict | None:
     """Classify a single aircraft and return enriched record."""
@@ -299,7 +309,7 @@ async def health():
 @app.get("/airspace")
 async def airspace(lat: float = 0, lng: float = 0, radius_km: int = 200):
     """All aircraft in global airspace, filtered by zone if coords provided."""
-    all_ac = await fetch_all_aircraft()
+    all_ac, sources = await fetch_all_aircraft()
     classified = []
     for ac in all_ac:
         c = classify_and_enrich(ac)
@@ -322,6 +332,8 @@ async def airspace(lat: float = 0, lng: float = 0, radius_km: int = 200):
         "generatedAt": now(),
         "total": len(classified),
         "aircraft": classified[:200],
+        "source": " + ".join(sources) if sources else None,
+        "sources": sources,
         "zones": get_airspace_zones(),
     }
 
@@ -330,7 +342,7 @@ async def anomalies(timeout: int = 18):
     """Detect suspicious aircraft patterns."""
     all_ac = []
     try:
-        all_ac = await asyncio.wait_for(fetch_all_aircraft(), timeout=timeout)
+        all_ac, _ = await asyncio.wait_for(fetch_all_aircraft(), timeout=timeout)
     except: pass
     classified = [classify_and_enrich(ac) for ac in all_ac]
     classified = [c for c in classified if c]
@@ -390,7 +402,7 @@ async def anomalies(timeout: int = 18):
 @app.post("/analyze-flight")
 async def analyze_flight(req: AnalyzeFlightRequest):
     """Deep analysis of a specific flight."""
-    all_ac = await fetch_all_aircraft()
+    all_ac, _ = await fetch_all_aircraft()
     target = None
     for ac in all_ac:
         hex_match = ac.get("hex", "").upper() == req.icao24.upper()
@@ -432,7 +444,7 @@ async def danger_zones():
 @app.post("/briefing")
 async def briefing(question: str = ""):
     """AI-powered airspace situation briefing."""
-    all_ac = await fetch_all_aircraft()
+    all_ac, _ = await fetch_all_aircraft()
     classified = [classify_and_enrich(ac) for ac in all_ac]
     classified = [c for c in classified if c]
     zones = get_airspace_zones()
