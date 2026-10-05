@@ -1421,7 +1421,7 @@ export default function Dashboard() {
                 )}
                 {desktopTool === 'search' && (
                   <div className="space-y-3">
-                    <SearchBar onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
+                    <SearchBar signals={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
                     <WatchZonesPanel center={{ latitude: mapView.latitude, longitude: mapView.longitude }} label={locationLabel} signals={data.news || []} onLocate={(lat, lng) => setFlyToLocation({ lat, lng, ts: Date.now() })} />
                     <SharePanel mapView={mapView} activeLayers={activeLayers} mouseCoords={mouseCoords} />
                   </div>
@@ -1705,6 +1705,7 @@ export default function Dashboard() {
                 {mobilePanel === 'search' && (
                   <div className="space-y-2">
                     <SearchBar
+                      signals={data.news || []}
                       onLocate={(lat, lng) => {
                         setFlyToLocation({ lat, lng, ts: Date.now() });
                         setMobilePanel(null);
